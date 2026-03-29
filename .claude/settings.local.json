@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pkill -f \"Godot_v4.6.1\")",
+      "Bash(\"C:/Custom/Tools/Godot_v4.6.1-stable_win64.exe/Godot_v4.6.1-stable_win64_console.exe\" --headless --path \"C:/Custom/UnityProjects/AICoding/roll-hhh\" --script \"res://scripts/test_buttons.gd\")",
+      "Bash(\"C:/Custom/Tools/Godot_v4.6.1-stable_win64.exe/Godot_v4.6.1-stable_win64_console.exe\" --headless --path \"C:/Custom/UnityProjects/AICoding/roll-hhh\" --script \"res://scripts/test_full_flow.gd\")"
+    ]
+  }
+}
