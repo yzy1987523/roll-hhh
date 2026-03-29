@@ -114,11 +114,23 @@ class CharacterData:
 
 	# 获取职业名称
 	func get_job_name() -> String:
+		# 先检查转职职业
+		var adv_name: String = JobAdvanced.get_advanced_job_name(job)
+		if adv_name != "":
+			return adv_name
 		match job:
 			Job.WARRIOR: return "战士"
 			Job.MAGE: return "法师"
 			Job.PRIEST: return "牧师"
 			_: return "未知"
+
+	# 获取基础职业 (转职前的原始职业)
+	func get_base_job() -> int:
+		if JobAdvanced.is_advanced_job(job):
+			if job >= 30: return Job.PRIEST
+			if job >= 20: return Job.MAGE
+			return Job.WARRIOR
+		return job
 
 
 # ==== Item ====

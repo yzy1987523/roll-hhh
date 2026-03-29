@@ -55,9 +55,21 @@ func execute_turn() -> int:
 
 	# 3. 检查敌方是否阵亡
 	if not enemy.is_alive():
-		battle_result = RESULT_WIN
-		_log("敌方阵亡! 我方胜利!")
-		return battle_result
+		# BOSS复活特技 (3008)
+		if enemy.skill_id == 3008 and not enemy.has_meta("revived"):
+			var revive_chance: float = 0.5 * enemy.skill_value
+			if randf() < revive_chance:
+				enemy.hp = int(enemy.max_hp * 0.3)
+				enemy.set_meta("revived", true)
+				_log("  BOSS触发[复活]! 以30%%血量复活! HP:%d" % enemy.hp)
+			else:
+				battle_result = RESULT_WIN
+				_log("敌方阵亡! 我方胜利!")
+				return battle_result
+		else:
+			battle_result = RESULT_WIN
+			_log("敌方阵亡! 我方胜利!")
+			return battle_result
 
 	# 4. 敌方攻击 (攻击前排)
 	_enemy_attack()
@@ -87,21 +99,52 @@ func _allies_attack() -> void:
 		if not enemy.is_alive():
 			break
 
+		# 闪避检查 (精英特技2004)
+		if enemy.skill_id == 2004:
+			var evade_chance: float = 0.2 * enemy.skill_value
+			if randf() < evade_chance:
+				_log("  敌方触发[闪避], 躲开了 %s 的攻击!" % ch.get_job_name())
+				continue
+
 		var damage: int = _calc_damage(ch.attack, enemy.defense)
 
-		# 法师穿透伤害 (特技1002)
+		# 法师穿透伤害 (特技1002) / 转职法师系穿透
 		var penetrate: int = 0
-		if ch.job == DataModels.Job.MAGE and ch.skill_level > 0:
-			penetrate = ch.skill_level  # 每回合额外1点穿透 * 特技等级
+		var base_job: int = ch.get_base_job()
+		if base_job == DataModels.Job.MAGE and ch.skill_level > 0:
+			penetrate = ch.skill_level
+
+		# 遗物: 穿透之箭(ID23) 所有攻击+1穿透
+		if ItemDatabase.has_relic(23, GameManager.relics):
+			penetrate += 1
+
+		if penetrate > 0:
 			_log("  %s Lv.%d 穿透伤害 +%d" % [ch.get_job_name(), ch.level, penetrate])
 
 		var total_damage: int = damage + penetrate
+
+		# 遗物: 连击之心(ID25) 15%概率2倍伤害
+		if ItemDatabase.has_relic(25, GameManager.relics) and randf() < 0.15:
+			total_damage *= 2
+			_log("  %s 触发[连击]! 伤害翻倍!" % ch.get_job_name())
+
 		enemy.take_damage(total_damage)
-		_log("  %s Lv.%d 攻击敌方, 伤害 %d (基础%d+穿透%d), 敌方剩余HP: %d" % [
-			ch.get_job_name(), ch.level, total_damage, damage, penetrate, enemy.hp
+		_log("  %s Lv.%d 攻击敌方, 伤害 %d, 敌方剩余HP: %d" % [
+			ch.get_job_name(), ch.level, total_damage, enemy.hp
 		])
 
-		# 触发攻击时 Buff
+		# 反击检查 (精英特技2001)
+		if enemy.skill_id == 2001 and enemy.is_alive():
+			var counter_chance: float = 0.3 * enemy.skill_value
+			if randf() < counter_chance:
+				var counter_dmg: int = maxi(int(enemy.attack * 0.5), 1)
+				ch.take_damage(counter_dmg)
+				_log("  敌方触发[反击]! %s 受到 %d 伤害" % [ch.get_job_name(), counter_dmg])
+
+		# 遗物: 复仇之魂(ID14) 击杀后再攻击一次
+		if not enemy.is_alive() and ItemDatabase.has_relic(14, GameManager.relics):
+			_log("  %s 触发[复仇之魂]! (敌方已阵亡)" % ch.get_job_name())
+
 		_trigger_on_attack(ch)
 
 
@@ -125,29 +168,43 @@ func _enemy_attack() -> void:
 
 		var damage: int = _calc_damage(enemy.attack, target.defense)
 
-		# 战士格挡 (特技1001): 每3回合格挡一次伤害
-		if target.job == DataModels.Job.WARRIOR and target.skill_level > 0:
+		# 战士系格挡 (特技1001): 每3回合格挡一次伤害
+		var base_job: int = target.get_base_job()
+		if base_job == DataModels.Job.WARRIOR and target.skill_level > 0:
 			if GameManager.battle_turn % 3 == 0:
 				_log("  %s Lv.%d 触发格挡, 免疫本次伤害!" % [target.get_job_name(), target.level])
 				damage = 0
 
+		# 遗物: 免控护符(ID24) 免疫敌方特技效果
+		var immune_skills: bool = ItemDatabase.has_relic(24, GameManager.relics)
+
 		target.take_damage(damage)
+
+		# 遗物: 守护天使(ID13) 首次致命保留1血
+		if not target.is_alive() and ItemDatabase.has_relic(13, GameManager.relics):
+			if not target.has_meta("angel_used"):
+				target.hp = 1
+				target.set_meta("angel_used", true)
+				_log("  [守护天使]触发! %s 保留1血!" % target.get_job_name())
+
 		_log("  敌方攻击 %s Lv.%d, 伤害 %d, 剩余HP: %d/%d" % [
 			target.get_job_name(), target.level, damage, target.hp, target.max_hp
 		])
 
-		# 敌方特技触发
-		_trigger_enemy_skill_on_attack(target)
+		# 敌方特技触发 (免控护符可阻止)
+		if not immune_skills:
+			_trigger_enemy_skill_on_attack(target)
 
 
 # ---- 回合开始 Buff ----
 
 func _trigger_round_start_buffs() -> void:
-	# 牧师回复 (特技1003): 每回合为身旁己方伤员回复1血
+	# 牧师系回复 (特技1003): 每回合为身旁己方伤员回复1血
 	for ch in allies:
 		if not ch.is_alive():
 			continue
-		if ch.job == DataModels.Job.PRIEST and ch.skill_level > 0:
+		var base_job: int = ch.get_base_job()
+		if base_job == DataModels.Job.PRIEST and ch.skill_level > 0:
 			var healed_count: int = _priest_heal_nearby(ch)
 			if healed_count > 0:
 				_log("  %s Lv.%d 回复了 %d 名伤员" % [ch.get_job_name(), ch.level, healed_count])

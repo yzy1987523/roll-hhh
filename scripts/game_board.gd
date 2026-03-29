@@ -316,6 +316,11 @@ func _refresh_board_display() -> void:
 
 
 func _get_job_color(job: int) -> Color:
+	# 转职职业: 使用基础职业颜色但更亮
+	if JobAdvanced.is_advanced_job(job):
+		if job >= 30: return Color("#50D050")  # 牧师系转职 - 亮绿
+		if job >= 20: return Color("#8060E0")  # 法师系转职 - 亮紫
+		return Color("#E05050")                # 战士系转职 - 亮红
 	match job:
 		DataModels.Job.WARRIOR: return COLOR_WARRIOR
 		DataModels.Job.MAGE: return COLOR_MAGE
@@ -356,7 +361,22 @@ func _on_spawn_pressed(job: int) -> void:
 		return
 
 	var level: int = randi_range(1, 3)
+
+	# 遗物: 经验药水(ID18) 10%概率直升2级
+	if ItemDatabase.has_relic(18, GameManager.relics) and randf() < 0.1:
+		level = mini(level + 1, 3)
+		print(">>> [GameBoard] 遗物[经验药水]触发, 等级+1")
+
+	# 遗物: 稀有召唤符(ID20) 5%概率直接3级
+	if ItemDatabase.has_relic(20, GameManager.relics) and randf() < 0.05:
+		level = 3
+		print(">>> [GameBoard] 遗物[稀有召唤符]触发, 直接3级")
+
 	var ch: DataModels.CharacterData = CharacterFactory.create_character(job, level)
+
+	# 转职概率检查 (5% + 转职令牌遗物+5%)
+	var has_relic_17: bool = ItemDatabase.has_relic(17, GameManager.relics)
+	JobAdvanced.check_advance_on_spawn(ch, has_relic_17)
 
 	var pos: Vector2i = GameManager.board_data.place_character_first_empty(ch)
 	if pos == Vector2i(-1, -1):
