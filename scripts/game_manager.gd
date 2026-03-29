@@ -37,6 +37,41 @@ var cycle_count: int = 0  # 完整循环次数 (每9轮+1)
 # ---- 棋盘数据 ----
 var board_data: BoardData = BoardData.new()
 
+# ---- 背包数据 ----
+var items: Array = []         # 道具背包 Array of ItemData
+var relics: Array = []        # 遗物栏 Array of ItemData
+signal items_changed()
+signal relics_changed()
+
+
+## 添加道具到背包
+func add_item(item: DataModels.ItemData) -> void:
+	items.append(item)
+	items_changed.emit()
+	print(">>> [GameManager] 获得道具: %s" % item.name)
+
+
+## 移除道具
+func remove_item(index: int) -> void:
+	if index >= 0 and index < items.size():
+		var item: DataModels.ItemData = items[index]
+		items.remove_at(index)
+		items_changed.emit()
+		print(">>> [GameManager] 移除道具: %s" % item.name)
+
+
+## 添加遗物
+func add_relic(relic: DataModels.ItemData) -> void:
+	# 唯一性检查 (战绩徽章可叠加)
+	if not relic.stackable:
+		for r in relics:
+			if r.id == relic.id:
+				print(">>> [GameManager] 遗物已拥有: %s" % relic.name)
+				return
+	relics.append(relic)
+	relics_changed.emit()
+	print(">>> [GameManager] 获得遗物: %s" % relic.name)
+
 # ---- 生命周期 ----
 
 func _ready() -> void:
@@ -194,10 +229,15 @@ func reset_after_defeat() -> void:
 	current_round = DEFAULT_ROUND
 	cycle_count = 0
 	phase = PHASE_PREPARE
+	items.clear()
+	relics.clear()
+	board_data.clear_board()
 	gold_changed.emit(gold)
 	energy_changed.emit(energy)
 	round_changed.emit(current_round)
 	phase_changed.emit(phase)
+	items_changed.emit()
+	relics_changed.emit()
 	print(">>> [GameManager] 战败重置 (图鉴保留)")
 
 
@@ -209,4 +249,6 @@ func _reset_to_defaults() -> void:
 	battle_turn = 0
 	current_round = DEFAULT_ROUND
 	cycle_count = 0
+	items.clear()
+	relics.clear()
 	board_data.clear_board()

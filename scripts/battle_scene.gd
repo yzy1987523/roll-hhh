@@ -171,21 +171,42 @@ func _handle_victory() -> void:
 	# 全员满血恢复
 	GameManager.board_data.heal_all()
 
-	# 计算奖励
+	# 计算金币奖励
 	var gold_reward: int = GOLD_REWARD_NORMAL
 	var enemy_type: int = GameManager.get_current_enemy_type()
 	match enemy_type:
 		1: gold_reward = GOLD_REWARD_ELITE
 		2: gold_reward = GOLD_REWARD_BOSS
 
+	# 金币袋遗物 (ID 15): +20%
+	if ItemDatabase.has_relic(15, GameManager.relics):
+		gold_reward = int(gold_reward * 1.2)
+
 	GameManager.add_gold(gold_reward)
+
+	# 随机道具奖励
+	var reward_text: String = "+%d 金币" % gold_reward
+	var all_consumables: Array = ItemDatabase.get_all_consumables()
+	var random_item: DataModels.ItemData = all_consumables[randi_range(0, all_consumables.size() - 1)]
+	GameManager.add_item(random_item)
+	reward_text += "\n+道具: %s" % random_item.name
+
+	# 精英/BOSS额外掉落遗物
+	if enemy_type >= 1:
+		var available_relics: Array = []
+		for r in ItemDatabase.get_all_relics():
+			if r.stackable or not ItemDatabase.has_relic(r.id, GameManager.relics):
+				available_relics.append(r)
+		if available_relics.size() > 0:
+			var relic: DataModels.ItemData = available_relics[randi_range(0, available_relics.size() - 1)]
+			GameManager.add_relic(relic)
+			reward_text += "\n+遗物: %s" % relic.name
+
 	GameManager.advance_round()
 
 	# 显示奖励面板
 	result_title.text = "战斗胜利!"
-	reward_label.text = "+%d 金币" % gold_reward
-	if enemy_type >= 1:
-		reward_label.text += "\n(精英/BOSS额外奖励待实现)"
+	reward_label.text = reward_text
 	result_panel.visible = true
 
 	print(">>> [BattleScene] 胜利! 奖励 %d 金币" % gold_reward)

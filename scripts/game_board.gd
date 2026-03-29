@@ -61,6 +61,8 @@ func _connect_signals() -> void:
 	end_turn_button.pressed.connect(_on_end_turn_pressed)
 	back_button.pressed.connect(_on_back_pressed)
 	dorm_button.pressed.connect(_on_dorm_pressed)
+	shop_button.pressed.connect(_on_shop_pressed)
+	item_button.pressed.connect(_on_item_pressed)
 	GameManager.gold_changed.connect(_on_gold_changed)
 	GameManager.energy_changed.connect(_on_energy_changed)
 	GameManager.round_changed.connect(_on_round_changed)
@@ -421,3 +423,103 @@ func _on_end_turn_pressed() -> void:
 func _on_back_pressed() -> void:
 	print(">>> [GameBoard] 返回主菜单")
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+
+
+func _on_shop_pressed() -> void:
+	print(">>> [GameBoard] 打开商店")
+	get_tree().change_scene_to_file("res://scenes/shop_scene.tscn")
+
+
+func _on_item_pressed() -> void:
+	# 道具栏弹窗
+	_show_item_panel()
+
+
+# ---- 道具栏面板 ----
+
+var item_panel: PanelContainer = null
+var item_panel_visible: bool = false
+
+func _show_item_panel() -> void:
+	if item_panel == null:
+		_create_item_panel()
+	item_panel_visible = !item_panel_visible
+	item_panel.visible = item_panel_visible
+	if item_panel_visible:
+		_refresh_item_panel()
+
+
+func _create_item_panel() -> void:
+	item_panel = PanelContainer.new()
+	item_panel.visible = false
+	item_panel.set_anchors_preset(Control.PRESET_CENTER)
+	item_panel.custom_minimum_size = Vector2(320, 220)
+	item_panel.offset_left = -160
+	item_panel.offset_top = -110
+	item_panel.offset_right = 160
+	item_panel.offset_bottom = 110
+	add_child(item_panel)
+
+
+func _refresh_item_panel() -> void:
+	for child in item_panel.get_children():
+		child.queue_free()
+
+	var vbox := VBoxContainer.new()
+	item_panel.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "道具栏 (%d个)" % GameManager.items.size()
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(300, 140)
+	vbox.add_child(scroll)
+
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(list)
+
+	for i in range(GameManager.items.size()):
+		var item: DataModels.ItemData = GameManager.items[i]
+		var row := HBoxContainer.new()
+		list.add_child(row)
+
+		var info := Label.new()
+		info.text = "%s - %s" % [item.name, item.description]
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		info.clip_text = true
+		row.add_child(info)
+
+		var use_btn := Button.new()
+		use_btn.text = "使用"
+		use_btn.pressed.connect(_on_use_item.bind(i))
+		row.add_child(use_btn)
+
+	if GameManager.items.size() == 0:
+		var empty := Label.new()
+		empty.text = "无道具"
+		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		list.add_child(empty)
+
+	var close_btn := Button.new()
+	close_btn.text = "关闭"
+	close_btn.pressed.connect(func(): item_panel.visible = false; item_panel_visible = false)
+	vbox.add_child(close_btn)
+
+
+func _on_use_item(item_index: int) -> void:
+	if item_index < 0 or item_index >= GameManager.items.size():
+		return
+	var item: DataModels.ItemData = GameManager.items[item_index]
+
+	# 需要指定目标的道具, 使用选中的格子
+	var target_idx: int = selected_index
+	var success: bool = ItemDatabase.use_consumable(item, target_idx)
+	if success:
+		GameManager.remove_item(item_index)
+		_refresh_item_panel()
+		_refresh_board_display()
+	else:
+		print(">>> [GameBoard] 使用道具失败 (可能需要先选中一个角色)")
