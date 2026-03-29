@@ -1,7 +1,7 @@
 extends Control
 
 ## 备战阶段主界面
-## 任务 2.1: UI 布局 + 任务 2.2: 角色生成
+## 任务 2.1-2.5: UI + 生成 + 拖拽 + 合成 + 献祭
 
 # ---- 节点引用 ----
 @onready var gold_label: Label = $MainLayout/TopBar/GoldLabel
@@ -25,18 +25,29 @@ const CELL_SIZE := 70
 # ---- 棋盘格子颜色 ----
 const COLOR_EMPTY_EVEN := Color("#3A5A8A")
 const COLOR_EMPTY_ODD := Color("#2A4A7A")
-const COLOR_WARRIOR := Color("#D94040")    # 红色 - 战士
-const COLOR_MAGE := Color("#6040D9")       # 紫色 - 法师
-const COLOR_PRIEST := Color("#40B040")     # 绿色 - 牧师
+const COLOR_WARRIOR := Color("#D94040")
+const COLOR_MAGE := Color("#6040D9")
+const COLOR_PRIEST := Color("#40B040")
+const COLOR_SELECTED := Color("#FFD700")  # 选中高亮边框色
+const COLOR_MERGE_HINT := Color("#FF8C00")  # 可合成提示色
 
 # ---- 棋盘格子引用 ----
-var cell_rects: Array = []    # ColorRect 数组
-var cell_labels: Array = []   # Label 数组 (显示角色信息)
+var cell_rects: Array = []     # ColorRect 背景
+var cell_labels: Array = []    # Label 角色信息
+var cell_panels: Array = []    # PanelContainer 格子容器
+
+# ---- 选中状态 (任务 2.3 拖拽) ----
+var selected_index: int = -1   # 当前选中的棋盘格索引, -1=无选中
+
+# ---- 宿舍面板 ----
+var dorm_panel: PanelContainer = null
+var dorm_visible: bool = false
 
 
 func _ready() -> void:
 	_connect_signals()
 	_setup_board_ui()
+	_setup_dorm_panel()
 	_update_resource_labels()
 	print(">>> [GameBoard] 备战阶段界面已加载")
 
@@ -44,13 +55,12 @@ func _ready() -> void:
 # ---- 信号连接 ----
 
 func _connect_signals() -> void:
-	# 按钮
 	spawn_warrior.pressed.connect(_on_spawn_pressed.bind(DataModels.Job.WARRIOR))
 	spawn_mage.pressed.connect(_on_spawn_pressed.bind(DataModels.Job.MAGE))
 	spawn_priest.pressed.connect(_on_spawn_pressed.bind(DataModels.Job.PRIEST))
 	end_turn_button.pressed.connect(_on_end_turn_pressed)
 	back_button.pressed.connect(_on_back_pressed)
-	# GameManager 信号
+	dorm_button.pressed.connect(_on_dorm_pressed)
 	GameManager.gold_changed.connect(_on_gold_changed)
 	GameManager.energy_changed.connect(_on_energy_changed)
 	GameManager.round_changed.connect(_on_round_changed)
@@ -59,16 +69,15 @@ func _connect_signals() -> void:
 # ---- 棋盘 UI 构建 ----
 
 func _setup_board_ui() -> void:
-	# 清空旧格子
 	for child in grid_container.get_children():
 		child.queue_free()
 	cell_rects.clear()
 	cell_labels.clear()
+	cell_panels.clear()
 
 	grid_container.columns = GRID_SIZE
 
 	for i in range(GRID_SIZE * GRID_SIZE):
-		# 格子容器
 		var cell := PanelContainer.new()
 		cell.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
 
@@ -92,13 +101,184 @@ func _setup_board_ui() -> void:
 		lbl.add_theme_font_size_override("font_size", 11)
 		cell.add_child(lbl)
 
+		# 点击事件
+		cell.gui_input.connect(_on_cell_gui_input.bind(i))
+
 		grid_container.add_child(cell)
 		cell_rects.append(bg)
 		cell_labels.append(lbl)
+		cell_panels.append(cell)
 
-	# 同步数据到 UI
 	_refresh_board_display()
 	print(">>> [GameBoard] %dx%d 棋盘格已生成" % [GRID_SIZE, GRID_SIZE])
+
+
+# ---- 宿舍面板 ----
+
+func _setup_dorm_panel() -> void:
+	dorm_panel = PanelContainer.new()
+	dorm_panel.visible = false
+	dorm_panel.set_anchors_preset(Control.PRESET_CENTER)
+	dorm_panel.custom_minimum_size = Vector2(300, 200)
+	dorm_panel.offset_left = -150
+	dorm_panel.offset_top = -100
+	dorm_panel.offset_right = 150
+	dorm_panel.offset_bottom = 100
+	add_child(dorm_panel)
+
+
+func _refresh_dorm_panel() -> void:
+	# 清空旧内容
+	for child in dorm_panel.get_children():
+		child.queue_free()
+
+	var vbox := VBoxContainer.new()
+	dorm_panel.add_child(vbox)
+
+	var title := Label.new()
+	title.text = "宿舍 (%d人)" % GameManager.board_data.dormitory.size()
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(280, 120)
+	vbox.add_child(scroll)
+
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(list)
+
+	for i in range(GameManager.board_data.dormitory.size()):
+		var ch: DataModels.CharacterData = GameManager.board_data.dormitory[i]
+		var row := HBoxContainer.new()
+		list.add_child(row)
+
+		var info := Label.new()
+		info.text = "%s Lv.%d  HP:%d/%d" % [ch.get_job_name(), ch.level, ch.hp, ch.max_hp]
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(info)
+
+		var take_btn := Button.new()
+		take_btn.text = "取出"
+		take_btn.pressed.connect(_on_dorm_take_pressed.bind(i))
+		row.add_child(take_btn)
+
+	if GameManager.board_data.dormitory.size() == 0:
+		var empty := Label.new()
+		empty.text = "宿舍为空"
+		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		list.add_child(empty)
+
+	var close_btn := Button.new()
+	close_btn.text = "关闭"
+	close_btn.pressed.connect(_on_dorm_close)
+	vbox.add_child(close_btn)
+
+
+# ---- 棋盘格点击处理 (任务 2.3 拖拽/选中) ----
+
+func _on_cell_gui_input(event: InputEvent, cell_index: int) -> void:
+	if not event is InputEventMouseButton:
+		return
+	var mb: InputEventMouseButton = event
+	if not mb.pressed:
+		return
+
+	var bd: BoardData = GameManager.board_data
+	var ch: DataModels.CharacterData = bd.get_character_at_index(cell_index)
+
+	# 左键: 选中 / 移动 / 合成
+	if mb.button_index == MOUSE_BUTTON_LEFT:
+		if selected_index == -1:
+			# 没有选中, 尝试选中
+			if ch != null:
+				selected_index = cell_index
+				_refresh_board_display()
+				print(">>> [GameBoard] 选中 %s Lv.%d 于格 %d" % [ch.get_job_name(), ch.level, cell_index])
+		else:
+			# 已有选中, 执行操作
+			if cell_index == selected_index:
+				# 点击同一个格子: 取消选中
+				selected_index = -1
+				_refresh_board_display()
+			else:
+				_handle_cell_action(cell_index)
+
+	# 右键: 献祭 (任务 2.5)
+	elif mb.button_index == MOUSE_BUTTON_RIGHT:
+		if ch != null:
+			_sacrifice_character(cell_index)
+
+
+func _handle_cell_action(target_index: int) -> void:
+	var bd: BoardData = GameManager.board_data
+	var source_ch: DataModels.CharacterData = bd.get_character_at_index(selected_index)
+	var target_ch: DataModels.CharacterData = bd.get_character_at_index(target_index)
+
+	if source_ch == null:
+		selected_index = -1
+		_refresh_board_display()
+		return
+
+	if target_ch == null:
+		# 目标为空: 移动
+		var src_pos: Vector2i = BoardData.index_to_pos(selected_index)
+		var tgt_pos: Vector2i = BoardData.index_to_pos(target_index)
+		bd.swap_positions(src_pos, tgt_pos)
+		print(">>> [GameBoard] 移动 %s 从格 %d 到格 %d" % [source_ch.get_job_name(), selected_index, target_index])
+	elif target_ch.job == source_ch.job and target_ch.level == source_ch.level:
+		# 同职业同等级: 合成 (任务 2.4)
+		_merge_at(selected_index, target_index)
+	else:
+		# 不同角色: 交换位置
+		var src_pos: Vector2i = BoardData.index_to_pos(selected_index)
+		var tgt_pos: Vector2i = BoardData.index_to_pos(target_index)
+		bd.swap_positions(src_pos, tgt_pos)
+		print(">>> [GameBoard] 交换 格%d ↔ 格%d" % [selected_index, target_index])
+
+	selected_index = -1
+	_refresh_board_display()
+
+
+# ---- 角色合成 (任务 2.4) ----
+
+func _merge_at(src_index: int, tgt_index: int) -> void:
+	var bd: BoardData = GameManager.board_data
+	var src_ch: DataModels.CharacterData = bd.get_character_at_index(src_index)
+	var tgt_ch: DataModels.CharacterData = bd.get_character_at_index(tgt_index)
+
+	var merged: DataModels.CharacterData = CharacterFactory.merge_characters(src_ch, tgt_ch)
+	if merged == null:
+		print(">>> [GameBoard] 合成失败")
+		return
+
+	# 移除两个原角色
+	bd.remove_character(BoardData.index_to_pos(src_index))
+	bd.remove_character(BoardData.index_to_pos(tgt_index))
+
+	# 放置新角色到目标位置
+	var tgt_pos: Vector2i = BoardData.index_to_pos(tgt_index)
+	bd.place_character(merged, tgt_pos)
+
+	print(">>> [GameBoard] 合成完成: %s Lv.%d 于格 %d" % [merged.get_job_name(), merged.level, tgt_index])
+
+
+# ---- 献祭 (任务 2.5) ----
+
+func _sacrifice_character(cell_index: int) -> void:
+	var bd: BoardData = GameManager.board_data
+	var pos: Vector2i = BoardData.index_to_pos(cell_index)
+	var ch: DataModels.CharacterData = bd.get_character_at(pos)
+	if ch == null:
+		return
+
+	var refund: int = GameManager.calc_sacrifice_energy(ch.level)
+	bd.remove_character(pos)
+	GameManager.restore_energy(refund)
+
+	print(">>> [GameBoard] 献祭 %s Lv.%d, 返还能量 %d" % [ch.get_job_name(), ch.level, refund])
+	selected_index = -1
+	_refresh_board_display()
 
 
 # ---- 棋盘显示刷新 ----
@@ -108,13 +288,23 @@ func _refresh_board_display() -> void:
 	for i in range(BoardData.BOARD_SLOTS):
 		var ch: DataModels.CharacterData = bd.get_character_at_index(i)
 		if ch != null:
-			# 显示角色
-			cell_rects[i].color = _get_job_color(ch.job)
+			var base_color: Color = _get_job_color(ch.job)
+			# 选中高亮
+			if i == selected_index:
+				cell_rects[i].color = COLOR_SELECTED
+			# 可合成提示: 与选中角色同职业同等级
+			elif selected_index >= 0:
+				var sel_ch: DataModels.CharacterData = bd.get_character_at_index(selected_index)
+				if sel_ch != null and ch.job == sel_ch.job and ch.level == sel_ch.level:
+					cell_rects[i].color = COLOR_MERGE_HINT
+				else:
+					cell_rects[i].color = base_color
+			else:
+				cell_rects[i].color = base_color
 			cell_labels[i].text = "%s\nLv.%d\n%d/%d" % [
 				ch.get_job_name(), ch.level, ch.hp, ch.max_hp
 			]
 		else:
-			# 空格子
 			@warning_ignore("integer_division")
 			var row := i / GRID_SIZE
 			var col := i % GRID_SIZE
@@ -154,23 +344,18 @@ func _on_round_changed(new_round: int) -> void:
 # ---- 角色生成 (任务 2.2) ----
 
 func _on_spawn_pressed(job: int) -> void:
-	# 检查能量
 	if not GameManager.spend_energy(1):
 		print(">>> [GameBoard] 生成失败: 能量不足")
 		return
 
-	# 检查棋盘是否已满
 	if GameManager.board_data.is_board_full():
-		# 退还能量
 		GameManager.restore_energy(1)
 		print(">>> [GameBoard] 生成失败: 棋盘已满")
 		return
 
-	# 创建角色 (随机1-3级)
 	var level: int = randi_range(1, 3)
 	var ch: DataModels.CharacterData = CharacterFactory.create_character(job, level)
 
-	# 放入棋盘空位
 	var pos: Vector2i = GameManager.board_data.place_character_first_empty(ch)
 	if pos == Vector2i(-1, -1):
 		GameManager.restore_energy(1)
@@ -181,9 +366,53 @@ func _on_spawn_pressed(job: int) -> void:
 	_refresh_board_display()
 
 
+# ---- 宿舍操作 ----
+
+func _on_dorm_pressed() -> void:
+	dorm_visible = !dorm_visible
+	dorm_panel.visible = dorm_visible
+	if dorm_visible:
+		_refresh_dorm_panel()
+
+
+func _on_dorm_take_pressed(dorm_index: int) -> void:
+	if GameManager.board_data.is_board_full():
+		print(">>> [GameBoard] 取出失败: 棋盘已满")
+		return
+	var ch: DataModels.CharacterData = GameManager.board_data.take_from_dormitory(dorm_index)
+	if ch == null:
+		return
+	var pos: Vector2i = GameManager.board_data.place_character_first_empty(ch)
+	print(">>> [GameBoard] 从宿舍取出 %s Lv.%d 到 (%d,%d)" % [ch.get_job_name(), ch.level, pos.x, pos.y])
+	_refresh_dorm_panel()
+	_refresh_board_display()
+
+
+func _on_dorm_close() -> void:
+	dorm_visible = false
+	dorm_panel.visible = false
+
+
+# ---- 棋盘→宿舍 (长按或双击可扩展, 暂用选中+宿舍按钮) ----
+
+func _input(event: InputEvent) -> void:
+	# 按 D 键将选中角色存入宿舍
+	if event is InputEventKey and event.pressed and event.keycode == KEY_D:
+		if selected_index >= 0:
+			var bd: BoardData = GameManager.board_data
+			var ch: DataModels.CharacterData = bd.get_character_at_index(selected_index)
+			if ch != null:
+				var pos: Vector2i = BoardData.index_to_pos(selected_index)
+				bd.board_to_dormitory(pos)
+				print(">>> [GameBoard] 存入宿舍: %s Lv.%d" % [ch.get_job_name(), ch.level])
+				selected_index = -1
+				_refresh_board_display()
+
+
 # ---- 按钮回调 ----
 
 func _on_end_turn_pressed() -> void:
+	selected_index = -1
 	print(">>> [GameBoard] 结束回合, 进入战斗阶段")
 	GameManager.enter_battle_phase()
 	# TODO: 切换到战斗场景 (任务 3.3)
