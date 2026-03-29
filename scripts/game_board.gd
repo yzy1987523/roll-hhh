@@ -415,7 +415,7 @@ func _on_end_turn_pressed() -> void:
 	selected_index = -1
 	print(">>> [GameBoard] 结束回合, 进入战斗阶段")
 	GameManager.enter_battle_phase()
-	# TODO: 切换到战斗场景 (任务 3.3)
+	get_tree().change_scene_to_file("res://scenes/battle_scene.tscn")
 
 
 func _on_back_pressed() -> void:
