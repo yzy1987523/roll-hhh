@@ -34,6 +34,9 @@ var battle_turn: int = 0
 var current_round: int = DEFAULT_ROUND
 var cycle_count: int = 0  # 完整循环次数 (每9轮+1)
 
+# ---- 棋盘数据 ----
+var board_data: BoardData = BoardData.new()
+
 # ---- 生命周期 ----
 
 func _ready() -> void:
@@ -206,3 +209,4 @@ func _reset_to_defaults() -> void:
 	battle_turn = 0
 	current_round = DEFAULT_ROUND
 	cycle_count = 0
+	board_data.clear_board()
