@@ -15,10 +15,13 @@ const BASE_STATS := {
 # ---- 每级成长系数 ----
 # 合成升级: 两个同职业同等级 → 高1级
 # 属性公式: base + floor(base * (level-1) * growth_rate)
+# 战士: 高HP/DEF成长, 中等ATK成长 (坦克定位)
+# 法师: 高ATK成长, 低HP/DEF成长 (输出定位)
+# 牧师: 中等HP成长, 低ATK成长 (辅助定位, 0基础ATK不参与攻击)
 const GROWTH_RATE := {
-	DataModels.Job.WARRIOR: { "hp": 0.6, "def": 0.4, "atk": 0.35 },
-	DataModels.Job.MAGE:    { "hp": 0.3, "def": 0.2, "atk": 0.5 },
-	DataModels.Job.PRIEST:  { "hp": 0.4, "def": 0.25, "atk": 0.15 },
+	DataModels.Job.WARRIOR: { "hp": 0.6, "def": 0.4, "atk": 0.45 },
+	DataModels.Job.MAGE:    { "hp": 0.35, "def": 0.2, "atk": 0.5 },
+	DataModels.Job.PRIEST:  { "hp": 0.45, "def": 0.25, "atk": 0.15 },
 }
 
 # ---- 特技强化等级节点 ----

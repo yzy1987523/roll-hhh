@@ -9,10 +9,20 @@ const TYPE_NORMAL := 0
 const TYPE_ELITE := 1
 const TYPE_BOSS := 2
 
+# ---- 平衡调整参数 ----
+# 普通敌人基础: HP 8, ATK 1, DEF 0
+# 精英敌人基础: HP 25, ATK 3, DEF 1
+# BOSS敌人基础: HP 70, ATK 5, DEF 2
+# 普通缩放: +30%/循环
+# 精英缩放: +40%/循环
+# BOSS缩放: +50%/循环
+# 金币奖励: 普通30, 精英60, BOSS100
+# 初始能量: 36
+
 # ---- 基础属性 (1循环第1个普通敌人) ----
-const BASE_NORMAL := { "hp": 5, "atk": 1, "def": 0 }
-const BASE_ELITE := { "hp": 20, "atk": 3, "def": 1 }
-const BASE_BOSS := { "hp": 50, "atk": 5, "def": 2 }
+const BASE_NORMAL := { "hp": 8, "atk": 1, "def": 0 }
+const BASE_ELITE := { "hp": 25, "atk": 3, "def": 1 }
+const BASE_BOSS := { "hp": 70, "atk": 5, "def": 2 }
 
 # ---- 每循环递增系数 ----
 const CYCLE_SCALE_NORMAL := 0.3   # 普通敌人每循环+30%

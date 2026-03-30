@@ -5,6 +5,7 @@ extends Node
 
 const SAVE_KEY := "roll_hhh_save"
 const ENCYCLOPEDIA_KEY := "roll_hhh_encyclopedia"
+const TUTORIAL_KEY := "roll_hhh_tutorial_done"
 
 ## 图鉴数据 (永久保留)
 var encyclopedia: Dictionary = {}  # key: "job_level" string, value: true
@@ -58,6 +59,33 @@ func load_encyclopedia() -> void:
 	var data: Dictionary = _load_from_storage(ENCYCLOPEDIA_KEY)
 	if data.size() > 0:
 		encyclopedia = data
+
+
+## 检查新手教学是否已完成
+func is_tutorial_done() -> bool:
+	var raw: String = ""
+	if OS.has_feature("web"):
+		var result = JavaScriptBridge.eval("localStorage.getItem('%s')" % TUTORIAL_KEY)
+		if result != null and result is String and result != "null":
+			raw = result
+	else:
+		var file := FileAccess.open("user://%s.json" % TUTORIAL_KEY, FileAccess.READ)
+		if file:
+			raw = file.get_as_text()
+			file.close()
+	return raw == "true"
+
+
+## 标记新手教学已完成
+func mark_tutorial_done() -> void:
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("localStorage.setItem('%s', 'true')" % TUTORIAL_KEY)
+	else:
+		var file := FileAccess.open("user://%s.json" % TUTORIAL_KEY, FileAccess.WRITE)
+		if file:
+			file.store_string("true")
+			file.close()
+	print(">>> [SaveSystem] 新手教学标记完成")
 
 
 # ---- 构建存档数据 ----

@@ -40,6 +40,9 @@ var cell_panels: Array = []    # PanelContainer 格子容器
 # ---- 选中状态 (任务 2.3 拖拽) ----
 var selected_index: int = -1   # 当前选中的棋盘格索引, -1=无选中
 
+# ---- 教学系统 ----
+var tutorial_overlay = null
+
 # ---- 宿舍面板 ----
 var dorm_panel: PanelContainer = null
 var dorm_visible: bool = false
@@ -50,6 +53,11 @@ func _ready() -> void:
 	_setup_board_ui()
 	_setup_dorm_panel()
 	_update_resource_labels()
+	# Load tutorial overlay
+	var tutorial_scene = preload("res://scenes/tutorial_overlay.tscn")
+	tutorial_overlay = tutorial_scene.instantiate()
+	add_child(tutorial_overlay)
+	tutorial_overlay.check_and_start(self)
 	print(">>> [GameBoard] 备战阶段界面已加载")
 
 
@@ -199,6 +207,8 @@ func _on_cell_gui_input(event: InputEvent, cell_index: int) -> void:
 				selected_index = cell_index
 				_refresh_board_display()
 				print(">>> [GameBoard] 选中 %s Lv.%d 于格 %d" % [ch.get_job_name(), ch.level, cell_index])
+				# Tutorial: advance after viewing character details (step 3)
+				_try_advance_tutorial(3)
 		else:
 			# 已有选中, 执行操作
 			if cell_index == selected_index:
@@ -242,6 +252,8 @@ func _handle_cell_action(target_index: int) -> void:
 
 	selected_index = -1
 	_refresh_board_display()
+	# Tutorial: advance after swap/move (step 2 = position adjustment)
+	_try_advance_tutorial(2)
 
 
 # ---- 角色合成 (任务 2.4) ----
@@ -285,6 +297,8 @@ func _sacrifice_character(cell_index: int) -> void:
 	print(">>> [GameBoard] 献祭 %s Lv.%d, 返还能量 %d" % [ch.get_job_name(), ch.level, refund])
 	selected_index = -1
 	_refresh_board_display()
+	# Tutorial: advance after sacrifice (step 3 = details/sacrifice/encyclopedia)
+	_try_advance_tutorial(3)
 
 
 # ---- 棋盘显示刷新 ----
@@ -392,6 +406,9 @@ func _on_spawn_pressed(job: int) -> void:
 	if is_instance_valid(get_node_or_null("/root/SaveSystem")):
 		SaveSystem.unlock_encyclopedia(ch.job, ch.level)
 	_refresh_board_display()
+	# Tutorial: advance after spawn (step 0 = first spawn, step 1 = second spawn/merge)
+	_try_advance_tutorial(0)
+	_try_advance_tutorial(1)
 
 
 # ---- 宿舍操作 ----
@@ -441,6 +458,8 @@ func _input(event: InputEvent) -> void:
 
 func _on_end_turn_pressed() -> void:
 	selected_index = -1
+	# Tutorial: advance on end turn (step 4)
+	_try_advance_tutorial(4)
 	print(">>> [GameBoard] 结束回合, 进入战斗阶段")
 	GameManager.enter_battle_phase()
 	get_tree().change_scene_to_file("res://scenes/battle_scene.tscn")
@@ -458,6 +477,8 @@ func _on_shop_pressed() -> void:
 
 func _on_encyclopedia_pressed() -> void:
 	print(">>> [GameBoard] 打开图鉴")
+	# Tutorial: advance after opening encyclopedia (step 3)
+	_try_advance_tutorial(3)
 	get_tree().change_scene_to_file("res://scenes/encyclopedia_scene.tscn")
 
 
@@ -554,3 +575,10 @@ func _on_use_item(item_index: int) -> void:
 		_refresh_board_display()
 	else:
 		print(">>> [GameBoard] 使用道具失败 (可能需要先选中一个角色)")
+
+
+# ---- 教学系统辅助 (任务 7.1) ----
+
+func _try_advance_tutorial(expected_step: int) -> void:
+	if tutorial_overlay and tutorial_overlay.is_active and tutorial_overlay.current_step == expected_step:
+		tutorial_overlay.advance_step()
