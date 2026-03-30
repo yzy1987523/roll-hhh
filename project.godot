@@ -28,3 +28,8 @@ GameManager="*res://scripts/game_manager.gd"
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+
+[gui]
+
+theme/default_font_names=PackedStringArray("Noto Sans CJK SC", "Microsoft YaHei", "PingFang SC", "SimHei", "Arial Unicode MS", "DejaVu Sans")
+theme/fallbacks=PackedStringArray("res://fonts/AlimamaFangYuanTiVF-Thin-2.ttf")

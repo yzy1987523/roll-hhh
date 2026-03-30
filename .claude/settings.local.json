@@ -3,7 +3,14 @@
     "allow": [
       "Bash(pkill -f \"Godot_v4.6.1\")",
       "Bash(\"C:/Custom/Tools/Godot_v4.6.1-stable_win64.exe/Godot_v4.6.1-stable_win64_console.exe\" --headless --path \"C:/Custom/UnityProjects/AICoding/roll-hhh\" --script \"res://scripts/test_buttons.gd\")",
-      "Bash(\"C:/Custom/Tools/Godot_v4.6.1-stable_win64.exe/Godot_v4.6.1-stable_win64_console.exe\" --headless --path \"C:/Custom/UnityProjects/AICoding/roll-hhh\" --script \"res://scripts/test_full_flow.gd\")"
+      "Bash(\"C:/Custom/Tools/Godot_v4.6.1-stable_win64.exe/Godot_v4.6.1-stable_win64_console.exe\" --headless --path \"C:/Custom/UnityProjects/AICoding/roll-hhh\" --script \"res://scripts/test_full_flow.gd\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(\"C:/Custom/Tools/Godot_v4.6.1-stable_win64.exe/Godot_v4.6.1-stable_win64_console.exe\" --headless --path C:/Custom/UnityProjects/AICoding/roll-hhh --export-release \"Web\" C:/Custom/UnityProjects/AICoding/roll-hhh/export/web/index.html)",
+      "Bash(mkdir -p \"C:/Users/Administrator/AppData/Roaming/Godot/export_templates/4.6.1.stable\")",
+      "Bash(cp -r \"C:/Users/Administrator/AppData/Roaming/Godot/export_templates/\"*.zip \"C:/Users/Administrator/AppData/Roaming/Godot/export_templates/4.6.1.stable/\")",
+      "Bash(cp \"C:/Users/Administrator/AppData/Roaming/Godot/export_templates/version.txt\" \"C:/Users/Administrator/AppData/Roaming/Godot/export_templates/4.6.1.stable/\")",
+      "Bash(cp \"C:/Users/Administrator/AppData/Roaming/Godot/export_templates/icudt_godot.dat\" \"C:/Users/Administrator/AppData/Roaming/Godot/export_templates/4.6.1.stable/\")"
     ]
   }
 }
