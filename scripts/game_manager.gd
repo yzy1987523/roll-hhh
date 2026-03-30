@@ -3,6 +3,9 @@ extends Node
 ## 游戏状态管理器 (Autoload 单例)
 ## 管理全局游戏状态、阶段流转、资源数据
 
+# ---- 初始化标志 ----
+var _initialized: bool = false
+
 # ---- 信号 ----
 signal phase_changed(new_phase: String)
 signal gold_changed(new_gold: int)
@@ -49,6 +52,7 @@ func add_item(item: DataModels.ItemData) -> void:
 	items.append(item)
 	items_changed.emit()
 	print(">>> [GameManager] 获得道具: %s" % item.name)
+	_auto_save()
 
 
 ## 移除道具
@@ -71,12 +75,14 @@ func add_relic(relic: DataModels.ItemData) -> void:
 	relics.append(relic)
 	relics_changed.emit()
 	print(">>> [GameManager] 获得遗物: %s" % relic.name)
+	_auto_save()
 
 # ---- 生命周期 ----
 
 func _ready() -> void:
 	print(">>> [GameManager] 游戏状态管理器已加载")
 	_reset_to_defaults()
+	_initialized = true
 
 
 # ---- 阶段流转 ----
@@ -87,6 +93,7 @@ func enter_prepare_phase() -> void:
 	battle_turn = 0
 	phase_changed.emit(phase)
 	print(">>> [GameManager] 进入备战阶段, 回合: %d" % current_round)
+	_auto_save()
 
 
 ## 进入战斗阶段
@@ -122,6 +129,7 @@ func advance_round() -> void:
 		print(">>> [GameManager] 完成第 %d 个循环" % cycle_count)
 	round_changed.emit(current_round)
 	print(">>> [GameManager] 推进到回合: %d" % current_round)
+	_auto_save()
 
 
 ## 获取当前回合的敌人类型 (0=普通, 1=精英, 2=BOSS)
@@ -239,6 +247,8 @@ func reset_after_defeat() -> void:
 	items_changed.emit()
 	relics_changed.emit()
 	print(">>> [GameManager] 战败重置 (图鉴保留)")
+	if _initialized and is_instance_valid(get_node_or_null("/root/SaveSystem")):
+		SaveSystem.clear_game_save()
 
 
 func _reset_to_defaults() -> void:
@@ -252,3 +262,9 @@ func _reset_to_defaults() -> void:
 	items.clear()
 	relics.clear()
 	board_data.clear_board()
+
+
+## 自动存档辅助 (仅在初始化完成且SaveSystem可用时调用)
+func _auto_save() -> void:
+	if _initialized and is_instance_valid(get_node_or_null("/root/SaveSystem")):
+		SaveSystem.save_game()

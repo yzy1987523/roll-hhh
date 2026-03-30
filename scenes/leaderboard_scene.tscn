@@ -1,0 +1,72 @@
+[gd_scene load_steps=2 format=3 uid="uid://c7leaderboard_scene"]
+
+[ext_resource type="Script" path="res://scripts/leaderboard_scene.gd" id="1_lb"]
+
+[node name="LeaderboardScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_lb")
+
+[node name="BgColor" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.08, 0.06, 0.12, 1)
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="TopBar" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 40)
+theme_override_constants/separation = 12
+
+[node name="BackButton" type="Button" parent="VBox/TopBar"]
+layout_mode = 2
+text = "返回"
+
+[node name="TitleLabel" type="Label" parent="VBox/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "排行榜"
+horizontal_alignment = 1
+
+[node name="PlayerInfo" type="Label" parent="VBox"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "玩家: Guest  |  最高循环: 0"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LeaderList" type="VBoxContainer" parent="VBox/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 4
+
+[node name="BottomBar" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 40)
+theme_override_constants/separation = 8
+
+[node name="NicknameInput" type="LineEdit" parent="VBox/BottomBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "输入昵称..."
+
+[node name="SetNameButton" type="Button" parent="VBox/BottomBar"]
+layout_mode = 2
+text = "设置昵称"

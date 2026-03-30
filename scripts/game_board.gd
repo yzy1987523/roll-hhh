@@ -17,6 +17,7 @@ extends Control
 @onready var item_button: Button = $MainLayout/MiddleBar/ItemButton
 @onready var dorm_button: Button = $MainLayout/MiddleBar/DormButton
 @onready var shop_button: Button = $MainLayout/MiddleBar/ShopButton
+@onready var encyclopedia_button: Button = $MainLayout/MiddleBar/EncyclopediaButton
 
 # ---- 常量 ----
 const GRID_SIZE := 6
@@ -63,6 +64,7 @@ func _connect_signals() -> void:
 	dorm_button.pressed.connect(_on_dorm_pressed)
 	shop_button.pressed.connect(_on_shop_pressed)
 	item_button.pressed.connect(_on_item_pressed)
+	encyclopedia_button.pressed.connect(_on_encyclopedia_pressed)
 	GameManager.gold_changed.connect(_on_gold_changed)
 	GameManager.energy_changed.connect(_on_energy_changed)
 	GameManager.round_changed.connect(_on_round_changed)
@@ -263,6 +265,8 @@ func _merge_at(src_index: int, tgt_index: int) -> void:
 	bd.place_character(merged, tgt_pos)
 
 	print(">>> [GameBoard] 合成完成: %s Lv.%d 于格 %d" % [merged.get_job_name(), merged.level, tgt_index])
+	if is_instance_valid(get_node_or_null("/root/SaveSystem")):
+		SaveSystem.unlock_encyclopedia(merged.job, merged.level)
 
 
 # ---- 献祭 (任务 2.5) ----
@@ -385,6 +389,8 @@ func _on_spawn_pressed(job: int) -> void:
 		return
 
 	print(">>> [GameBoard] 生成 %s Lv.%d 于 (%d, %d)" % [ch.get_job_name(), ch.level, pos.x, pos.y])
+	if is_instance_valid(get_node_or_null("/root/SaveSystem")):
+		SaveSystem.unlock_encyclopedia(ch.job, ch.level)
 	_refresh_board_display()
 
 
@@ -448,6 +454,11 @@ func _on_back_pressed() -> void:
 func _on_shop_pressed() -> void:
 	print(">>> [GameBoard] 打开商店")
 	get_tree().change_scene_to_file("res://scenes/shop_scene.tscn")
+
+
+func _on_encyclopedia_pressed() -> void:
+	print(">>> [GameBoard] 打开图鉴")
+	get_tree().change_scene_to_file("res://scenes/encyclopedia_scene.tscn")
 
 
 func _on_item_pressed() -> void:

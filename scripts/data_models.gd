@@ -132,6 +132,31 @@ class CharacterData:
 			return Job.WARRIOR
 		return job
 
+	# 序列化为字典
+	func to_dict() -> Dictionary:
+		return {
+			"id": id, "job": job, "level": level,
+			"hp": hp, "max_hp": max_hp,
+			"attack": attack, "defense": defense,
+			"skill_id": skill_id, "skill_level": skill_level,
+			"pos_x": position.x, "pos_y": position.y
+		}
+
+	# 从字典反序列化
+	static func from_dict(d: Dictionary) -> CharacterData:
+		var ch := CharacterData.new()
+		ch.id = d.get("id", 0)
+		ch.job = d.get("job", 0)
+		ch.level = d.get("level", 1)
+		ch.hp = d.get("hp", 1)
+		ch.max_hp = d.get("max_hp", 1)
+		ch.attack = d.get("attack", 0)
+		ch.defense = d.get("defense", 0)
+		ch.skill_id = d.get("skill_id", 0)
+		ch.skill_level = d.get("skill_level", 0)
+		ch.position = Vector2i(d.get("pos_x", -1), d.get("pos_y", -1))
+		return ch
+
 
 # ==== Item ====
 class ItemData:
@@ -149,3 +174,23 @@ class ItemData:
 
 	func is_consumable() -> bool:
 		return type == ItemType.CONSUMABLE
+
+	# 序列化为字典
+	func to_dict() -> Dictionary:
+		return {
+			"id": id, "type": type, "name": name,
+			"description": description, "stackable": stackable,
+			"stack_count": stack_count, "price": price
+		}
+
+	# 从字典反序列化
+	static func from_dict(d: Dictionary) -> ItemData:
+		var item := ItemData.new()
+		item.id = d.get("id", 0)
+		item.type = d.get("type", 0)
+		item.name = d.get("name", "")
+		item.description = d.get("description", "")
+		item.stackable = d.get("stackable", false)
+		item.stack_count = d.get("stack_count", 1)
+		item.price = d.get("price", 0)
+		return item

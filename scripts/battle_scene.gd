@@ -217,6 +217,8 @@ func _handle_defeat() -> void:
 	result_title.text = LocalizationSystem.get_text("battle.defeat_title")
 	reward_label.text = LocalizationSystem.get_text("battle.survived_rounds", {"value": GameManager.current_round})
 	result_panel.visible = true
+	# 提交排行榜分数
+	SaveSystem.submit_leaderboard_score(GameManager.cycle_count)
 	GameManager.enter_game_over()
 	print(">>> [BattleScene] 战败!")
 
