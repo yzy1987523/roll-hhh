@@ -34,7 +34,7 @@ theme_override_constants/separation = 12
 
 [node name="RelicLabel" type="Label" parent="MainLayout/TopBar"]
 layout_mode = 2
-text = "遗物栏"
+text = "Relics"
 
 [node name="Spacer" type="Control" parent="MainLayout/TopBar"]
 layout_mode = 2
@@ -42,7 +42,7 @@ size_flags_horizontal = 3
 
 [node name="TurnLabel" type="Label" parent="MainLayout/TopBar"]
 layout_mode = 2
-text = "回合: 1"
+text = "Turn: 1"
 
 [node name="EnemyInfo" type="VBoxContainer" parent="MainLayout"]
 layout_mode = 2
@@ -51,7 +51,7 @@ custom_minimum_size = Vector2(0, 60)
 [node name="EnemyName" type="Label" parent="MainLayout/EnemyInfo"]
 layout_mode = 2
 horizontal_alignment = 1
-text = "敌人名称"
+text = "Enemy Name"
 
 [node name="EnemyHpBar" type="ProgressBar" parent="MainLayout/EnemyInfo"]
 layout_mode = 2
@@ -94,11 +94,11 @@ theme_override_constants/separation = 8
 
 [node name="PlayButton" type="Button" parent="MainLayout/BottomBar"]
 layout_mode = 2
-text = "播放"
+text = "Play"
 
 [node name="SkipButton" type="Button" parent="MainLayout/BottomBar"]
 layout_mode = 2
-text = "跳过"
+text = "Skip"
 
 [node name="Spacer2" type="Control" parent="MainLayout/BottomBar"]
 layout_mode = 2
@@ -130,7 +130,7 @@ theme_override_constants/separation = 8
 [node name="ResultTitle" type="Label" parent="ResultPanel/ResultVBox"]
 layout_mode = 2
 horizontal_alignment = 1
-text = "战斗结果"
+text = "Battle Result"
 
 [node name="RewardLabel" type="Label" parent="ResultPanel/ResultVBox"]
 layout_mode = 2
@@ -139,4 +139,4 @@ text = ""
 
 [node name="ContinueButton" type="Button" parent="ResultPanel/ResultVBox"]
 layout_mode = 2
-text = "继续"
+text = "Continue"

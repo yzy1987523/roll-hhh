@@ -124,7 +124,7 @@ func _play_turns() -> void:
 	var result: int = engine.execute_turn()
 	_update_enemy_display()
 	_refresh_board_display()
-	turn_label.text = "战斗回合: %d" % GameManager.battle_turn
+	turn_label.text = LocalizationSystem.get_text("battle.turn", {"value": GameManager.battle_turn})
 
 	if result != BattleEngine.RESULT_ONGOING:
 		_on_battle_end(result)
@@ -144,7 +144,7 @@ func _on_skip_pressed() -> void:
 	var result: int = engine.run_full_battle()
 	_update_enemy_display()
 	_refresh_board_display()
-	turn_label.text = "战斗回合: %d" % GameManager.battle_turn
+	turn_label.text = LocalizationSystem.get_text("battle.turn", {"value": GameManager.battle_turn})
 	_on_battle_end(result)
 
 
@@ -166,7 +166,7 @@ func _on_battle_end(result: int) -> void:
 
 
 func _handle_victory() -> void:
-	result_label.text = "胜利!"
+	result_label.text = LocalizationSystem.get_text("battle.victory")
 
 	# 全员满血恢复
 	GameManager.board_data.heal_all()
@@ -185,11 +185,11 @@ func _handle_victory() -> void:
 	GameManager.add_gold(gold_reward)
 
 	# 随机道具奖励
-	var reward_text: String = "+%d 金币" % gold_reward
+	var reward_text: String = LocalizationSystem.get_text("battle.gold_reward", {"value": gold_reward})
 	var all_consumables: Array = ItemDatabase.get_all_consumables()
 	var random_item: DataModels.ItemData = all_consumables[randi_range(0, all_consumables.size() - 1)]
 	GameManager.add_item(random_item)
-	reward_text += "\n+道具: %s" % random_item.name
+	reward_text += "\n" + LocalizationSystem.get_text("battle.item_reward", {"name": random_item.name})
 
 	# 精英/BOSS额外掉落遗物
 	if enemy_type >= 1:
@@ -200,12 +200,12 @@ func _handle_victory() -> void:
 		if available_relics.size() > 0:
 			var relic: DataModels.ItemData = available_relics[randi_range(0, available_relics.size() - 1)]
 			GameManager.add_relic(relic)
-			reward_text += "\n+遗物: %s" % relic.name
+			reward_text += "\n" + LocalizationSystem.get_text("battle.relic_reward", {"name": relic.name})
 
 	GameManager.advance_round()
 
 	# 显示奖励面板
-	result_title.text = "战斗胜利!"
+	result_title.text = LocalizationSystem.get_text("battle.victory_title")
 	reward_label.text = reward_text
 	result_panel.visible = true
 
@@ -213,18 +213,18 @@ func _handle_victory() -> void:
 
 
 func _handle_defeat() -> void:
-	result_label.text = "失败..."
-	result_title.text = "游戏结束"
-	reward_label.text = "存活 %d 回合\n图鉴记录已保留" % GameManager.current_round
+	result_label.text = LocalizationSystem.get_text("battle.defeat")
+	result_title.text = LocalizationSystem.get_text("battle.defeat_title")
+	reward_label.text = LocalizationSystem.get_text("battle.survived_rounds", {"value": GameManager.current_round})
 	result_panel.visible = true
 	GameManager.enter_game_over()
 	print(">>> [BattleScene] 战败!")
 
 
 func _handle_draw() -> void:
-	result_label.text = "平局"
-	result_title.text = "平局"
-	reward_label.text = "无奖励, 回归备战"
+	result_label.text = LocalizationSystem.get_text("battle.draw")
+	result_title.text = LocalizationSystem.get_text("battle.draw_title")
+	reward_label.text = LocalizationSystem.get_text("battle.no_reward_draw")
 	result_panel.visible = true
 	GameManager.advance_round()
 	print(">>> [BattleScene] 平局!")
@@ -265,7 +265,7 @@ func _refresh_board_display() -> void:
 				]
 			else:
 				cell_rects[i].color = COLOR_DEAD
-				cell_labels[i].text = "%s\n阵亡" % ch.get_job_name()
+				cell_labels[i].text = "%s\n%s" % [ch.get_job_name(), LocalizationSystem.get_text("battle.dead")]
 		else:
 			@warning_ignore("integer_division")
 			var row := i / GRID_SIZE

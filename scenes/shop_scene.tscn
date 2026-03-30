@@ -30,14 +30,14 @@ theme_override_constants/separation = 8
 [node name="Title" type="Label" parent="VBox"]
 layout_mode = 2
 horizontal_alignment = 1
-text = "商店"
+text = "Shop"
 
 [node name="GoldBar" type="HBoxContainer" parent="VBox"]
 layout_mode = 2
 
 [node name="GoldLabel" type="Label" parent="VBox/GoldBar"]
 layout_mode = 2
-text = "金币: 0"
+text = "Gold: 0"
 
 [node name="ScrollContainer" type="ScrollContainer" parent="VBox"]
 layout_mode = 2
@@ -56,7 +56,7 @@ theme_override_constants/separation = 8
 
 [node name="RefreshButton" type="Button" parent="VBox/BottomBar"]
 layout_mode = 2
-text = "刷新 (10金)"
+text = "Refresh (10G)"
 
 [node name="Spacer" type="Control" parent="VBox/BottomBar"]
 layout_mode = 2
@@ -64,7 +64,7 @@ size_flags_horizontal = 3
 
 [node name="CloseButton" type="Button" parent="VBox/BottomBar"]
 layout_mode = 2
-text = "关闭"
+text = "Close"
 
 [node name="DetailPanel" type="PanelContainer" parent="."]
 visible = false
@@ -88,23 +88,23 @@ theme_override_constants/separation = 6
 [node name="DetailName" type="Label" parent="DetailPanel/DVBox"]
 layout_mode = 2
 horizontal_alignment = 1
-text = "商品名称"
+text = "Item Name"
 
 [node name="DetailDesc" type="Label" parent="DetailPanel/DVBox"]
 layout_mode = 2
 horizontal_alignment = 1
-text = "描述"
+text = "Description"
 autowrap_mode = 2
 
 [node name="DetailPrice" type="Label" parent="DetailPanel/DVBox"]
 layout_mode = 2
 horizontal_alignment = 1
-text = "价格"
+text = "Price"
 
 [node name="BuyButton" type="Button" parent="DetailPanel/DVBox"]
 layout_mode = 2
-text = "购买"
+text = "Buy"
 
 [node name="DetailClose" type="Button" parent="DetailPanel/DVBox"]
 layout_mode = 2
-text = "取消"
+text = "Cancel"

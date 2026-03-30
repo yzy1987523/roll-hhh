@@ -36,9 +36,9 @@ vertical_alignment = 1
 [node name="StartButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/normal_font = ExtResource("2")
-text = "开始游戏"
+text = "Start Game"
 
 [node name="SettingsButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 theme_override_fonts/normal_font = ExtResource("2")
-text = "设置"
+text = "Settings"

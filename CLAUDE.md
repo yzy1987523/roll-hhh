@@ -14,22 +14,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ### Run/Edit
+
 ```bash
 "C:/Custom/Tools/Godot_v4.6.1-stable_win64.exe/Godot_v4.6.1-stable_win64_console.exe" --path C:/Custom/UnityProjects/AICoding/roll-hhh
 ```
 
 ### Headless Testing (CLI)
+
 ```bash
 "C:/Custom/Tools/Godot_v4.6.1-stable_win64.exe/Godot_v4.6.1-stable_win64_console.exe" --headless --path <project_path> --script res://scripts/<script_name>.gd
 ```
 
 ### VSCode Debugging
+
 - Launch config: `.vscode/launch.json` → "GDScript: Launch Project"
 - F5 starts the Godot editor with debugger
 
 ## Architecture
 
 ### Scene Structure
+
 ```
 main_menu.tscn (Control root)
 └── VBoxContainer
@@ -44,6 +48,7 @@ game_board.tscn (Control root)
 ```
 
 ### File Organization
+
 ```
 scripts/      # GDScript scripts
 scenes/       # .tscn scene files
@@ -53,6 +58,7 @@ test_*.gd     # Test scripts (development only)
 ## Coding Standards
 
 ### Node References
+
 ```gdscript
 # Correct: full path defined in scene
 @onready var btn: Button = $VBoxContainer/StartButton
@@ -62,22 +68,28 @@ test_*.gd     # Test scripts (development only)
 ```
 
 ### Integer Division Warning
+
 Godot 4 warns on `i / GRID_SIZE`. Suppress with:
+
 ```gdscript
 @warning_ignore("integer_division")
 var row := i / GRID_SIZE
 ```
 
 ### Scene Transitions
+
 ```gdscript
 get_tree().change_scene_to_file("res://scenes/target.tscn")
 ```
 
 ### Log Format
+
 ```
 >>> [SceneName] operation description
 ```
+
 Example:
+
 ```gdscript
 print(">>> [MainMenu] 开始游戏按钮被点击")
 print(">>> [GameBoard] 6x6 棋盘格已生成")
@@ -86,6 +98,7 @@ print(">>> [GameBoard] 6x6 棋盘格已生成")
 ## Testing Standards
 
 ### Headless Test Script Requirements
+
 - Extend `SceneTree`
 - Use `_init()` as entry point
 - Use `root.add_child()` to add scenes
@@ -93,6 +106,7 @@ print(">>> [GameBoard] 6x6 棋盘格已生成")
 - Use `quit()` to exit
 
 ### Debug Checklist
+
 - [ ] Scene file path is correct
 - [ ] Node path matches scene structure
 - [ ] `@onready` path is relative to scene

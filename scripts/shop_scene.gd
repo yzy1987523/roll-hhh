@@ -77,7 +77,7 @@ func _rebuild_item_list() -> void:
 		item_list.add_child(row)
 
 		var type_tag := Label.new()
-		type_tag.text = "[遗物]" if item.is_relic() else "[道具]"
+		type_tag.text = LocalizationSystem.get_text("shop.tag_relic") if item.is_relic() else LocalizationSystem.get_text("shop.tag_consumable")
 		type_tag.custom_minimum_size = Vector2(50, 0)
 		row.add_child(type_tag)
 
@@ -88,17 +88,17 @@ func _rebuild_item_list() -> void:
 
 		var price_lbl := Label.new()
 		var actual_price: int = _get_actual_price(item)
-		price_lbl.text = "%d金" % actual_price
+		price_lbl.text = LocalizationSystem.get_text("shop.price_format", {"value": actual_price})
 		price_lbl.custom_minimum_size = Vector2(50, 0)
 		row.add_child(price_lbl)
 
 		var stock_lbl := Label.new()
-		stock_lbl.text = "x%d" % stock if stock > 0 else "售罄"
+		stock_lbl.text = LocalizationSystem.get_text("shop.stock_format", {"value": stock}) if stock > 0 else LocalizationSystem.get_text("shop.sold_out")
 		stock_lbl.custom_minimum_size = Vector2(40, 0)
 		row.add_child(stock_lbl)
 
 		var btn := Button.new()
-		btn.text = "查看"
+		btn.text = LocalizationSystem.get_text("shop.view")
 		btn.disabled = stock <= 0
 		btn.pressed.connect(_on_item_select.bind(i))
 		row.add_child(btn)
@@ -124,7 +124,7 @@ func _on_item_select(index: int) -> void:
 	var item: DataModels.ItemData = shop_items[index]
 	detail_name.text = item.name
 	detail_desc.text = item.description
-	detail_price.text = "价格: %d 金币 | 库存: %d" % [_get_actual_price(item), shop_stock[index]]
+	detail_price.text = LocalizationSystem.get_text("shop.detail_price", {"price": _get_actual_price(item), "stock": shop_stock[index]})
 	buy_button.disabled = shop_stock[index] <= 0
 	detail_panel.visible = true
 
@@ -180,8 +180,8 @@ func _on_detail_close() -> void:
 
 
 func _update_gold() -> void:
-	gold_label.text = "金币: %d" % GameManager.gold
+	gold_label.text = LocalizationSystem.get_text("shop.gold_label", {"value": GameManager.gold})
 
 
 func _on_gold_changed(new_gold: int) -> void:
-	gold_label.text = "金币: %d" % new_gold
+	gold_label.text = LocalizationSystem.get_text("shop.gold_label", {"value": new_gold})

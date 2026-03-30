@@ -138,7 +138,7 @@ func _refresh_dorm_panel() -> void:
 	dorm_panel.add_child(vbox)
 
 	var title := Label.new()
-	title.text = "宿舍 (%d人)" % GameManager.board_data.dormitory.size()
+	title.text = LocalizationSystem.get_text("game_board.dorm_title", {"count": GameManager.board_data.dormitory.size()})
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
@@ -161,18 +161,18 @@ func _refresh_dorm_panel() -> void:
 		row.add_child(info)
 
 		var take_btn := Button.new()
-		take_btn.text = "取出"
+		take_btn.text = LocalizationSystem.get_text("game_board.dorm_take")
 		take_btn.pressed.connect(_on_dorm_take_pressed.bind(i))
 		row.add_child(take_btn)
 
 	if GameManager.board_data.dormitory.size() == 0:
 		var empty := Label.new()
-		empty.text = "宿舍为空"
+		empty.text = LocalizationSystem.get_text("game_board.dorm_empty")
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		list.add_child(empty)
 
 	var close_btn := Button.new()
-	close_btn.text = "关闭"
+	close_btn.text = LocalizationSystem.get_text("game_board.back")
 	close_btn.pressed.connect(_on_dorm_close)
 	vbox.add_child(close_btn)
 
@@ -331,21 +331,21 @@ func _get_job_color(job: int) -> Color:
 # ---- 资源标签更新 ----
 
 func _update_resource_labels() -> void:
-	gold_label.text = "金币: %d" % GameManager.gold
-	energy_label.text = "能量: %d/%d" % [GameManager.energy, GameManager.max_energy]
-	round_label.text = "回合: %d" % GameManager.current_round
+	gold_label.text = LocalizationSystem.get_text("game_board.gold", {"value": GameManager.gold})
+	energy_label.text = LocalizationSystem.get_text("game_board.energy", {"current": GameManager.energy, "max": GameManager.max_energy})
+	round_label.text = LocalizationSystem.get_text("game_board.round", {"value": GameManager.current_round})
 
 
 func _on_gold_changed(new_gold: int) -> void:
-	gold_label.text = "金币: %d" % new_gold
+	gold_label.text = LocalizationSystem.get_text("game_board.gold", {"value": new_gold})
 
 
 func _on_energy_changed(new_energy: int) -> void:
-	energy_label.text = "能量: %d/%d" % [new_energy, GameManager.max_energy]
+	energy_label.text = LocalizationSystem.get_text("game_board.energy", {"current": new_energy, "max": GameManager.max_energy})
 
 
 func _on_round_changed(new_round: int) -> void:
-	round_label.text = "回合: %d" % new_round
+	round_label.text = LocalizationSystem.get_text("game_board.round", {"value": new_round})
 
 
 # ---- 角色生成 (任务 2.2) ----
@@ -489,7 +489,7 @@ func _refresh_item_panel() -> void:
 	item_panel.add_child(vbox)
 
 	var title := Label.new()
-	title.text = "道具栏 (%d个)" % GameManager.items.size()
+	title.text = LocalizationSystem.get_text("game_board.item_title", {"count": GameManager.items.size()})
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
@@ -513,18 +513,18 @@ func _refresh_item_panel() -> void:
 		row.add_child(info)
 
 		var use_btn := Button.new()
-		use_btn.text = "使用"
+		use_btn.text = LocalizationSystem.get_text("game_board.item_use")
 		use_btn.pressed.connect(_on_use_item.bind(i))
 		row.add_child(use_btn)
 
 	if GameManager.items.size() == 0:
 		var empty := Label.new()
-		empty.text = "无道具"
+		empty.text = LocalizationSystem.get_text("game_board.item_empty")
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		list.add_child(empty)
 
 	var close_btn := Button.new()
-	close_btn.text = "关闭"
+	close_btn.text = LocalizationSystem.get_text("game_board.back")
 	close_btn.pressed.connect(func(): item_panel.visible = false; item_panel_visible = false)
 	vbox.add_child(close_btn)
 

@@ -1,0 +1,159 @@
+{
+  "current_language": "en",
+  "languages": {
+    "en": {
+      "app_title": "Roll HHH",
+      "menu": {
+        "start_game": "Start Game",
+        "settings": "Settings"
+      },
+      "game_board": {
+        "gold": "Gold: {value}",
+        "energy": "Energy: {current}/{max}",
+        "round": "Round: {value}",
+        "settings": "Settings",
+        "relics": "Relics ({count})",
+        "relics_empty": "Relics (Empty)",
+        "items": "Items",
+        "dorm": "Dorm",
+        "shop": "Shop",
+        "spawn_warrior": "Spawn:Warrior",
+        "spawn_mage": "Spawn:Mage",
+        "spawn_priest": "Spawn:Priest",
+        "back": "Back",
+        "end_turn": "End Turn",
+        "dorm_title": "Dorm ({count})",
+        "dorm_take": "Take",
+        "dorm_empty": "Dorm is Empty",
+        "dorm_close": "Close",
+        "item_title": "Items ({count})",
+        "item_use": "Use",
+        "item_empty": "No Items",
+        "item_close": "Close",
+        "energy_insufficient": "Insufficient Energy",
+        "board_full": "Board is Full",
+        "spawn_failed": "Spawn Failed",
+        "take_failed_board_full": "Take Failed: Board Full"
+      },
+      "battle": {
+        "turn": "Battle Turn: {value}",
+        "victory": "Victory!",
+        "defeat": "Defeat...",
+        "draw": "Draw",
+        "victory_title": "Battle Victory!",
+        "defeat_title": "Game Over",
+        "draw_title": "Draw",
+        "gold_reward": "+{value} Gold",
+        "item_reward": "+Item: {name}",
+        "relic_reward": "+Relic: {name}",
+        "survived_rounds": "Survived {value} Rounds\nEncyclopedia Saved",
+        "dead": "Dead",
+        "no_reward_draw": "No Reward, Return to Prep"
+      },
+      "shop": {
+        "title": "Shop",
+        "refresh": "Refresh",
+        "buy": "Buy",
+        "not_enough_gold": "Not Enough Gold",
+        "item_bought": "Purchased: {name}",
+        "tag_relic": "[Relic]",
+        "tag_consumable": "[Item]",
+        "price_format": "{value}G",
+        "stock_format": "x{value}",
+        "sold_out": "Sold Out",
+        "view": "View",
+        "detail_price": "Price: {price}G | Stock: {stock}",
+        "title_bar": "Shop",
+        "gold_label": "Gold: {value}"
+      },
+      "dorm": {
+        "title": "Dorm",
+        "deploy": "Deploy",
+        "recall": "Recall"
+      },
+      "settings": {
+        "title": "Settings",
+        "sound": "Sound",
+        "music": "Music",
+        "close": "Close"
+      }
+    },
+    "zh": {
+      "app_title": "Roll HHH",
+      "menu": {
+        "start_game": "开始游戏",
+        "settings": "设置"
+      },
+      "game_board": {
+        "gold": "金币: {value}",
+        "energy": "能量: {current}/{max}",
+        "round": "回合: {value}",
+        "settings": "设置",
+        "relics": "遗物 ({count})",
+        "relics_empty": "遗物 (空)",
+        "items": "道具栏",
+        "dorm": "宿舍",
+        "shop": "商店",
+        "spawn_warrior": "生成:战士",
+        "spawn_mage": "生成:法师",
+        "spawn_priest": "生成:牧师",
+        "back": "返回",
+        "end_turn": "结束回合",
+        "dorm_title": "宿舍 ({count})",
+        "dorm_take": "取出",
+        "dorm_empty": "宿舍为空",
+        "dorm_close": "关闭",
+        "item_title": "道具栏 ({count})",
+        "item_use": "使用",
+        "item_empty": "无道具",
+        "item_close": "关闭",
+        "energy_insufficient": "能量不足",
+        "board_full": "棋盘已满",
+        "spawn_failed": "生成失败",
+        "take_failed_board_full": "取出失败: 棋盘已满"
+      },
+      "battle": {
+        "turn": "战斗回合: {value}",
+        "victory": "胜利!",
+        "defeat": "失败...",
+        "draw": "平局",
+        "victory_title": "战斗胜利!",
+        "defeat_title": "游戏结束",
+        "draw_title": "平局",
+        "gold_reward": "+{value} 金币",
+        "item_reward": "+道具: {name}",
+        "relic_reward": "+遗物: {name}",
+        "survived_rounds": "存活 {value} 回合\n图鉴记录已保留",
+        "dead": "阵亡",
+        "no_reward_draw": "无奖励, 回归备战"
+      },
+      "shop": {
+        "title": "商店",
+        "refresh": "刷新",
+        "buy": "购买",
+        "not_enough_gold": "金币不足",
+        "item_bought": "已购买: {name}",
+        "tag_relic": "[遗物]",
+        "tag_consumable": "[道具]",
+        "price_format": "{value}金",
+        "stock_format": "x{value}",
+        "sold_out": "售罄",
+        "view": "查看",
+        "detail_price": "价格: {price} 金币 | 库存: {stock}",
+        "title_bar": "商店",
+        "gold_label": "金币: {value}"
+      },
+      "dorm": {
+        "title": "宿舍",
+        "deploy": "部署",
+        "recall": "召回"
+      },
+      "settings": {
+        "title": "设置",
+        "sound": "音效",
+        "music": "音乐",
+        "close": "关闭"
+      }
+    }
+  }
+}
