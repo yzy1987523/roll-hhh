@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://bvkqp8h_game_board"]
+[gd_scene load_steps=3 format=3 uid="uid://bvkqp8h_game_board"]
 
 [ext_resource type="Script" path="res://scripts/game_board.gd" id="1_game_board"]
+[ext_resource type="FontFile" path="res://fonts/NotoSansSC-Regular.ttf" id="2"]
 
 [node name="GameBoard" type="Control"]
 layout_mode = 3
@@ -34,14 +35,17 @@ theme_override_constants/separation = 12
 
 [node name="GoldLabel" type="Label" parent="MainLayout/TopBar"]
 layout_mode = 2
+theme_override_fonts/normal_font = ExtResource("2")
 text = "金币: 0"
 
 [node name="EnergyLabel" type="Label" parent="MainLayout/TopBar"]
 layout_mode = 2
+theme_override_fonts/normal_font = ExtResource("2")
 text = "能量: 36/36"
 
 [node name="RoundLabel" type="Label" parent="MainLayout/TopBar"]
 layout_mode = 2
+theme_override_fonts/normal_font = ExtResource("2")
 text = "回合: 1"
 
 [node name="Spacer" type="Control" parent="MainLayout/TopBar"]
@@ -50,6 +54,7 @@ size_flags_horizontal = 3
 
 [node name="SettingsButton" type="Button" parent="MainLayout/TopBar"]
 layout_mode = 2
+theme_override_fonts/normal_font = ExtResource("2")
 text = "设置"
 
 [node name="RelicBar" type="HBoxContainer" parent="MainLayout"]
@@ -59,6 +64,7 @@ theme_override_constants/separation = 4
 
 [node name="RelicLabel" type="Label" parent="MainLayout/RelicBar"]
 layout_mode = 2
+theme_override_fonts/normal_font = ExtResource("2")
 text = "遗物栏 (空)"
 
 [node name="MiddleBar" type="HBoxContainer" parent="MainLayout"]
@@ -69,16 +75,19 @@ theme_override_constants/separation = 8
 [node name="ItemButton" type="Button" parent="MainLayout/MiddleBar"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_fonts/normal_font = ExtResource("2")
 text = "道具栏"
 
 [node name="DormButton" type="Button" parent="MainLayout/MiddleBar"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_fonts/normal_font = ExtResource("2")
 text = "宿舍"
 
 [node name="ShopButton" type="Button" parent="MainLayout/MiddleBar"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_fonts/normal_font = ExtResource("2")
 text = "商店"
 
 [node name="BoardCenter" type="CenterContainer" parent="MainLayout"]
@@ -102,16 +111,19 @@ theme_override_constants/separation = 8
 [node name="SpawnWarrior" type="Button" parent="MainLayout/BottomBar/SpawnRow"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_fonts/normal_font = ExtResource("2")
 text = "生成:战士"
 
 [node name="SpawnMage" type="Button" parent="MainLayout/BottomBar/SpawnRow"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_fonts/normal_font = ExtResource("2")
 text = "生成:法师"
 
 [node name="SpawnPriest" type="Button" parent="MainLayout/BottomBar/SpawnRow"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_fonts/normal_font = ExtResource("2")
 text = "生成:牧师"
 
 [node name="ActionRow" type="HBoxContainer" parent="MainLayout/BottomBar"]
@@ -120,6 +132,7 @@ theme_override_constants/separation = 8
 
 [node name="BackButton" type="Button" parent="MainLayout/BottomBar/ActionRow"]
 layout_mode = 2
+theme_override_fonts/normal_font = ExtResource("2")
 text = "返回"
 
 [node name="ActionSpacer" type="Control" parent="MainLayout/BottomBar/ActionRow"]
@@ -129,4 +142,5 @@ size_flags_horizontal = 3
 [node name="EndTurnButton" type="Button" parent="MainLayout/BottomBar/ActionRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(120, 0)
+theme_override_fonts/normal_font = ExtResource("2")
 text = "结束回合"

@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://bvkqp8h_main_menu"]
+[gd_scene load_steps=3 format=3 uid="uid://bvkqp8h_main_menu"]
 
 [ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_main_menu"]
+[ext_resource type="FontFile" path="res://fonts/NotoSansSC-Regular.ttf" id="2"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -27,14 +28,17 @@ grow_vertical = 2
 
 [node name="TitleLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
+theme_override_fonts/normal_font = ExtResource("2")
 text = "Roll HHH"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="StartButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
+theme_override_fonts/normal_font = ExtResource("2")
 text = "开始游戏"
 
 [node name="SettingsButton" type="Button" parent="VBoxContainer"]
 layout_mode = 2
+theme_override_fonts/normal_font = ExtResource("2")
 text = "设置"
