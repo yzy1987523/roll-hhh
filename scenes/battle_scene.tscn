@@ -44,6 +44,44 @@ size_flags_horizontal = 3
 layout_mode = 2
 text = "Turn: 1"
 
+[node name="ControlBar" type="HBoxContainer" parent="MainLayout"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 36)
+theme_override_constants/separation = 8
+
+[node name="PauseButton" type="Button" parent="MainLayout/ControlBar"]
+layout_mode = 2
+toggle_mode = true
+text = "Pause"
+
+[node name="Spacer1" type="Control" parent="MainLayout/ControlBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Speed1x" type="Button" parent="MainLayout/ControlBar"]
+layout_mode = 2
+toggle_mode = true
+button_pressed = true
+text = "1x"
+
+[node name="Speed2x" type="Button" parent="MainLayout/ControlBar"]
+layout_mode = 2
+toggle_mode = true
+text = "2x"
+
+[node name="Speed3x" type="Button" parent="MainLayout/ControlBar"]
+layout_mode = 2
+toggle_mode = true
+text = "3x"
+
+[node name="Spacer2" type="Control" parent="MainLayout/ControlBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PauseHint" type="Label" parent="MainLayout/ControlBar"]
+layout_mode = 2
+text = ""
+
 [node name="EnemyInfo" type="VBoxContainer" parent="MainLayout"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 60)

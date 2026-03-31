@@ -54,24 +54,56 @@ size_flags_horizontal = 3
 layout_mode = 2
 text = "Settings"
 
-[node name="RelicBar" type="HBoxContainer" parent="MainLayout" unique_id=308367481]
+[node name="RelicBar" type="VBoxContainer" parent="MainLayout" unique_id=308367481]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="RelicHeader" type="HBoxContainer" parent="MainLayout/RelicBar" unique_id=1164852766]
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="RelicLabel" type="Label" parent="MainLayout/RelicBar" unique_id=1164852766]
+[node name="RelicButton" type="Button" parent="MainLayout/RelicBar/RelicHeader" unique_id=1164852767]
 layout_mode = 2
+size_flags_horizontal = 3
 text = "Relics (Empty)"
+
+[node name="RelicPanel" type="PanelContainer" parent="MainLayout/RelicBar" unique_id=308367482]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MainLayout/RelicBar/RelicPanel" unique_id=308367483]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="RelicList" type="HFlowContainer" parent="MainLayout/RelicBar/RelicPanel/ScrollContainer" unique_id=308367484]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/h_separation = 4
+theme_override_constants/v_separation = 4
 
 [node name="MiddleBar" type="HBoxContainer" parent="MainLayout" unique_id=584068900]
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ItemButton" type="Button" parent="MainLayout/MiddleBar" unique_id=657005284]
+[node name="ItemBar" type="HBoxContainer" parent="MainLayout/MiddleBar" unique_id=657005285]
+custom_minimum_size = Vector2(120, 36)
 layout_mode = 2
-size_flags_horizontal = 3
-text = "Items"
+theme_override_constants/separation = 4
+
+[node name="ItemSlot0" type="PanelContainer" parent="MainLayout/MiddleBar/ItemBar" unique_id=657005286]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+
+[node name="ItemSlot1" type="PanelContainer" parent="MainLayout/MiddleBar/ItemBar" unique_id=657005287]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+
+[node name="ItemSlot2" type="PanelContainer" parent="MainLayout/MiddleBar/ItemBar" unique_id=657005288]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
 
 [node name="DormButton" type="Button" parent="MainLayout/MiddleBar" unique_id=656967448]
 layout_mode = 2
@@ -132,3 +164,72 @@ size_flags_horizontal = 3
 custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
 text = "End Turn"
+
+[node name="SettingsPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -140.0
+offset_right = 180.0
+offset_bottom = 140.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SettingsVBox" type="VBoxContainer" parent="SettingsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SettingsTitle" type="Label" parent="SettingsPanel/SettingsVBox"]
+layout_mode = 2
+text = "Settings"
+horizontal_alignment = 1
+
+[node name="LanguageRow" type="HBoxContainer" parent="SettingsPanel/SettingsVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="LanguageLabel" type="Label" parent="SettingsPanel/SettingsVBox/LanguageRow"]
+layout_mode = 2
+text = "Language"
+
+[node name="LanguageButton" type="Button" parent="SettingsPanel/SettingsVBox/LanguageRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "EN"
+
+[node name="VolumeRow" type="HBoxContainer" parent="SettingsPanel/SettingsVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="VolumeLabel" type="Label" parent="SettingsPanel/SettingsVBox/VolumeRow"]
+layout_mode = 2
+text = "Volume"
+
+[node name="VolumeSlider" type="HSlider" parent="SettingsPanel/SettingsVBox/VolumeRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.0
+max_value = 1.0
+step = 0.1
+value = 1.0
+
+[node name="ResetTutorialButton" type="Button" parent="SettingsPanel/SettingsVBox"]
+layout_mode = 2
+text = "Reset Tutorial"
+
+[node name="CloseButton" type="Button" parent="SettingsPanel/SettingsVBox"]
+layout_mode = 2
+text = "Close"
+
+[node name="ResetConfirmLabel" type="Label" parent="SettingsPanel"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+text = "Tutorial reset!"
+horizontal_alignment = 1
+vertical_alignment = 1

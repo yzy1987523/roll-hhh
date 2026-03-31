@@ -119,10 +119,10 @@ class CharacterData:
 		if adv_name != "":
 			return adv_name
 		match job:
-			Job.WARRIOR: return "战士"
-			Job.MAGE: return "法师"
-			Job.PRIEST: return "牧师"
-			_: return "未知"
+			Job.WARRIOR: return LocalizationSystem.get_text("jobs.warrior")
+			Job.MAGE: return LocalizationSystem.get_text("jobs.mage")
+			Job.PRIEST: return LocalizationSystem.get_text("jobs.priest")
+			_: return LocalizationSystem.get_text("jobs.unknown")
 
 	# 获取基础职业 (转职前的原始职业)
 	func get_base_job() -> int:

@@ -8,37 +8,37 @@ class_name ItemDatabase
 
 static func get_all_consumables() -> Array:
 	return [
-		_item(1, "小血瓶", "指定角色回复5血量", 10),
-		_item(2, "中血瓶", "指定角色回复10血量", 18),
-		_item(3, "大血瓶", "指定角色回复20血量", 30),
-		_item(4, "能量药水", "立即恢复10能量", 20),
-		_item(5, "能量饮料", "立即恢复20能量", 35),
-		_item(6, "角色礼包", "随机生成2-3级角色×3", 50),
-		_item(7, "战士召唤符", "生成1个3级战士", 30),
-		_item(8, "法师召唤符", "生成1个3级法师", 30),
-		_item(9, "牧师召唤符", "生成1个3级牧师", 30),
-		_item(10, "经验药水", "随机1个角色升1级", 30),
-		_item(11, "高级经验书", "指定角色升1级", 45),
-		_item(12, "直升卷轴", "随机1个角色直升3级", 80),
-		_item(13, "临时护盾", "指定角色获得5点临时护盾", 20),
-		_item(14, "攻击符印", "指定角色攻击+2(本回合)", 20),
-		_item(15, "防御符印", "指定角色防御+2(本回合)", 20),
-		_item(16, "无敌药水", "指定角色本回合免疫伤害", 40),
-		_item(17, "献祭卷轴", "本回合献祭返还翻倍", 40),
-		_item(18, "双重献祭符", "本回合献祭返还×3", 80),
-		_item(19, "刷新令牌", "商店商品刷新1次", 20),
-		_item(20, "商店折扣券", "下次购买-30%", 25),
-		_item(21, "命运骰子", "随机强化或弱化1个角色", 30),
-		_item(22, "时光沙漏", "重置当前回合能量为满", 50),
+		_item(1, "1", 10),
+		_item(2, "2", 18),
+		_item(3, "3", 30),
+		_item(4, "4", 20),
+		_item(5, "5", 35),
+		_item(6, "6", 50),
+		_item(7, "7", 30),
+		_item(8, "8", 30),
+		_item(9, "9", 30),
+		_item(10, "10", 30),
+		_item(11, "11", 45),
+		_item(12, "12", 80),
+		_item(13, "13", 20),
+		_item(14, "14", 20),
+		_item(15, "15", 20),
+		_item(16, "16", 40),
+		_item(17, "17", 40),
+		_item(18, "18", 80),
+		_item(19, "19", 20),
+		_item(20, "20", 25),
+		_item(21, "21", 30),
+		_item(22, "22", 50),
 	]
 
 
-static func _item(id: int, item_name: String, desc: String, price: int) -> DataModels.ItemData:
+static func _item(id: int, item_key: String, price: int) -> DataModels.ItemData:
 	var item := DataModels.ItemData.new()
 	item.id = id
 	item.type = DataModels.ItemType.CONSUMABLE
-	item.name = item_name
-	item.description = desc
+	item.name = LocalizationSystem.get_text("items." + item_key + "_name")
+	item.description = LocalizationSystem.get_text("items." + item_key + "_desc")
 	item.price = price
 	item.stackable = false
 	return item
@@ -55,41 +55,41 @@ static func get_consumable_by_id(id: int) -> DataModels.ItemData:
 
 static func get_all_relics() -> Array:
 	return [
-		_relic(1, "战士护符", "战士血量+2", false),
-		_relic(2, "战士长靴", "战士攻击+1", false),
-		_relic(3, "战士头盔", "战士防御+1", false),
-		_relic(4, "法师权杖", "法师攻击+1", false),
-		_relic(5, "法师披风", "法师穿透+1", false),
-		_relic(6, "法师戒指", "法师血量+1", false),
-		_relic(7, "牧师圣典", "牧师每回合额外回复1血", false),
-		_relic(8, "牧师十字架", "牧师回复范围+1格", false),
-		_relic(9, "牧师长袍", "牧师血量+2", false),
-		_relic(10, "战斗号角", "我方全员攻击+1", false),
-		_relic(11, "铁壁护盾", "我方全员防御+1", false),
-		_relic(12, "生命之泉", "我方全员血量上限+2", false),
-		_relic(13, "守护天使", "首次致命伤害保留1血", false),
-		_relic(14, "复仇之魂", "击杀后再攻击一次", false),
-		_relic(15, "金币袋", "战斗胜利金币+20%", false),
-		_relic(16, "商店折扣卷", "商店商品价格-15%", false),
-		_relic(17, "转职令牌", "生成角色时5%概率转职", false),
-		_relic(18, "经验药水", "生成角色时10%概率直升2级", false),
-		_relic(19, "能量护腕", "初始能量上限+3", false),
-		_relic(20, "稀有召唤符", "生成时5%概率直接3级", false),
-		_relic(21, "献祭之书", "献祭能量返还+20%", false),
-		_relic(22, "灵魂收割者", "献祭时额外获得1金币", false),
-		_relic(23, "穿透之箭", "所有攻击额外+1穿透", false),
-		_relic(24, "免控护符", "免疫敌方特技效果", false),
-		_relic(25, "连击之心", "15%概率发动连击", false),
-		_relic(26, "战绩徽章", "无效果,可叠加", true),
+		_relic(1, "1", false),
+		_relic(2, "2", false),
+		_relic(3, "3", false),
+		_relic(4, "4", false),
+		_relic(5, "5", false),
+		_relic(6, "6", false),
+		_relic(7, "7", false),
+		_relic(8, "8", false),
+		_relic(9, "9", false),
+		_relic(10, "10", false),
+		_relic(11, "11", false),
+		_relic(12, "12", false),
+		_relic(13, "13", false),
+		_relic(14, "14", false),
+		_relic(15, "15", false),
+		_relic(16, "16", false),
+		_relic(17, "17", false),
+		_relic(18, "18", false),
+		_relic(19, "19", false),
+		_relic(20, "20", false),
+		_relic(21, "21", false),
+		_relic(22, "22", false),
+		_relic(23, "23", false),
+		_relic(24, "24", false),
+		_relic(25, "25", false),
+		_relic(26, "26", true),
 	]
 
 
-static func _relic(id: int, relic_name: String, desc: String, stackable: bool) -> DataModels.ItemData:
+static func _relic(id: int, relic_key: String, stackable: bool) -> DataModels.ItemData:
 	var item := DataModels.ItemData.new()
 	item.id = id
 	item.type = DataModels.ItemType.RELIC
-	item.name = relic_name
-	item.description = desc
+	item.name = LocalizationSystem.get_text("relics." + relic_key + "_name")
+	item.description = LocalizationSystem.get_text("relics." + relic_key + "_desc")
 	item.stackable = stackable
 	# 遗物商店价格
 	item.price = 80 if id <= 9 else 120

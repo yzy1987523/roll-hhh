@@ -126,11 +126,14 @@ static func recalc_stats(ch: DataModels.CharacterData) -> void:
 ## 打印指定职业 1-16 级属性表
 static func print_stat_table(job: int) -> void:
 	var job_name: String
-	match job:
-		DataModels.Job.WARRIOR: job_name = "战士"
-		DataModels.Job.MAGE: job_name = "法师"
-		DataModels.Job.PRIEST: job_name = "牧师"
-		_: job_name = "未知"
+	if JobAdvanced.is_advanced_job(job):
+		job_name = JobAdvanced.get_advanced_job_name(job)
+	else:
+		match job:
+			DataModels.Job.WARRIOR: job_name = LocalizationSystem.get_text("jobs.warrior")
+			DataModels.Job.MAGE: job_name = LocalizationSystem.get_text("jobs.mage")
+			DataModels.Job.PRIEST: job_name = LocalizationSystem.get_text("jobs.priest")
+			_: job_name = LocalizationSystem.get_text("jobs.unknown")
 
 	print("=== %s 属性成长表 ===" % job_name)
 	print("等级 | 血量 | 攻击 | 防御 | 特技等级")

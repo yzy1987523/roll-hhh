@@ -22,13 +22,13 @@ const ADVANCE_MAP := {
 
 # ---- 转职职业基础属性 ----
 const ADVANCED_BASE := {
-	JOB_BERSERKER:    { "hp": 4, "def": 0, "atk": 2, "skill_id": 1101, "name": "狂战士" },
-	JOB_KNIGHT:       { "hp": 5, "def": 2, "atk": 1, "skill_id": 1102, "name": "骑士" },
-	JOB_GREATSWORD:   { "hp": 3, "def": 1, "atk": 3, "skill_id": 1103, "name": "大剑士" },
-	JOB_ARCHMAGE:     { "hp": 1, "def": 0, "atk": 3, "skill_id": 1201, "name": "魔导师" },
-	JOB_NECROMANCER:  { "hp": 2, "def": 0, "atk": 2, "skill_id": 1202, "name": "死灵法师" },
-	JOB_HIGH_PRIEST:  { "hp": 3, "def": 0, "atk": 0, "skill_id": 1301, "name": "大祭司" },
-	JOB_PALADIN:      { "hp": 4, "def": 1, "atk": 1, "skill_id": 1302, "name": "圣骑士" },
+	JOB_BERSERKER:    { "hp": 4, "def": 0, "atk": 2, "skill_id": 1101, "name_key": "berserker" },
+	JOB_KNIGHT:       { "hp": 5, "def": 2, "atk": 1, "skill_id": 1102, "name_key": "knight" },
+	JOB_GREATSWORD:   { "hp": 3, "def": 1, "atk": 3, "skill_id": 1103, "name_key": "greatsword" },
+	JOB_ARCHMAGE:     { "hp": 1, "def": 0, "atk": 3, "skill_id": 1201, "name_key": "archmage" },
+	JOB_NECROMANCER:  { "hp": 2, "def": 0, "atk": 2, "skill_id": 1202, "name_key": "necromancer" },
+	JOB_HIGH_PRIEST:  { "hp": 3, "def": 0, "atk": 0, "skill_id": 1301, "name_key": "high_priest" },
+	JOB_PALADIN:      { "hp": 4, "def": 1, "atk": 1, "skill_id": 1302, "name_key": "paladin" },
 }
 
 # ---- 转职职业成长系数 ----
@@ -50,9 +50,11 @@ static func is_advanced_job(job: int) -> bool:
 
 ## 获取转职职业名称
 static func get_advanced_job_name(job: int) -> String:
-	if ADVANCED_BASE.has(job):
-		return ADVANCED_BASE[job]["name"]
-	return ""
+	if not ADVANCED_BASE.has(job):
+		return ""
+	var adv_info: Dictionary = ADVANCED_BASE[job]
+	var key: String = adv_info["name_key"]
+	return LocalizationSystem.get_text("jobs." + key)
 
 
 ## 计算转职职业属性

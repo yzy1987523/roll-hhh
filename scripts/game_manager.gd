@@ -8,6 +8,7 @@ signal phase_changed(new_phase: String)
 signal gold_changed(new_gold: int)
 signal energy_changed(new_energy: int)
 signal round_changed(new_round: int)
+signal character_merged(merged_level: int)  # 角色合成信号
 
 # ---- 游戏阶段常量 ----
 const PHASE_PREPARE := "prepare"
@@ -33,6 +34,39 @@ var max_energy: int = DEFAULT_MAX_ENERGY
 var battle_turn: int = 0
 var current_round: int = DEFAULT_ROUND
 var cycle_count: int = 0  # 完整循环次数 (每9轮+1)
+
+# ---- 教程状态 ----
+var tutorial_completed: bool = false  # 新手教程是否已完成
+
+# ---- 属性 ----
+var has_tutorial_completed: bool:
+	get: return tutorial_completed
+
+func set_tutorial_completed(value: bool) -> void:
+	tutorial_completed = value
+	# 持久化存储
+	if value:
+		_save_tutorial_state()
+
+func _save_tutorial_state() -> void:
+	# 使用 ConfigFile 持久化
+	var config := ConfigFile.new()
+	config.set_value("player", "tutorial_completed", true)
+	config.save("user://tutorial.cfg")
+
+func _load_tutorial_state() -> void:
+	var config := ConfigFile.new()
+	var err := config.load("user://tutorial.cfg")
+	if err == OK:
+		tutorial_completed = config.get_value("player", "tutorial_completed", false)
+
+func reset_tutorial() -> void:
+	# 重置教程状态
+	tutorial_completed = false
+	var config := ConfigFile.new()
+	config.set_value("player", "tutorial_completed", false)
+	config.save("user://tutorial.cfg")
+	print(">>> [GameManager] 教程状态已重置")
 
 # ---- 棋盘数据 ----
 var board_data: BoardData = BoardData.new()
@@ -76,6 +110,7 @@ func add_relic(relic: DataModels.ItemData) -> void:
 
 func _ready() -> void:
 	print(">>> [GameManager] 游戏状态管理器已加载")
+	_load_tutorial_state()
 	_reset_to_defaults()
 
 

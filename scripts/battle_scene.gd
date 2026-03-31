@@ -17,11 +17,16 @@ extends Control
 @onready var result_title: Label = $ResultPanel/ResultVBox/ResultTitle
 @onready var reward_label: Label = $ResultPanel/ResultVBox/RewardLabel
 @onready var continue_button: Button = $ResultPanel/ResultVBox/ContinueButton
+@onready var pause_button: Button = $MainLayout/ControlBar/PauseButton
+@onready var speed_1x: Button = $MainLayout/ControlBar/Speed1x
+@onready var speed_2x: Button = $MainLayout/ControlBar/Speed2x
+@onready var speed_3x: Button = $MainLayout/ControlBar/Speed3x
+@onready var pause_hint: Label = $MainLayout/ControlBar/PauseHint
 
 # ---- 常量 ----
 const GRID_SIZE := 6
 const CELL_SIZE := 60
-const TURN_DELAY := 0.5  # 播放模式每回合间隔(秒)
+const BASE_TURN_DELAY := 0.5  # 播放模式每回合间隔(秒)
 
 # ---- 颜色 ----
 const COLOR_EMPTY_EVEN := Color("#2A3A5A")
@@ -37,24 +42,42 @@ var cell_rects: Array = []
 var cell_labels: Array = []
 var is_playing: bool = false
 var battle_finished: bool = false
+var is_paused: bool = false
+var battle_speed: float = 1.0  # 1.0, 2.0, 3.0
+var pending_timer: SceneTreeTimer = null
 
 # ---- 奖励常量 ----
 const GOLD_REWARD_NORMAL := 30
 const GOLD_REWARD_ELITE := 60
 const GOLD_REWARD_BOSS := 100
 
+# ---- 教程系统 ----
+var battle_tutorial_instance: Control = null
+
 
 func _ready() -> void:
 	_connect_signals()
 	_setup_board_display()
 	_start_battle()
+	_start_tutorial()
 	print(">>> [BattleScene] 战斗场景已加载")
+
+
+func _start_tutorial() -> void:
+	# 只有在第一回合且未完成教程时显示
+	if GameManager.current_round == 1 and not GameManager.tutorial_completed:
+		battle_tutorial_instance = preload("res://scripts/battle_tutorial_system.gd").new()
+		add_child(battle_tutorial_instance)
 
 
 func _connect_signals() -> void:
 	play_button.pressed.connect(_on_play_pressed)
 	skip_button.pressed.connect(_on_skip_pressed)
 	continue_button.pressed.connect(_on_continue_pressed)
+	pause_button.pressed.connect(_on_pause_pressed)
+	speed_1x.pressed.connect(_on_speed_1x_pressed)
+	speed_2x.pressed.connect(_on_speed_2x_pressed)
+	speed_3x.pressed.connect(_on_speed_3x_pressed)
 
 
 # ---- 棋盘显示 (只读, 不可交互) ----
@@ -105,12 +128,25 @@ func _start_battle() -> void:
 	log_label.text = ""
 	result_panel.visible = false
 	battle_finished = false
+	is_paused = false
+	battle_speed = 1.0
+	pause_button.text = LocalizationSystem.get_text("battle.pause")
+	pause_button.button_pressed = false
+	pause_button.disabled = false
+	speed_1x.button_pressed = true
+	speed_2x.button_pressed = false
+	speed_3x.button_pressed = false
+	pause_hint.text = ""
 
 
 # ---- 播放/跳过 ----
 
 func _on_play_pressed() -> void:
-	if battle_finished or is_playing:
+	if battle_finished:
+		return
+	if is_paused:
+		return
+	if is_playing:
 		return
 	is_playing = true
 	play_button.disabled = true
@@ -119,6 +155,9 @@ func _on_play_pressed() -> void:
 
 func _play_turns() -> void:
 	if not is_playing or battle_finished:
+		return
+
+	if is_paused:
 		return
 
 	var result: int = engine.execute_turn()
@@ -130,8 +169,10 @@ func _play_turns() -> void:
 		_on_battle_end(result)
 		return
 
-	# 延迟后执行下一回合
-	get_tree().create_timer(TURN_DELAY).timeout.connect(_play_turns)
+	# 延迟后执行下一回合 (根据速度调整)
+	var delay: float = BASE_TURN_DELAY / battle_speed
+	pending_timer = get_tree().create_timer(delay)
+	pending_timer.timeout.connect(_play_turns)
 
 
 func _on_skip_pressed() -> void:
@@ -140,6 +181,9 @@ func _on_skip_pressed() -> void:
 	is_playing = false
 	play_button.disabled = true
 	skip_button.disabled = true
+	if pending_timer != null:
+		pending_timer.cancel()
+		pending_timer = null
 
 	var result: int = engine.run_full_battle()
 	_update_enemy_display()
@@ -148,13 +192,55 @@ func _on_skip_pressed() -> void:
 	_on_battle_end(result)
 
 
+# ---- 暂停/调速 ----
+
+func _on_pause_pressed() -> void:
+	if battle_finished:
+		return
+	is_paused = !is_paused
+	pause_button.text = LocalizationSystem.get_text("battle.resume") if is_paused else LocalizationSystem.get_text("battle.pause")
+	pause_hint.text = LocalizationSystem.get_text("battle.battle_paused") if is_paused else ""
+	if is_paused:
+		if pending_timer != null:
+			pending_timer.cancel()
+			pending_timer = null
+	else:
+		# 恢复时继续播放
+		if is_playing:
+			_play_turns()
+
+
+func _on_speed_1x_pressed() -> void:
+	battle_speed = 1.0
+	speed_1x.button_pressed = true
+	speed_2x.button_pressed = false
+	speed_3x.button_pressed = false
+
+
+func _on_speed_2x_pressed() -> void:
+	battle_speed = 2.0
+	speed_1x.button_pressed = false
+	speed_2x.button_pressed = true
+	speed_3x.button_pressed = false
+
+
+func _on_speed_3x_pressed() -> void:
+	battle_speed = 3.0
+	speed_1x.button_pressed = false
+	speed_2x.button_pressed = false
+	speed_3x.button_pressed = true
+
+
 # ---- 战斗结束与结算 (任务 3.5) ----
 
 func _on_battle_end(result: int) -> void:
 	battle_finished = true
 	is_playing = false
+	is_paused = false
 	play_button.disabled = true
 	skip_button.disabled = true
+	pause_button.disabled = true
+	pause_hint.text = ""
 
 	match result:
 		BattleEngine.RESULT_WIN:
@@ -276,6 +362,11 @@ func _refresh_board_display() -> void:
 
 
 func _get_job_color(job: int) -> Color:
+	# 转职职业: 使用基础职业颜色但更亮
+	if JobAdvanced.is_advanced_job(job):
+		if job >= 30: return Color("#50D050")  # 牧师系转职 - 亮绿
+		if job >= 20: return Color("#8060E0")  # 法师系转职 - 亮紫
+		return Color("#E05050")                # 战士系转职 - 亮红
 	match job:
 		DataModels.Job.WARRIOR: return COLOR_WARRIOR
 		DataModels.Job.MAGE: return COLOR_MAGE

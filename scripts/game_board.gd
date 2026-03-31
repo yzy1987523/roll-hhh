@@ -7,16 +7,31 @@ extends Control
 @onready var gold_label: Label = $MainLayout/TopBar/GoldLabel
 @onready var energy_label: Label = $MainLayout/TopBar/EnergyLabel
 @onready var round_label: Label = $MainLayout/TopBar/RoundLabel
-@onready var relic_label: Label = $MainLayout/RelicBar/RelicLabel
+@onready var settings_button: Button = $MainLayout/TopBar/SettingsButton
+@onready var relic_button: Button = $MainLayout/RelicBar/RelicHeader/RelicButton
+@onready var relic_panel: PanelContainer = $MainLayout/RelicBar/RelicPanel
+@onready var relic_list: HFlowContainer = $MainLayout/RelicBar/RelicPanel/ScrollContainer/RelicList
 @onready var grid_container: GridContainer = $MainLayout/BoardCenter/GridContainer
 @onready var spawn_warrior: Button = $MainLayout/BottomBar/SpawnRow/SpawnWarrior
 @onready var spawn_mage: Button = $MainLayout/BottomBar/SpawnRow/SpawnMage
 @onready var spawn_priest: Button = $MainLayout/BottomBar/SpawnRow/SpawnPriest
 @onready var end_turn_button: Button = $MainLayout/BottomBar/ActionRow/EndTurnButton
 @onready var back_button: Button = $MainLayout/BottomBar/ActionRow/BackButton
-@onready var item_button: Button = $MainLayout/MiddleBar/ItemButton
+@onready var item_bar: HBoxContainer = $MainLayout/MiddleBar/ItemBar
 @onready var dorm_button: Button = $MainLayout/MiddleBar/DormButton
 @onready var shop_button: Button = $MainLayout/MiddleBar/ShopButton
+
+# ---- 设置面板节点 ----
+@onready var settings_panel: PanelContainer = $SettingsPanel
+@onready var settings_vbox: VBoxContainer = $SettingsPanel/SettingsVBox
+@onready var settings_title: Label = $SettingsPanel/SettingsVBox/SettingsTitle
+@onready var language_button: Button = $SettingsPanel/SettingsVBox/LanguageRow/LanguageButton
+@onready var language_label: Label = $SettingsPanel/SettingsVBox/LanguageRow/LanguageLabel
+@onready var volume_slider: HSlider = $SettingsPanel/SettingsVBox/VolumeRow/VolumeSlider
+@onready var volume_label: Label = $SettingsPanel/SettingsVBox/VolumeRow/VolumeLabel
+@onready var reset_tutorial_button: Button = $SettingsPanel/SettingsVBox/ResetTutorialButton
+@onready var close_settings_button: Button = $SettingsPanel/SettingsVBox/CloseButton
+@onready var reset_confirm_label: Label = $SettingsPanel/ResetConfirmLabel
 
 # ---- 常量 ----
 const GRID_SIZE := 6
@@ -39,17 +54,47 @@ var cell_panels: Array = []    # PanelContainer 格子容器
 # ---- 选中状态 (任务 2.3 拖拽) ----
 var selected_index: int = -1   # 当前选中的棋盘格索引, -1=无选中
 
+# ---- 拖拽状态 ----
+var is_dragging: bool = false   # 是否正在拖拽
+var drag_index: int = -1        # 拖拽源的格子索引
+var drag_preview: Control = null # 拖拽预览节点
+var hover_index: int = -1       # 当前悬停的格子索引
+var is_hovering_dorm: bool = false  # 是否悬停在宿舍按钮上
+
 # ---- 宿舍面板 ----
 var dorm_panel: PanelContainer = null
 var dorm_visible: bool = false
+
+# ---- 遗物栏面板 ----
+var relic_panel_visible: bool = false
+
+# ---- 道具栏格子 ----
+const ITEM_SLOT_COUNT := 3
+var item_slot_nodes: Array = []
+var item_slot_labels: Array = []
+var item_slot_overlays: Array = []
+
+# ---- 教程系统 ----
+var tutorial_instance: Control = null
 
 
 func _ready() -> void:
 	_connect_signals()
 	_setup_board_ui()
 	_setup_dorm_panel()
+	_setup_item_slots()
 	_update_resource_labels()
+	_refresh_relic_panel()
+	_refresh_item_slots()
+	_start_tutorial()
 	print(">>> [GameBoard] 备战阶段界面已加载")
+
+
+func _start_tutorial() -> void:
+	# 只有在第一回合且未完成教程时显示教程
+	if GameManager.current_round == 1 and not GameManager.tutorial_completed:
+		tutorial_instance = preload("res://scripts/tutorial_system.gd").new()
+		add_child(tutorial_instance)
 
 
 # ---- 信号连接 ----
@@ -62,10 +107,17 @@ func _connect_signals() -> void:
 	back_button.pressed.connect(_on_back_pressed)
 	dorm_button.pressed.connect(_on_dorm_pressed)
 	shop_button.pressed.connect(_on_shop_pressed)
-	item_button.pressed.connect(_on_item_pressed)
+	relic_button.pressed.connect(_on_relic_toggle)
+	settings_button.pressed.connect(_on_settings_pressed)
 	GameManager.gold_changed.connect(_on_gold_changed)
 	GameManager.energy_changed.connect(_on_energy_changed)
 	GameManager.round_changed.connect(_on_round_changed)
+	GameManager.relics_changed.connect(_on_relics_changed)
+	# 设置面板信号
+	language_button.pressed.connect(_on_language_toggled)
+	volume_slider.value_changed.connect(_on_volume_changed)
+	reset_tutorial_button.pressed.connect(_on_reset_tutorial_pressed)
+	close_settings_button.pressed.connect(_on_close_settings)
 
 
 # ---- 棋盘 UI 构建 ----
@@ -177,39 +229,44 @@ func _refresh_dorm_panel() -> void:
 	vbox.add_child(close_btn)
 
 
-# ---- 棋盘格点击处理 (任务 2.3 拖拽/选中) ----
+# ---- 棋盘格拖拽处理 (任务 2.3 拖拽/选中) ----
 
 func _on_cell_gui_input(event: InputEvent, cell_index: int) -> void:
-	if not event is InputEventMouseButton:
-		return
-	var mb: InputEventMouseButton = event
-	if not mb.pressed:
-		return
-
 	var bd: BoardData = GameManager.board_data
 	var ch: DataModels.CharacterData = bd.get_character_at_index(cell_index)
 
-	# 左键: 选中 / 移动 / 合成
-	if mb.button_index == MOUSE_BUTTON_LEFT:
-		if selected_index == -1:
-			# 没有选中, 尝试选中
-			if ch != null:
-				selected_index = cell_index
-				_refresh_board_display()
-				print(">>> [GameBoard] 选中 %s Lv.%d 于格 %d" % [ch.get_job_name(), ch.level, cell_index])
-		else:
-			# 已有选中, 执行操作
-			if cell_index == selected_index:
-				# 点击同一个格子: 取消选中
-				selected_index = -1
-				_refresh_board_display()
+	# 鼠标按下: 开始拖拽或选中
+	if event is InputEventMouseButton:
+		var mb: InputEventMouseButton = event
+		if mb.button_index == MOUSE_BUTTON_LEFT:
+			if mb.pressed:
+				# 按下左键: 有角色则开始拖拽
+				if ch != null:
+					_start_drag(cell_index, mb.global_position)
+				else:
+					# 空格子且有选中: 移动到此处
+					if selected_index >= 0:
+						_handle_cell_action(cell_index)
 			else:
-				_handle_cell_action(cell_index)
+				# 释放左键: 结束拖拽
+				if is_dragging:
+					_end_drag(cell_index)
+				else:
+					# 无拖拽: 取消选中
+					selected_index = -1
+					_refresh_board_display()
+
+	# 鼠标移动: 更新拖拽预览位置
+	elif event is InputEventMouseMotion:
+		if is_dragging:
+			_update_drag_preview(event.global_position)
 
 	# 右键: 献祭 (任务 2.5)
-	elif mb.button_index == MOUSE_BUTTON_RIGHT:
-		if ch != null:
-			_sacrifice_character(cell_index)
+	elif event is InputEventMouseButton:
+		var mb: InputEventMouseButton = event
+		if mb.button_index == MOUSE_BUTTON_RIGHT and mb.pressed:
+			if ch != null:
+				_sacrifice_character(cell_index)
 
 
 func _handle_cell_action(target_index: int) -> void:
@@ -264,6 +321,9 @@ func _merge_at(src_index: int, tgt_index: int) -> void:
 
 	print(">>> [GameBoard] 合成完成: %s Lv.%d 于格 %d" % [merged.get_job_name(), merged.level, tgt_index])
 
+	# 发出合成信号
+	GameManager.character_merged.emit(merged.level)
+
 
 # ---- 献祭 (任务 2.5) ----
 
@@ -281,6 +341,148 @@ func _sacrifice_character(cell_index: int) -> void:
 	print(">>> [GameBoard] 献祭 %s Lv.%d, 返还能量 %d" % [ch.get_job_name(), ch.level, refund])
 	selected_index = -1
 	_refresh_board_display()
+
+
+# ---- 拖拽系统 (任务 2.3) ----
+
+func _start_drag(cell_index: int, mouse_pos: Vector2) -> void:
+	is_dragging = true
+	drag_index = cell_index
+	selected_index = cell_index
+
+	# 创建拖拽预览
+	drag_preview = _create_drag_preview(cell_index)
+	add_child(drag_preview)
+	drag_preview.global_position = mouse_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
+
+	# 隐藏原始格子
+	cell_panels[cell_index].modulate.a = 0.3
+
+	print(">>> [GameBoard] 开始拖拽格 %d" % cell_index)
+
+
+func _create_drag_preview(cell_index: int) -> Control:
+	var bd: BoardData = GameManager.board_data
+	var ch: DataModels.CharacterData = bd.get_character_at_index(cell_index)
+
+	var preview := PanelContainer.new()
+	preview.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
+	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE  # 让事件穿透到下层
+
+	# 背景
+	var bg := ColorRect.new()
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.color = _get_job_color(ch.job)
+	preview.add_child(bg)
+
+	# 标签
+	var lbl := Label.new()
+	lbl.text = "%s\nLv.%d" % [ch.get_job_name(), ch.level]
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+	lbl.add_theme_font_size_override("font_size", 11)
+	preview.add_child(lbl)
+
+	# 添加阴影效果
+	var shadow := PanelContainer.new()
+	shadow.modulate.a = 0.3
+	shadow.offset_left = 3
+	shadow.offset_top = 3
+	shadow.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
+	var shadow_bg := ColorRect.new()
+	shadow_bg.color = Color(0, 0, 0, 0.5)
+	shadow.add_child(shadow_bg)
+	preview.add_child(shadow)
+	preview.move_child(shadow, 0)
+
+	return preview
+
+
+func _update_drag_preview(mouse_pos: Vector2) -> void:
+	if drag_preview == null:
+		return
+	drag_preview.global_position = mouse_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
+
+	# 高亮悬停的格子
+	hover_index = _get_hovered_cell_index(mouse_pos)
+	is_hovering_dorm = _is_hovering_dorm_button(mouse_pos)
+	_refresh_board_display()
+
+	# 临时高亮目标格子
+	if hover_index >= 0 and hover_index != drag_index:
+		var bd: BoardData = GameManager.board_data
+		var target_ch: DataModels.CharacterData = bd.get_character_at_index(hover_index)
+		var sel_ch: DataModels.CharacterData = bd.get_character_at_index(drag_index)
+
+		if target_ch == null:
+			# 移动到空格子
+			cell_rects[hover_index].color = COLOR_SELECTED
+		elif target_ch.job == sel_ch.job and target_ch.level == sel_ch.level:
+			# 可合成
+			cell_rects[hover_index].color = COLOR_MERGE_HINT
+		else:
+			# 交换
+			cell_rects[hover_index].color = Color("#888888")
+
+
+func _get_hovered_cell_index(mouse_pos: Vector2) -> int:
+	# 将鼠标位置转换为格子索引
+	var grid_rect: Rect2 = grid_container.get_global_rect()
+	if not grid_rect.has_point(mouse_pos):
+		return -1
+
+	var local_pos := mouse_pos - grid_rect.position
+	var col := int(local_pos.x / (grid_rect.size.x / GRID_SIZE))
+	var row := int(local_pos.y / (grid_rect.size.y / GRID_SIZE))
+
+	if row < 0 or row >= GRID_SIZE or col < 0 or col >= GRID_SIZE:
+		return -1
+
+	return row * GRID_SIZE + col
+
+
+func _is_hovering_dorm_button(mouse_pos: Vector2) -> bool:
+	var dorm_rect: Rect2 = dorm_button.get_global_rect()
+	return dorm_rect.has_point(mouse_pos)
+
+
+func _end_drag(_target_index: int) -> void:
+	if not is_dragging:
+		return
+
+	# 恢复原始格子透明度
+	if drag_index >= 0 and drag_index < cell_panels.size():
+		cell_panels[drag_index].modulate.a = 1.0
+
+	# 销毁拖拽预览
+	if drag_preview != null:
+		drag_preview.queue_free()
+		drag_preview = null
+
+	# 检查是否拖放到宿舍
+	if is_hovering_dorm:
+		_drag_to_dorm()
+		is_dragging = false
+		drag_index = -1
+		hover_index = -1
+		is_hovering_dorm = false
+		return
+
+	# 执行放置操作: 使用悬停的格子作为目标
+	if hover_index >= 0 and hover_index != drag_index:
+		selected_index = drag_index
+		_handle_cell_action(hover_index)
+	elif hover_index == drag_index or hover_index < 0:
+		# 释放到原格子或无效区域: 取消选中
+		selected_index = -1
+		_refresh_board_display()
+
+	is_dragging = false
+	drag_index = -1
+	hover_index = -1
+	is_hovering_dorm = false
+	print(">>> [GameBoard] 结束拖拽")
 
 
 # ---- 棋盘显示刷新 ----
@@ -415,6 +617,67 @@ func _on_dorm_close() -> void:
 	dorm_panel.visible = false
 
 
+func _drag_to_dorm() -> void:
+	if drag_index < 0:
+		return
+	var bd: BoardData = GameManager.board_data
+	var ch: DataModels.CharacterData = bd.get_character_at_index(drag_index)
+	if ch == null:
+		return
+	var pos: Vector2i = BoardData.index_to_pos(drag_index)
+	bd.board_to_dormitory(pos)
+	print(">>> [GameBoard] 拖拽存入宿舍: %s Lv.%d" % [ch.get_job_name(), ch.level])
+	selected_index = -1
+	_refresh_board_display()
+
+
+# ---- 遗物栏操作（常驻显示）----
+
+func _on_relic_toggle() -> void:
+	relic_panel_visible = !relic_panel_visible
+	relic_panel.visible = relic_panel_visible
+	if relic_panel_visible:
+		_refresh_relic_panel()
+
+
+func _refresh_relic_panel() -> void:
+	# 清空旧内容
+	for child in relic_list.get_children():
+		child.queue_free()
+
+	# 更新按钮文本
+	var relic_count: int = GameManager.relics.size()
+	relic_button.text = LocalizationSystem.get_text("game_board.relics", {"count": relic_count})
+
+	# 显示遗物列表
+	for i in range(GameManager.relics.size()):
+		var relic: DataModels.ItemData = GameManager.relics[i]
+		var relic_item: PanelContainer = PanelContainer.new()
+		relic_item.custom_minimum_size = Vector2(80, 60)
+
+		var vbox := VBoxContainer.new()
+		relic_item.add_child(vbox)
+
+		var name_lbl := Label.new()
+		name_lbl.text = relic.name
+		name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_lbl.add_theme_font_size_override("font_size", 10)
+		vbox.add_child(name_lbl)
+
+		var count_lbl := Label.new()
+		count_lbl.text = LocalizationSystem.get_text("game_board.relic_count", {"count": relic.stack_count})
+		count_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		count_lbl.add_theme_font_size_override("font_size", 9)
+		vbox.add_child(count_lbl)
+
+		relic_list.add_child(relic_item)
+
+
+func _on_relics_changed() -> void:
+	_refresh_relic_panel()
+
+
 # ---- 棋盘→宿舍 (长按或双击可扩展, 暂用选中+宿舍按钮) ----
 
 func _input(event: InputEvent) -> void:
@@ -451,8 +714,80 @@ func _on_shop_pressed() -> void:
 
 
 func _on_item_pressed() -> void:
-	# 道具栏弹窗
+	# 道具栏弹窗 (备用)
 	_show_item_panel()
+
+
+# ---- 道具栏格子 (3个固定格子) ----
+
+func _setup_item_slots() -> void:
+	item_slot_nodes.clear()
+	item_slot_labels.clear()
+	item_slot_overlays.clear()
+
+	for i in range(ITEM_SLOT_COUNT):
+		var slot: PanelContainer = item_bar.get_child(i)
+		item_slot_nodes.append(slot)
+
+		# 清除旧内容
+		for child in slot.get_children():
+			child.queue_free()
+
+		# 背景色
+		var bg := ColorRect.new()
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.color = Color("#1A2A4A")
+		slot.add_child(bg)
+
+		# 标签显示道具名
+		var lbl := Label.new()
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+		lbl.add_theme_font_size_override("font_size", 8)
+		lbl.clip_text = true
+		slot.add_child(lbl)
+		item_slot_labels.append(lbl)
+
+		# 点击事件
+		slot.gui_input.connect(_on_item_slot_input.bind(i))
+
+
+func _refresh_item_slots() -> void:
+	for i in range(ITEM_SLOT_COUNT):
+		if i < GameManager.items.size():
+			var item: DataModels.ItemData = GameManager.items[i]
+			item_slot_labels[i].text = item.name
+			item_slot_nodes[i].modulate = Color.WHITE
+		else:
+			item_slot_labels[i].text = ""
+			item_slot_nodes[i].modulate = Color(0.5, 0.5, 0.5, 0.3)
+
+
+func _on_item_slot_input(event: InputEvent, slot_index: int) -> void:
+	if event is InputEventMouseButton:
+		var mb: InputEventMouseButton = event
+		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
+			_use_item_at_slot(slot_index)
+
+
+func _use_item_at_slot(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= GameManager.items.size():
+		return
+
+	# 查找选中的角色
+	if selected_index < 0:
+		print(">>> [GameBoard] 使用道具失败: 请先选中一个角色")
+		return
+
+	var item: DataModels.ItemData = GameManager.items[slot_index]
+	var success: bool = ItemDatabase.use_consumable(item, selected_index)
+	if success:
+		GameManager.remove_item(slot_index)
+		_refresh_item_slots()
+		_refresh_board_display()
+	else:
+		print(">>> [GameBoard] 使用道具失败")
 
 
 # ---- 道具栏面板 ----
@@ -540,6 +875,90 @@ func _on_use_item(item_index: int) -> void:
 	if success:
 		GameManager.remove_item(item_index)
 		_refresh_item_panel()
+		_refresh_item_slots()
 		_refresh_board_display()
 	else:
 		print(">>> [GameBoard] 使用道具失败 (可能需要先选中一个角色)")
+
+
+# ---- 设置面板 ----
+
+func _on_settings_pressed() -> void:
+	_show_settings_panel()
+
+
+func _show_settings_panel() -> void:
+	settings_panel.visible = true
+	_update_settings_ui()
+	_update_settings_texts()
+
+
+func _hide_settings_panel() -> void:
+	settings_panel.visible = false
+
+
+func _update_settings_ui() -> void:
+	_update_language_button_text()
+	volume_slider.value = _load_volume()
+
+
+func _update_settings_texts() -> void:
+	settings_title.text = LocalizationSystem.get_text("settings.title")
+	language_label.text = LocalizationSystem.get_text("settings.language")
+	volume_label.text = LocalizationSystem.get_text("settings.volume")
+	reset_tutorial_button.text = LocalizationSystem.get_text("settings.reset_tutorial")
+	close_settings_button.text = LocalizationSystem.get_text("settings.close")
+	_reset_confirm_label_visible(false)
+
+
+func _on_language_toggled() -> void:
+	var current_lang: String = LocalizationSystem.current_lang
+	if current_lang == "en":
+		LocalizationSystem.set_language("zh")
+	else:
+		LocalizationSystem.set_language("en")
+
+	_update_language_button_text()
+	_update_settings_texts()
+	_refresh_relic_panel()
+	print(">>> [GameBoard] 语言切换为: %s" % LocalizationSystem.current_lang)
+
+
+func _update_language_button_text() -> void:
+	if LocalizationSystem.current_lang == "en":
+		language_button.text = "EN"
+	else:
+		language_button.text = "中文"
+
+
+func _on_volume_changed(value: float) -> void:
+	_save_volume(value)
+
+
+func _on_reset_tutorial_pressed() -> void:
+	GameManager.reset_tutorial()
+	_reset_confirm_label_visible(true)
+
+
+func _reset_confirm_label_visible(visible: bool) -> void:
+	reset_confirm_label.visible = visible
+	if visible:
+		reset_confirm_label.text = LocalizationSystem.get_text("settings.reset_confirm")
+
+
+func _on_close_settings() -> void:
+	_hide_settings_panel()
+
+
+func _load_volume() -> float:
+	var config := ConfigFile.new()
+	var err := config.load("user://settings.cfg")
+	if err == OK:
+		return config.get_value("audio", "volume", 1.0)
+	return 1.0
+
+
+func _save_volume(value: float) -> void:
+	var config := ConfigFile.new()
+	config.set_value("audio", "volume", value)
+	config.save("user://settings.cfg")

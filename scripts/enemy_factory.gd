@@ -50,10 +50,10 @@ class EnemyData:
 
 	func get_type_name() -> String:
 		match type:
-			TYPE_NORMAL: return "普通"
-			TYPE_ELITE: return "精英"
-			TYPE_BOSS: return "BOSS"
-			_: return "未知"
+			TYPE_NORMAL: return LocalizationSystem.get_text("enemy.normal")
+			TYPE_ELITE: return LocalizationSystem.get_text("enemy.elite")
+			TYPE_BOSS: return LocalizationSystem.get_text("enemy.boss")
+			_: return LocalizationSystem.get_text("enemy.unknown")
 
 
 ## 根据当前回合生成敌人
@@ -96,7 +96,7 @@ static func _apply_normal_stats(enemy: EnemyData, current_round: int, cycle_coun
 	enemy.attack = maxi(int(BASE_NORMAL["atk"] * cycle_mult * intra_mult), 1)
 	enemy.defense = int(BASE_NORMAL["def"] * cycle_mult)
 	enemy.skill_id = 0
-	enemy.name = "普通敌人 R%d" % current_round
+	enemy.name = LocalizationSystem.get_text("enemy.normal_name", {"round": current_round})
 
 
 static func _apply_elite_stats(enemy: EnemyData, _current_round: int, cycle_count: int) -> void:
@@ -109,7 +109,7 @@ static func _apply_elite_stats(enemy: EnemyData, _current_round: int, cycle_coun
 	# 特技效果随循环增强: 每3轮循环+10%
 	@warning_ignore("integer_division")
 	enemy.skill_value = 1.0 + (cycle_count / 3) * 0.1
-	enemy.name = "精英敌人 R%d" % _current_round
+	enemy.name = LocalizationSystem.get_text("enemy.elite_name", {"round": _current_round})
 
 
 static func _apply_boss_stats(enemy: EnemyData, _current_round: int, cycle_count: int) -> void:
@@ -121,7 +121,7 @@ static func _apply_boss_stats(enemy: EnemyData, _current_round: int, cycle_count
 	enemy.skill_id = BOSS_SKILLS[randi_range(0, BOSS_SKILLS.size() - 1)]
 	# BOSS特技: 每轮循环+5%, 上限+100%
 	enemy.skill_value = minf(1.0 + cycle_count * 0.05, 2.0)
-	enemy.name = "BOSS R%d" % _current_round
+	enemy.name = LocalizationSystem.get_text("enemy.boss_name", {"round": _current_round})
 
 
 ## 获取当前普通敌人在本循环中的序号 (0-5)
