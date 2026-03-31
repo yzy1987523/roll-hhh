@@ -115,6 +115,11 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "Shop"
 
+[node name="EncyclopediaButton" type="Button" parent="MainLayout/MiddleBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Encyclopedia"
+
 [node name="BoardCenter" type="CenterContainer" parent="MainLayout" unique_id=277718230]
 layout_mode = 2
 size_flags_vertical = 3

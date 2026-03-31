@@ -20,6 +20,7 @@ extends Control
 @onready var item_bar: HBoxContainer = $MainLayout/MiddleBar/ItemBar
 @onready var dorm_button: Button = $MainLayout/MiddleBar/DormButton
 @onready var shop_button: Button = $MainLayout/MiddleBar/ShopButton
+@onready var encyclopedia_button: Button = $MainLayout/MiddleBar/EncyclopediaButton
 
 # ---- 设置面板节点 ----
 @onready var settings_panel: PanelContainer = $SettingsPanel
@@ -60,6 +61,9 @@ var drag_index: int = -1        # 拖拽源的格子索引
 var drag_preview: Control = null # 拖拽预览节点
 var hover_index: int = -1       # 当前悬停的格子索引
 var is_hovering_dorm: bool = false  # 是否悬停在宿舍按钮上
+
+# ---- 教学系统 ----
+var tutorial_overlay = null
 
 # ---- 宿舍面板 ----
 var dorm_panel: PanelContainer = null
@@ -109,6 +113,7 @@ func _connect_signals() -> void:
 	shop_button.pressed.connect(_on_shop_pressed)
 	relic_button.pressed.connect(_on_relic_toggle)
 	settings_button.pressed.connect(_on_settings_pressed)
+	encyclopedia_button.pressed.connect(_on_encyclopedia_pressed)
 	GameManager.gold_changed.connect(_on_gold_changed)
 	GameManager.energy_changed.connect(_on_energy_changed)
 	GameManager.round_changed.connect(_on_round_changed)
@@ -297,6 +302,8 @@ func _handle_cell_action(target_index: int) -> void:
 
 	selected_index = -1
 	_refresh_board_display()
+	# Tutorial: advance after swap/move (step 2 = position adjustment)
+	_try_advance_tutorial(2)
 
 
 # ---- 角色合成 (任务 2.4) ----
@@ -320,6 +327,8 @@ func _merge_at(src_index: int, tgt_index: int) -> void:
 	bd.place_character(merged, tgt_pos)
 
 	print(">>> [GameBoard] 合成完成: %s Lv.%d 于格 %d" % [merged.get_job_name(), merged.level, tgt_index])
+	if is_instance_valid(get_node_or_null("/root/SaveSystem")):
+		SaveSystem.unlock_encyclopedia(merged.job, merged.level)
 
 	# 发出合成信号
 	GameManager.character_merged.emit(merged.level)
@@ -341,6 +350,8 @@ func _sacrifice_character(cell_index: int) -> void:
 	print(">>> [GameBoard] 献祭 %s Lv.%d, 返还能量 %d" % [ch.get_job_name(), ch.level, refund])
 	selected_index = -1
 	_refresh_board_display()
+	# Tutorial: advance after sacrifice (step 3 = details/sacrifice/encyclopedia)
+	_try_advance_tutorial(3)
 
 
 # ---- 拖拽系统 (任务 2.3) ----
@@ -587,7 +598,12 @@ func _on_spawn_pressed(job: int) -> void:
 		return
 
 	print(">>> [GameBoard] 生成 %s Lv.%d 于 (%d, %d)" % [ch.get_job_name(), ch.level, pos.x, pos.y])
+	if is_instance_valid(get_node_or_null("/root/SaveSystem")):
+		SaveSystem.unlock_encyclopedia(ch.job, ch.level)
 	_refresh_board_display()
+	# Tutorial: advance after spawn (step 0 = first spawn, step 1 = second spawn/merge)
+	_try_advance_tutorial(0)
+	_try_advance_tutorial(1)
 
 
 # ---- 宿舍操作 ----
@@ -698,6 +714,8 @@ func _input(event: InputEvent) -> void:
 
 func _on_end_turn_pressed() -> void:
 	selected_index = -1
+	# Tutorial: advance on end turn (step 4)
+	_try_advance_tutorial(4)
 	print(">>> [GameBoard] 结束回合, 进入战斗阶段")
 	GameManager.enter_battle_phase()
 	get_tree().change_scene_to_file("res://scenes/battle_scene.tscn")
@@ -711,6 +729,13 @@ func _on_back_pressed() -> void:
 func _on_shop_pressed() -> void:
 	print(">>> [GameBoard] 打开商店")
 	get_tree().change_scene_to_file("res://scenes/shop_scene.tscn")
+
+
+func _on_encyclopedia_pressed() -> void:
+	print(">>> [GameBoard] 打开图鉴")
+	# Tutorial: advance after opening encyclopedia (step 3)
+	_try_advance_tutorial(3)
+	get_tree().change_scene_to_file("res://scenes/encyclopedia_scene.tscn")
 
 
 func _on_item_pressed() -> void:
@@ -962,3 +987,11 @@ func _save_volume(value: float) -> void:
 	var config := ConfigFile.new()
 	config.set_value("audio", "volume", value)
 	config.save("user://settings.cfg")
+
+
+# ---- 教学系统辅助 (任务 7.1) ----
+
+func _try_advance_tutorial(expected_step: int) -> void:
+	# Tutorial advancement is handled by tutorial_instance
+	# This method kept for compatibility with old tutorial overlay
+	pass

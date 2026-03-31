@@ -2,6 +2,7 @@ extends Control
 
 @onready var start_button: Button = $VBoxContainer/StartButton
 @onready var settings_button: Button = $VBoxContainer/SettingsButton
+@onready var leaderboard_button: Button = $VBoxContainer/LeaderboardButton
 @onready var settings_panel: PanelContainer = $SettingsPanel
 @onready var settings_vbox: VBoxContainer = $SettingsPanel/SettingsVBox
 @onready var language_button: Button = $SettingsPanel/SettingsVBox/LanguageRow/LanguageButton
@@ -24,6 +25,7 @@ func _ready() -> void:
 	# 连接按钮信号
 	start_button.pressed.connect(_on_start_pressed)
 	settings_button.pressed.connect(_on_settings_pressed)
+	leaderboard_button.pressed.connect(_on_leaderboard_pressed)
 	language_button.pressed.connect(_on_language_toggled)
 	volume_slider.value_changed.connect(_on_volume_changed)
 	reset_tutorial_button.pressed.connect(_on_reset_tutorial_pressed)
@@ -42,6 +44,11 @@ func _on_start_pressed() -> void:
 func _on_settings_pressed() -> void:
 	print(">>> [MainMenu] 设置按钮被点击")
 	_show_settings()
+
+
+func _on_leaderboard_pressed() -> void:
+	print(">>> [MainMenu] 排行榜按钮被点击")
+	get_tree().change_scene_to_file("res://scenes/leaderboard_scene.tscn")
 
 
 func _show_settings() -> void:

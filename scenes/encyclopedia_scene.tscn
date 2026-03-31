@@ -1,0 +1,76 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/encyclopedia_scene.gd" id="1_enc"]
+
+[node name="EncyclopediaScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_enc")
+
+[node name="BgColor" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.08, 0.08, 0.12, 1)
+
+[node name="TopBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 40.0
+grow_horizontal = 2
+theme_override_constants/separation = 12
+
+[node name="BackButton" type="Button" parent="TopBar"]
+layout_mode = 2
+text = "返回"
+
+[node name="TitleLabel" type="Label" parent="TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "图鉴"
+horizontal_alignment = 1
+
+[node name="MainHBox" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 44.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 4
+
+[node name="LeftPanel" type="PanelContainer" parent="MainHBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MainHBox/LeftPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="JobList" type="VBoxContainer" parent="MainHBox/LeftPanel/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 4
+
+[node name="RightPanel" type="PanelContainer" parent="MainHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="DetailScroll" type="ScrollContainer" parent="MainHBox/RightPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="DetailContent" type="VBoxContainer" parent="MainHBox/RightPanel/DetailScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 2
