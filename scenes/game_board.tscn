@@ -115,7 +115,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "Shop"
 
-[node name="EncyclopediaButton" type="Button" parent="MainLayout/MiddleBar"]
+[node name="EncyclopediaButton" type="Button" parent="MainLayout/MiddleBar" unique_id=1591691191]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Encyclopedia"
@@ -170,7 +170,7 @@ custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
 text = "End Turn"
 
-[node name="SettingsPanel" type="PanelContainer" parent="."]
+[node name="SettingsPanel" type="PanelContainer" parent="." unique_id=1089472691]
 visible = false
 layout_mode = 1
 anchors_preset = 8
@@ -185,53 +185,52 @@ offset_bottom = 140.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="SettingsVBox" type="VBoxContainer" parent="SettingsPanel"]
+[node name="SettingsVBox" type="VBoxContainer" parent="SettingsPanel" unique_id=1435528226]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="SettingsTitle" type="Label" parent="SettingsPanel/SettingsVBox"]
+[node name="SettingsTitle" type="Label" parent="SettingsPanel/SettingsVBox" unique_id=1725768073]
 layout_mode = 2
 text = "Settings"
 horizontal_alignment = 1
 
-[node name="LanguageRow" type="HBoxContainer" parent="SettingsPanel/SettingsVBox"]
+[node name="LanguageRow" type="HBoxContainer" parent="SettingsPanel/SettingsVBox" unique_id=1453064821]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="LanguageLabel" type="Label" parent="SettingsPanel/SettingsVBox/LanguageRow"]
+[node name="LanguageLabel" type="Label" parent="SettingsPanel/SettingsVBox/LanguageRow" unique_id=1051287378]
 layout_mode = 2
 text = "Language"
 
-[node name="LanguageButton" type="Button" parent="SettingsPanel/SettingsVBox/LanguageRow"]
+[node name="LanguageButton" type="Button" parent="SettingsPanel/SettingsVBox/LanguageRow" unique_id=747074118]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "EN"
 
-[node name="VolumeRow" type="HBoxContainer" parent="SettingsPanel/SettingsVBox"]
+[node name="VolumeRow" type="HBoxContainer" parent="SettingsPanel/SettingsVBox" unique_id=1298891949]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="VolumeLabel" type="Label" parent="SettingsPanel/SettingsVBox/VolumeRow"]
+[node name="VolumeLabel" type="Label" parent="SettingsPanel/SettingsVBox/VolumeRow" unique_id=249283928]
 layout_mode = 2
 text = "Volume"
 
-[node name="VolumeSlider" type="HSlider" parent="SettingsPanel/SettingsVBox/VolumeRow"]
+[node name="VolumeSlider" type="HSlider" parent="SettingsPanel/SettingsVBox/VolumeRow" unique_id=335025774]
 layout_mode = 2
 size_flags_horizontal = 3
-min_value = 0.0
 max_value = 1.0
 step = 0.1
 value = 1.0
 
-[node name="ResetTutorialButton" type="Button" parent="SettingsPanel/SettingsVBox"]
+[node name="ResetTutorialButton" type="Button" parent="SettingsPanel/SettingsVBox" unique_id=86378731]
 layout_mode = 2
 text = "Reset Tutorial"
 
-[node name="CloseButton" type="Button" parent="SettingsPanel/SettingsVBox"]
+[node name="CloseButton" type="Button" parent="SettingsPanel/SettingsVBox" unique_id=2035558326]
 layout_mode = 2
 text = "Close"
 
-[node name="ResetConfirmLabel" type="Label" parent="SettingsPanel"]
+[node name="ResetConfirmLabel" type="Label" parent="SettingsPanel" unique_id=827146354]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2

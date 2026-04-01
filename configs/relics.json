@@ -1,0 +1,30 @@
+{
+	"relics": [
+		{"id": 1, "stackable": false},
+		{"id": 2, "stackable": false},
+		{"id": 3, "stackable": false},
+		{"id": 4, "stackable": false},
+		{"id": 5, "stackable": false},
+		{"id": 6, "stackable": false},
+		{"id": 7, "stackable": false},
+		{"id": 8, "stackable": false},
+		{"id": 9, "stackable": false},
+		{"id": 10, "stackable": false},
+		{"id": 11, "stackable": false},
+		{"id": 12, "stackable": false},
+		{"id": 13, "stackable": false},
+		{"id": 14, "stackable": false},
+		{"id": 15, "stackable": false},
+		{"id": 16, "stackable": false},
+		{"id": 17, "stackable": false},
+		{"id": 18, "stackable": false},
+		{"id": 19, "stackable": false},
+		{"id": 20, "stackable": false},
+		{"id": 21, "stackable": false},
+		{"id": 22, "stackable": false},
+		{"id": 23, "stackable": false},
+		{"id": 24, "stackable": false},
+		{"id": 25, "stackable": false},
+		{"id": 26, "stackable": true}
+	]
+}

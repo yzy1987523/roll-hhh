@@ -3,6 +3,8 @@ extends Node
 ## 国际化/本地化管理系统
 ## 使用配置表管理多语言文本
 
+signal language_changed(lang: String)
+
 var config: Dictionary = {}
 var current_lang: String = "en"
 
@@ -56,6 +58,7 @@ func set_language(lang: String) -> void:
 		current_lang = lang
 		config["current_language"] = lang
 		save_config()
+		language_changed.emit(lang)
 
 func save_config() -> void:
 	var file_path := "res://configs/localization.json"

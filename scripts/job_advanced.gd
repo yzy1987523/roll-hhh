@@ -7,27 +7,25 @@ class_name JobAdvanced
 # ---- 转职职业ID (从10开始, 避免与基础职业冲突) ----
 const JOB_BERSERKER := 10     # 狂战士 (战士分支)
 const JOB_KNIGHT := 11        # 骑士 (战士分支)
-const JOB_GREATSWORD := 12    # 大剑士 (战士分支)
-const JOB_ARCHMAGE := 20      # 魔导师 (法师分支)
-const JOB_NECROMANCER := 21   # 死灵法师 (法师分支)
-const JOB_HIGH_PRIEST := 30   # 大祭司 (牧师分支)
+const JOB_ICEMAGE := 20       # 冰法师 (法师分支)
+const JOB_FIREMAGE := 21      # 火法师 (法师分支)
+const JOB_DARKPRIEST := 30    # 暗牧师 (牧师分支)
 const JOB_PALADIN := 31       # 圣骑士 (牧师分支)
 
 # ---- 转职映射: 原始职业 → 可转职分支 ----
 const ADVANCE_MAP := {
-	DataModels.Job.WARRIOR: [JOB_BERSERKER, JOB_KNIGHT, JOB_GREATSWORD],
-	DataModels.Job.MAGE: [JOB_ARCHMAGE, JOB_NECROMANCER],
-	DataModels.Job.PRIEST: [JOB_HIGH_PRIEST, JOB_PALADIN],
+	DataModels.Job.WARRIOR: [JOB_BERSERKER, JOB_KNIGHT],
+	DataModels.Job.MAGE: [JOB_ICEMAGE, JOB_FIREMAGE],
+	DataModels.Job.PRIEST: [JOB_DARKPRIEST, JOB_PALADIN],
 }
 
 # ---- 转职职业基础属性 ----
 const ADVANCED_BASE := {
 	JOB_BERSERKER:    { "hp": 4, "def": 0, "atk": 2, "skill_id": 1101, "name_key": "berserker" },
 	JOB_KNIGHT:       { "hp": 5, "def": 2, "atk": 1, "skill_id": 1102, "name_key": "knight" },
-	JOB_GREATSWORD:   { "hp": 3, "def": 1, "atk": 3, "skill_id": 1103, "name_key": "greatsword" },
-	JOB_ARCHMAGE:     { "hp": 1, "def": 0, "atk": 3, "skill_id": 1201, "name_key": "archmage" },
-	JOB_NECROMANCER:  { "hp": 2, "def": 0, "atk": 2, "skill_id": 1202, "name_key": "necromancer" },
-	JOB_HIGH_PRIEST:  { "hp": 3, "def": 0, "atk": 0, "skill_id": 1301, "name_key": "high_priest" },
+	JOB_ICEMAGE:      { "hp": 1, "def": 0, "atk": 3, "skill_id": 1201, "name_key": "ice_mage" },
+	JOB_FIREMAGE:     { "hp": 1, "def": 0, "atk": 3, "skill_id": 1202, "name_key": "fire_mage" },
+	JOB_DARKPRIEST:   { "hp": 3, "def": 0, "atk": 0, "skill_id": 1301, "name_key": "dark_priest" },
 	JOB_PALADIN:      { "hp": 4, "def": 1, "atk": 1, "skill_id": 1302, "name_key": "paladin" },
 }
 
@@ -35,10 +33,9 @@ const ADVANCED_BASE := {
 const ADVANCED_GROWTH := {
 	JOB_BERSERKER:    { "hp": 0.5, "def": 0.15, "atk": 0.55 },
 	JOB_KNIGHT:       { "hp": 0.7, "def": 0.5, "atk": 0.3 },
-	JOB_GREATSWORD:   { "hp": 0.45, "def": 0.3, "atk": 0.6 },
-	JOB_ARCHMAGE:     { "hp": 0.25, "def": 0.15, "atk": 0.65 },
-	JOB_NECROMANCER:  { "hp": 0.35, "def": 0.2, "atk": 0.45 },
-	JOB_HIGH_PRIEST:  { "hp": 0.5, "def": 0.2, "atk": 0.1 },
+	JOB_ICEMAGE:      { "hp": 0.25, "def": 0.15, "atk": 0.65 },
+	JOB_FIREMAGE:     { "hp": 0.25, "def": 0.15, "atk": 0.65 },
+	JOB_DARKPRIEST:   { "hp": 0.5, "def": 0.2, "atk": 0.1 },
 	JOB_PALADIN:      { "hp": 0.55, "def": 0.4, "atk": 0.35 },
 }
 
@@ -102,7 +99,6 @@ static func advance_character(ch: DataModels.CharacterData, advanced_job: int) -
 ## 随机转职 (根据原始职业)
 static func random_advance(ch: DataModels.CharacterData) -> bool:
 	var base_job: int = ch.job
-	# 如果已转职, 不能再转
 	if is_advanced_job(base_job):
 		print(">>> [JobAdvanced] 已是转职职业, 不可再转")
 		return false

@@ -22,9 +22,11 @@ var leaderboard_data: Array = []  # Array of {id, name, score, timestamp}
 func _ready() -> void:
 	back_button.pressed.connect(_on_back)
 	set_name_button.pressed.connect(_on_set_nickname)
+	LocalizationSystem.language_changed.connect(_on_localization_changed)
 	_load_player_id()
 	_load_leaderboard()
 	_update_display()
+	_update_ui_texts()
 	print(">>> [Leaderboard] 排行榜已打开")
 
 
@@ -101,7 +103,10 @@ func submit_score(score: int) -> void:
 
 func _update_display() -> void:
 	# Player info
-	player_info_label.text = "玩家: %s  |  最高循环: %d" % [player_nickname, _get_my_best_score()]
+	player_info_label.text = LocalizationSystem.get_text("leaderboard.player_info", {
+		"player": player_nickname,
+		"value": _get_my_best_score()
+	})
 	nickname_input.text = player_nickname
 
 	# Clear list
@@ -110,12 +115,17 @@ func _update_display() -> void:
 
 	# Header row
 	var header := HBoxContainer.new()
-	for col in ["排名", "玩家", "最高循环"]:
+	var cols := [
+		LocalizationSystem.get_text("leaderboard.rank"),
+		LocalizationSystem.get_text("leaderboard.player"),
+		LocalizationSystem.get_text("leaderboard.best_cycle")
+	]
+	for col in cols:
 		var lbl := Label.new()
 		lbl.text = col
 		lbl.custom_minimum_size = Vector2(80, 0)
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		if col == "玩家":
+		if col == cols[1]:
 			lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		header.add_child(lbl)
 	list_container.add_child(header)
@@ -127,7 +137,7 @@ func _update_display() -> void:
 	# Entries
 	if leaderboard_data.size() == 0:
 		var empty_lbl := Label.new()
-		empty_lbl.text = "暂无记录"
+		empty_lbl.text = LocalizationSystem.get_text("leaderboard.empty")
 		empty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		list_container.add_child(empty_lbl)
 		return
@@ -190,6 +200,18 @@ func _on_set_nickname() -> void:
 
 func _on_back() -> void:
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+
+
+func _on_localization_changed(lang: String) -> void:
+	_update_ui_texts()
+	_update_display()
+	print(">>> [Leaderboard] 语言切换为: %s" % lang)
+
+
+func _update_ui_texts() -> void:
+	title_label.text = LocalizationSystem.get_text("leaderboard.title")
+	back_button.text = LocalizationSystem.get_text("leaderboard.back")
+	set_name_button.text = LocalizationSystem.get_text("leaderboard.set_name")
 
 
 # ---- LocalStorage 操作 ----

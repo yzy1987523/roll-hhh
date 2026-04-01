@@ -1,0 +1,77 @@
+{
+	"relics": [
+		{"id": 1,  "name_key": "relics.1_name",  "desc_key": "relics.1_desc",  "effect_type": "stat_buff", "target": "warrior", "stat": "hp", "value": 2},
+		{"id": 2,  "name_key": "relics.2_name",  "desc_key": "relics.2_desc",  "effect_type": "stat_buff", "target": "warrior", "stat": "atk", "value": 1},
+		{"id": 3,  "name_key": "relics.3_name",  "desc_key": "relics.3_desc",  "effect_type": "stat_buff", "target": "warrior", "stat": "def", "value": 1},
+		{"id": 4,  "name_key": "relics.4_name",  "desc_key": "relics.4_desc",  "effect_type": "stat_buff", "target": "mage", "stat": "atk", "value": 1},
+		{"id": 5,  "name_key": "relics.5_name",  "desc_key": "relics.5_desc",  "effect_type": "stat_buff", "target": "mage", "stat": "penetrate", "value": 1},
+		{"id": 6,  "name_key": "relics.6_name",  "desc_key": "relics.6_desc",  "effect_type": "stat_buff", "target": "mage", "stat": "hp", "value": 1},
+		{"id": 7,  "name_key": "relics.7_name",  "desc_key": "relics.7_desc",  "effect_type": "priest_heal_passive", "heal_amount": 1},
+		{"id": 8,  "name_key": "relics.8_name",  "desc_key": "relics.8_desc",  "effect_type": "priest_range_passive", "range_bonus": 1},
+		{"id": 9,  "name_key": "relics.9_name",  "desc_key": "relics.9_desc",  "effect_type": "stat_buff", "target": "priest", "stat": "hp", "value": 2},
+		{"id": 10, "name_key": "relics.10_name", "desc_key": "relics.10_desc", "effect_type": "stat_buff", "target": "all", "stat": "atk", "value": 1},
+		{"id": 11, "name_key": "relics.11_name", "desc_key": "relics.11_desc", "effect_type": "stat_buff", "target": "all", "stat": "def", "value": 1},
+		{"id": 12, "name_key": "relics.12_name", "desc_key": "relics.12_desc", "effect_type": "stat_buff", "target": "all", "stat": "hp", "value": 2},
+		{"id": 13, "name_key": "relics.13_name", "desc_key": "relics.13_desc", "effect_type": "guardian_angel"},
+		{"id": 14, "name_key": "relics.14_name", "desc_key": "relics.14_desc", "effect_type": "revenge_attack"},
+		{"id": 15, "name_key": "relics.15_name", "desc_key": "relics.15_desc", "effect_type": "gold_bonus", "bonus_ratio": 0.2},
+		{"id": 16, "name_key": "relics.16_name", "desc_key": "relics.16_desc", "effect_type": "shop_discount", "discount": 0.15},
+		{"id": 17, "name_key": "relics.17_name", "desc_key": "relics.17_desc", "effect_type": "job_advance_bonus", "chance_bonus": 0.05},
+		{"id": 18, "name_key": "relics.18_name", "desc_key": "relics.18_desc", "effect_type": "level_up_bonus", "level_bonus": 2, "chance": 0.1},
+		{"id": 19, "name_key": "relics.19_name", "desc_key": "relics.19_desc", "effect_type": "start_energy_bonus", "bonus": 3},
+		{"id": 20, "name_key": "relics.20_name", "desc_key": "relics.20_desc", "effect_type": "summon_level_bonus", "level": 3, "chance": 0.05},
+		{"id": 21, "name_key": "relics.21_name", "desc_key": "relics.21_desc", "effect_type": "sacrifice_efficiency", "bonus_ratio": 0.2},
+		{"id": 22, "name_key": "relics.22_name", "desc_key": "relics.22_desc", "effect_type": "sacrifice_gold_bonus", "gold_per_sacrifice": 1},
+		{"id": 23, "name_key": "relics.23_name", "desc_key": "relics.23_desc", "effect_type": "battle_passive", "trigger": "all_attack", "stat": "penetrate", "value": 1},
+		{"id": 24, "name_key": "relics.24_name", "desc_key": "relics.24_desc", "effect_type": "immune_enemy_skill"},
+		{"id": 25, "name_key": "relics.25_name", "desc_key": "relics.25_desc", "effect_type": "crit_chance", "chance": 0.15, "multiplier": 2.0},
+		{"id": 26, "name_key": "relics.26_name", "desc_key": "relics.26_desc", "effect_type": "battle_xp_bonus", "xp_bonus": 1, "stackable": true}
+	],
+
+	"items": [
+		{"id": 1,  "name_key": "items.1_name",  "desc_key": "items.1_desc",  "price": 10,  "effect_type": "heal", "target": "character", "value": 5},
+		{"id": 2,  "name_key": "items.2_name",  "desc_key": "items.2_desc",  "price": 20,  "effect_type": "heal", "target": "character", "value": 10},
+		{"id": 3,  "name_key": "items.3_name",  "desc_key": "items.3_desc",  "price": 50,  "effect_type": "heal", "target": "character", "value": 20},
+		{"id": 4,  "name_key": "items.4_name",  "desc_key": "items.4_desc",  "price": 15,  "effect_type": "restore_energy", "value": 10},
+		{"id": 5,  "name_key": "items.5_name",  "desc_key": "items.5_desc",  "price": 30,  "effect_type": "restore_energy", "value": 20},
+		{"id": 6,  "name_key": "items.6_name",  "desc_key": "items.6_desc",  "price": 100, "effect_type": "spawn_characters", "count": 3, "min_level": 2, "max_level": 3},
+		{"id": 7,  "name_key": "items.7_name",  "desc_key": "items.7_desc",  "price": 80,  "effect_type": "summon", "job": 0, "level": 3},
+		{"id": 8,  "name_key": "items.8_name",  "desc_key": "items.8_desc",  "price": 80,  "effect_type": "summon", "job": 1, "level": 3},
+		{"id": 9,  "name_key": "items.9_name",  "desc_key": "items.9_desc",  "price": 80,  "effect_type": "summon", "job": 2, "level": 3},
+		{"id": 10, "name_key": "items.10_name", "desc_key": "items.10_desc", "price": 50,  "effect_type": "level_up_random", "levels": 1},
+		{"id": 11, "name_key": "items.11_name", "desc_key": "items.11_desc", "price": 120, "effect_type": "level_up_target", "levels": 1},
+		{"id": 12, "name_key": "items.12_name", "desc_key": "items.12_desc", "price": 200, "effect_type": "level_up_random", "levels": 3},
+		{"id": 13, "name_key": "items.13_name", "desc_key": "items.13_desc", "price": 30,  "effect_type": "temp_shield", "target": "character", "value": 5},
+		{"id": 14, "name_key": "items.14_name", "desc_key": "items.14_desc", "price": 40,  "effect_type": "stat_buff_target", "target": "character", "stat": "atk", "value": 2},
+		{"id": 15, "name_key": "items.15_name", "desc_key": "items.15_desc", "price": 40,  "effect_type": "stat_buff_target", "target": "character", "stat": "def", "value": 2},
+		{"id": 16, "name_key": "items.16_name", "desc_key": "items.16_desc", "price": 80,  "effect_type": "stat_buff_target", "target": "character", "stat": "def", "value": 999},
+		{"id": 17, "name_key": "items.17_name", "desc_key": "items.17_desc", "price": 150, "effect_type": "meta", "key": "sacrifice_mult", "value": 2},
+		{"id": 18, "name_key": "items.18_name", "desc_key": "items.18_desc", "price": 300, "effect_type": "meta", "key": "sacrifice_mult", "value": 3},
+		{"id": 19, "name_key": "items.19_name", "desc_key": "items.19_desc", "price": 50,  "effect_type": "meta", "key": "shop_refresh", "value": 1},
+		{"id": 20, "name_key": "items.20_name", "desc_key": "items.20_desc", "price": 60,  "effect_type": "meta", "key": "shop_discount", "value": 0.7},
+		{"id": 21, "name_key": "items.21_name", "desc_key": "items.21_desc", "price": 100, "effect_type": "dice_of_fate"},
+		{"id": 22, "name_key": "items.22_name", "desc_key": "items.22_desc", "price": 30,  "effect_type": "reset_energy"}
+	],
+
+	"elite_skills": [
+		{"id": 2001, "name_key": "elite.skill.counter", "trigger": "on_hit_received", "effect_type": "counter", "chance_base": 0.3, "damage_ratio": 0.5},
+		{"id": 2002, "name_key": "elite.skill.lifesteal", "trigger": "on_attack", "effect_type": "lifesteal", "value_base": 2},
+		{"id": 2003, "name_key": "elite.skill.shield", "trigger": "on_round_start", "effect_type": "heal", "value_base": 3},
+		{"id": 2004, "name_key": "elite.skill.evade", "trigger": "before_hit_received", "effect_type": "evade", "chance_base": 0.2},
+		{"id": 2005, "name_key": "elite.skill.weak", "trigger": "on_attack", "effect_type": "debuff_def", "value_base": 1},
+		{"id": 2006, "name_key": "elite.skill.burn", "trigger": "on_attack", "effect_type": "burn", "value_base": 1},
+		{"id": 2007, "name_key": "elite.skill.freeze", "trigger": "on_attack", "effect_type": "freeze", "chance_base": 0.2},
+		{"id": 2008, "name_key": "elite.skill.poison", "trigger": "on_attack", "effect_type": "poison", "value_base": 1}
+	],
+
+	"boss_skills": [
+		{"id": 3001, "name_key": "boss.skill.thunder", "trigger": "on_attack", "effect_type": "bonus_damage", "value_base": 3},
+		{"id": 3002, "name_key": "boss.skill.splash", "trigger": "on_round_start", "effect_type": "splash_attack", "damage_ratio": 0.5},
+		{"id": 3003, "name_key": "boss.skill.regen", "trigger": "on_round_start", "effect_type": "heal", "value_base": 3},
+		{"id": 3004, "name_key": "boss.skill.berserk", "trigger": "on_round_start", "effect_type": "atk_up_when_low_hp", "threshold": 0.3, "value_base": 2},
+		{"id": 3005, "name_key": "boss.skill.armor", "trigger": "on_battle_start", "effect_type": "def_up", "value_base": 2, "once": true},
+		{"id": 3006, "name_key": "boss.skill.fear", "trigger": "on_attack", "effect_type": "fear", "chance_base": 0.15},
+		{"id": 3007, "name_key": "boss.skill.curse", "trigger": "on_attack", "effect_type": "debuff_atk", "value_base": 1},
+		{"id": 3008, "name_key": "boss.skill.revive", "trigger": "on_death", "effect_type": "revive", "chance_base": 0.5, "hp_ratio": 0.3}
+	]
+}

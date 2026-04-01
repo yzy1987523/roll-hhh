@@ -72,7 +72,7 @@ class BuffEffect:
 class CharacterData:
 	var id: int = 0
 	var job: int = 0             # Job enum: 0=战士, 1=法师, 2=牧师
-	var level: int = 1           # 1-16
+	var level: int = 1           # 1-9
 	var hp: int = 0
 	var max_hp: int = 0
 	var attack: int = 0
@@ -131,6 +131,33 @@ class CharacterData:
 			if job >= 20: return Job.MAGE
 			return Job.WARRIOR
 		return job
+
+	# 获取精灵图路径
+	# 格式: char_JJLLAA (职业_等级_动画)
+	# JJ=职业(01=战士,02=法师,03=牧师,04=暗牧师), LL=等级(01-09), AA=动画(01=待机,02=攻击)
+	func get_sprite_path(anim_id: int = 1, _frame: int = 1) -> String:
+		var job_code: int = _job_to_sprite_code(job)
+		var job_str: String = str(job_code).pad_zeros(2)       # 01-03
+		var level_str: String = str(level).pad_zeros(2)       # 01-13
+		var anim_str: String = str(anim_id).pad_zeros(2)       # 01-02
+		return "char_%s%s%s" % [job_str, level_str, anim_str]
+
+	# 获取精灵图文件夹路径 (如 "char_02")
+	func get_sprite_folder() -> String:
+		var job_code: int = _job_to_sprite_code(job)
+		return "char_%s" % str(job_code).pad_zeros(2)
+
+	# 职业ID转换为精灵图职业代码
+	func _job_to_sprite_code(_j: int) -> int:
+		# 暗牧师有独立的精灵图
+		if _j == 30:  # JobAdvanced.JOB_DARKPRIEST
+			return 4
+		var base: int = get_base_job()
+		match base:
+			Job.WARRIOR: return 1
+			Job.MAGE: return 2
+			Job.PRIEST: return 3
+		return 1
 
 	# 序列化为字典
 	func to_dict() -> Dictionary:

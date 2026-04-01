@@ -154,6 +154,12 @@ func _enemy_attack() -> void:
 	if not enemy.is_alive():
 		return
 
+	# 冰冻效果检测
+	if enemy.get_meta("frozen", false):
+		enemy.set_meta("frozen", false)
+		_log(LocalizationSystem.get_text("battle_log.freeze_skip") % enemy.name)
+		return
+
 	# 获取前排目标
 	var front_row: Array = GameManager.board_data.get_front_row_characters()
 	if front_row.size() == 0:
@@ -320,8 +326,91 @@ func _trigger_enemy_round_start() -> void:
 
 
 func _trigger_on_attack(ch: DataModels.CharacterData) -> void:
-	# 预留: 角色攻击时 Buff 触发扩展点
-	pass
+	# 转职职业技能触发 (在攻击后)
+	var job: int = ch.job
+	match job:
+		JobAdvanced.JOB_ICEMAGE:  # 冰法师: 冰霜层数
+			_apply_frost_stacks(ch)
+		JobAdvanced.JOB_FIREMAGE:  # 火法师: 点燃层数
+			_apply_burn_stacks(ch)
+		JobAdvanced.JOB_DARKPRIEST:  # 暗牧师: 诅咒层数
+			_apply_curse_stacks(ch)
+		JobAdvanced.JOB_PALADIN:  # 圣骑士: 祝福层数 (应用于前排队友)
+			_apply_blessing_stacks()
+
+
+# ---- 冰法师: 冰霜层数 ----
+func _apply_frost_stacks(_ch: DataModels.CharacterData) -> void:
+	if not enemy.is_alive():
+		return
+	var stacks: int = enemy.get_meta("frost_stacks", 0)
+	stacks += 1
+	enemy.set_meta("frost_stacks", stacks)
+	_log(LocalizationSystem.get_text("battle_log.frost_stack") % [enemy.name, stacks])
+	if stacks >= 50:
+		enemy.set_meta("frozen", true)
+		enemy.set_meta("frost_stacks", 0)
+		_log(LocalizationSystem.get_text("battle_log.frost_freeze") % enemy.name)
+
+
+# ---- 火法师: 点燃层数 ----
+func _apply_burn_stacks(_ch: DataModels.CharacterData) -> void:
+	if not enemy.is_alive():
+		return
+	var stacks: int = enemy.get_meta("burn_stacks", 0)
+	stacks += 1
+	enemy.set_meta("burn_stacks", stacks)
+	_log(LocalizationSystem.get_text("battle_log.burn_stack") % [enemy.name, stacks])
+	if stacks >= 10:
+		var explosion_dmg: int = stacks * 2  # 爆炸伤害 = 层数 * 2
+		enemy.take_damage(explosion_dmg)
+		enemy.set_meta("burn_stacks", 0)
+		_log(LocalizationSystem.get_text("battle_log.burn_explosion") % [enemy.name, explosion_dmg])
+
+
+# ---- 暗牧师: 诅咒层数 (降低敌方1%攻/防, 最高50层) ----
+func _apply_curse_stacks(_ch: DataModels.CharacterData) -> void:
+	if not enemy.is_alive():
+		return
+	var stacks: int = enemy.get_meta("curse_stacks", 0)
+	if stacks >= 50:
+		return  # 已达上限
+	stacks += 1
+	enemy.set_meta("curse_stacks", stacks)
+	# 诅咒效果: 随机降低1% ATK 或 DEF
+	var is_atk: bool = randi_range(0, 1) == 0
+	if is_atk:
+		var reduction: float = enemy.attack * 0.01
+		enemy.attack = maxi(enemy.attack - int(reduction), 0)
+		_log(LocalizationSystem.get_text("battle_log.curse_stack_atk") % [enemy.name, stacks])
+	else:
+		var reduction: float = enemy.defense * 0.01
+		enemy.defense = maxi(enemy.defense - int(reduction), 0)
+		_log(LocalizationSystem.get_text("battle_log.curse_stack_def") % [enemy.name, stacks])
+
+
+# ---- 圣骑士: 祝福层数 (增加前排队友1%攻/防, 最高50层/人) ----
+func _apply_blessing_stacks() -> void:
+	var front_row: Array = GameManager.board_data.get_front_row_characters()
+	for ally in front_row:
+		if not ally.is_alive():
+			continue
+		var pos_key: String = str(ally.position.x) + "_" + str(ally.position.y)
+		var stacks: int = ally.get_meta("blessing_stacks_" + pos_key, 0)
+		if stacks >= 50:
+			continue  # 该角色已达上限
+		stacks += 1
+		ally.set_meta("blessing_stacks_" + pos_key, stacks)
+		# 祝福效果: 随机增加1% ATK 或 DEF
+		var is_atk: bool = randi_range(0, 1) == 0
+		if is_atk:
+			var bonus: float = ally.attack * 0.01
+			ally.attack += maxi(int(bonus), 1)
+			_log(LocalizationSystem.get_text("battle_log.bless_stack_atk") % [ally.get_job_name(), stacks])
+		else:
+			var bonus: float = ally.defense * 0.01
+			ally.defense += maxi(int(bonus), 0)
+			_log(LocalizationSystem.get_text("battle_log.bless_stack_def") % [ally.get_job_name(), stacks])
 
 
 # ---- 工具方法 ----

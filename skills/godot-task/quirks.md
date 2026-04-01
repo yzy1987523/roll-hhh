@@ -52,9 +52,10 @@ var val = my_dict["key"]         # OK (untyped)
 **Collision state changes in callbacks:**
 - Changing collision shape `.disabled` inside `body_entered`/`body_exited` → "Can't change state while flushing queries". Use `set_deferred("disabled", false)`.
 
-**Spawn immunity for revealed items:**
-- Items spawned inside an active Area2D (e.g., power-up revealed by explosion) get `area_entered` immediately → destroyed same frame.
-- Fix: track `_alive_time` in `_process()`, ignore `area_entered` for ~0.8s (longer than the triggering effect's lifetime).
+**SceneTreeTimer cannot be cancelled:**
+- `SceneTreeTimer` (from `get_tree().create_timer()`) has NO `cancel()` method in Godot 4.
+- To "stop" a pending timer: set a guard flag (`is_playing = false`) then null out your reference (`pending_timer = null`). The timer will expire harmlessly; check the flag inside the callback to early-return.
+- Do NOT call `pending_timer.cancel()` — it will throw a scripting error at runtime.
 
 **Pass-by-value types in functions:**
 - `bool`, `int`, `float`, `Vector3`, `AABB`, `Transform3D` etc. are value types — assigning to a parameter inside a function does NOT update the caller's variable. Use Array/Dictionary accumulator for out-parameters:

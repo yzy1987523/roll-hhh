@@ -1,0 +1,15 @@
+{
+	"base_stats": {
+		"normal": {"hp": 8, "atk": 1, "def": 0},
+		"elite": {"hp": 25, "atk": 3, "def": 1},
+		"boss": {"hp": 70, "atk": 5, "def": 2}
+	},
+	"cycle_scale": {
+		"normal": 0.3,
+		"elite": 0.4,
+		"boss": 0.5
+	},
+	"intra_cycle_scale": 0.1,
+	"elite_skills": [2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008],
+	"boss_skills": [3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008]
+}

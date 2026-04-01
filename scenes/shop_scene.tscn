@@ -39,11 +39,21 @@ layout_mode = 2
 layout_mode = 2
 text = "Gold: 0"
 
-[node name="ScrollContainer" type="ScrollContainer" parent="VBox"]
+[node name="ItemScroll" type="ScrollContainer" parent="VBox"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ItemList" type="VBoxContainer" parent="VBox/ScrollContainer"]
+[node name="ItemList" type="VBoxContainer" parent="VBox/ItemScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 4
+
+[node name="RelicScroll" type="ScrollContainer" parent="VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="RelicList" type="VBoxContainer" parent="VBox/RelicScroll"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3

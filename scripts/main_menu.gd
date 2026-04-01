@@ -31,8 +31,12 @@ func _ready() -> void:
 	reset_tutorial_button.pressed.connect(_on_reset_tutorial_pressed)
 	close_button.pressed.connect(_on_close_settings)
 
+	# 连接语言切换信号
+	LocalizationSystem.language_changed.connect(_on_localization_changed)
+
 	# 初始化UI
 	_update_language_button()
+	_update_ui_texts()
 	_load_settings()
 
 
@@ -75,9 +79,13 @@ func _on_language_toggled() -> void:
 	else:
 		LocalizationSystem.set_language("en")
 
+	# 注: language_changed 信号会触发 _on_localization_changed
+
+
+func _on_localization_changed(lang: String) -> void:
 	_update_language_button()
 	_update_ui_texts()
-	print(">>> [MainMenu] 语言切换为: %s" % LocalizationSystem.current_lang)
+	print(">>> [MainMenu] 语言切换为: %s" % lang)
 
 
 func _update_language_button() -> void:
@@ -89,6 +97,11 @@ func _update_language_button() -> void:
 
 
 func _update_ui_texts() -> void:
+	# 更新主菜单按钮文本
+	start_button.text = LocalizationSystem.get_text("main_menu.start")
+	settings_button.text = LocalizationSystem.get_text("main_menu.settings")
+	leaderboard_button.text = LocalizationSystem.get_text("main_menu.leaderboard")
+
 	# 更新设置面板文本
 	var settings_title: Label = $SettingsPanel/SettingsVBox/SettingsTitle
 	settings_title.text = LocalizationSystem.get_text("settings.title")

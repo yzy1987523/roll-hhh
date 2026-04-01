@@ -24,6 +24,7 @@ const DEFAULT_MAX_ENERGY := 36
 const DEFAULT_GOLD := 0
 const DEFAULT_ROUND := 1
 const MAX_BATTLE_TURNS := 999
+const MAX_ITEM_SLOTS := 3
 
 # ---- 敌人循环节奏 (9轮一循环) ----
 # 0=普通, 1=精英, 2=BOSS
@@ -82,11 +83,16 @@ signal relics_changed()
 
 
 ## 添加道具到背包
-func add_item(item: DataModels.ItemData) -> void:
+## 返回是否添加成功（栏位已满时返回false）
+func add_item(item: DataModels.ItemData) -> bool:
+	if items.size() >= MAX_ITEM_SLOTS:
+		print(">>> [GameManager] 道具栏已满，无法获取: %s" % item.name)
+		return false
 	items.append(item)
 	items_changed.emit()
 	print(">>> [GameManager] 获得道具: %s" % item.name)
 	_auto_save()
+	return true
 
 
 ## 移除道具
@@ -126,6 +132,7 @@ func _ready() -> void:
 func enter_prepare_phase() -> void:
 	phase = PHASE_PREPARE
 	battle_turn = 0
+	reset_energy()
 	phase_changed.emit(phase)
 	print(">>> [GameManager] 进入备战阶段, 回合: %d" % current_round)
 	_auto_save()

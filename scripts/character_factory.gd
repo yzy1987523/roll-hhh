@@ -24,8 +24,11 @@ const GROWTH_RATE := {
 	DataModels.Job.PRIEST:  { "hp": 0.45, "def": 0.25, "atk": 0.15 },
 }
 
+# ---- 最高等级 ----
+const MAX_LEVEL := 9
+
 # ---- 特技强化等级节点 ----
-const SKILL_UPGRADE_LEVELS := [3, 6, 10, 16]
+const SKILL_UPGRADE_LEVELS := [3, 5, 7, 9]
 
 # ---- 唯一ID计数器 ----
 static var _next_id: int = 1
@@ -71,7 +74,7 @@ static func create_character(job: int, level: int) -> DataModels.CharacterData:
 	ch.id = _next_id
 	_next_id += 1
 	ch.job = job
-	ch.level = clampi(level, 1, 16)
+	ch.level = clampi(level, 1, MAX_LEVEL)
 	ch.max_hp = calc_hp(job, ch.level)
 	ch.hp = ch.max_hp
 	ch.attack = calc_attack(job, ch.level)
@@ -103,7 +106,7 @@ static func merge_characters(a: DataModels.CharacterData, b: DataModels.Characte
 	if a.level != b.level:
 		print(">>> [CharacterFactory] 合成失败: 等级不同 (%d vs %d)" % [a.level, b.level])
 		return null
-	if a.level >= 16:
+	if a.level >= MAX_LEVEL:
 		print(">>> [CharacterFactory] 合成失败: 已达最高等级")
 		return null
 

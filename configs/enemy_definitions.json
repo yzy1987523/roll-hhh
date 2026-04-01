@@ -1,0 +1,24 @@
+{
+	"enemies": [
+		{"id": 1,  "category": "normal", "name_key": "enemy.1_name",  "desc_key": "enemy.1_desc",  "image": ""},
+		{"id": 2,  "category": "normal", "name_key": "enemy.2_name",  "desc_key": "enemy.2_desc",  "image": ""},
+		{"id": 3,  "category": "normal", "name_key": "enemy.3_name",  "desc_key": "enemy.3_desc",  "image": ""},
+		{"id": 4,  "category": "normal", "name_key": "enemy.4_name",  "desc_key": "enemy.4_desc",  "image": ""},
+		{"id": 5,  "category": "normal", "name_key": "enemy.5_name",  "desc_key": "enemy.5_desc",  "image": ""},
+		{"id": 6,  "category": "normal", "name_key": "enemy.6_name",  "desc_key": "enemy.6_desc",  "image": ""},
+		{"id": 7,  "category": "normal", "name_key": "enemy.7_name",  "desc_key": "enemy.7_desc",  "image": ""},
+		{"id": 8,  "category": "normal", "name_key": "enemy.8_name",  "desc_key": "enemy.8_desc",  "image": ""},
+		{"id": 9,  "category": "normal", "name_key": "enemy.9_name",  "desc_key": "enemy.9_desc",  "image": ""},
+		{"id": 10, "category": "normal", "name_key": "enemy.10_name", "desc_key": "enemy.10_desc", "image": ""},
+		{"id": 11, "category": "normal", "name_key": "enemy.11_name", "desc_key": "enemy.11_desc", "image": ""},
+		{"id": 12, "category": "normal", "name_key": "enemy.12_name", "desc_key": "enemy.12_desc", "image": ""},
+		{"id": 13, "category": "normal", "name_key": "enemy.13_name", "desc_key": "enemy.13_desc", "image": ""},
+		{"id": 14, "category": "normal", "name_key": "enemy.14_name", "desc_key": "enemy.14_desc", "image": ""},
+		{"id": 15, "category": "elite",  "name_key": "enemy.15_name", "desc_key": "enemy.15_desc", "image": ""},
+		{"id": 16, "category": "elite",  "name_key": "enemy.16_name", "desc_key": "enemy.16_desc", "image": ""},
+		{"id": 17, "category": "elite",  "name_key": "enemy.17_name", "desc_key": "enemy.17_desc", "image": ""},
+		{"id": 18, "category": "elite",  "name_key": "enemy.18_name", "desc_key": "enemy.18_desc", "image": ""},
+		{"id": 19, "category": "boss",   "name_key": "enemy.19_name", "desc_key": "enemy.19_desc", "image": ""},
+		{"id": 20, "category": "boss",   "name_key": "enemy.20_name", "desc_key": "enemy.20_desc", "image": ""}
+	]
+}
