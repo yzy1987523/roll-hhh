@@ -51,6 +51,7 @@ const COLOR_MERGE_HINT := Color("#FF8C00")  # 可合成提示色
 var cell_rects: Array = []     # ColorRect 背景
 var cell_labels: Array = []    # Label 角色信息
 var cell_panels: Array = []    # PanelContainer 格子容器
+var cell_sprites: Array = []   # TextureRect 角色精灵图
 
 # ---- 选中状态 (任务 2.3 拖拽) ----
 var selected_index: int = -1   # 当前选中的棋盘格索引, -1=无选中
@@ -77,6 +78,17 @@ const ITEM_SLOT_COUNT := 3
 var item_slot_nodes: Array = []
 var item_slot_labels: Array = []
 var item_slot_overlays: Array = []
+
+# ---- 道具详情弹窗 ----
+var item_detail_popup: PanelContainer = null
+var item_detail_backdrop: Control = null
+var item_detail_popup_slot: int = -1
+var item_detail_visible: bool = false
+
+# ---- 目标选择指针 ----
+var target_cursor: Control = null
+var is_selecting_target: bool = false
+var target_select_item_slot: int = -1
 
 # ---- 教程系统 ----
 var tutorial_instance: Control = null
@@ -123,6 +135,8 @@ func _connect_signals() -> void:
 	volume_slider.value_changed.connect(_on_volume_changed)
 	reset_tutorial_button.pressed.connect(_on_reset_tutorial_pressed)
 	close_settings_button.pressed.connect(_on_close_settings)
+	# 语言切换信号
+	LocalizationSystem.language_changed.connect(_on_localization_changed)
 
 
 # ---- 棋盘 UI 构建 ----
@@ -133,6 +147,7 @@ func _setup_board_ui() -> void:
 	cell_rects.clear()
 	cell_labels.clear()
 	cell_panels.clear()
+	cell_sprites.clear()
 
 	grid_container.columns = GRID_SIZE
 
@@ -151,13 +166,27 @@ func _setup_board_ui() -> void:
 		bg.color = COLOR_EMPTY_EVEN if is_even else COLOR_EMPTY_ODD
 		cell.add_child(bg)
 
-		# 角色信息标签
+		# 角色精灵图（覆盖整个格子）
+		var sprite := TextureRect.new()
+		sprite.set_anchors_preset(Control.PRESET_FULL_RECT)
+		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
+		sprite.position = Vector2(0, 0)
+		sprite.pivot_offset = Vector2(CELL_SIZE / 2, CELL_SIZE / 2)  # 以中央为缩放中心
+		sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		sprite.visible = false
+		cell.add_child(sprite)
+
+		# 角色信息标签（覆盖在精灵图下方）
 		var lbl := Label.new()
+		lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+		lbl.anchor_top = 0.6  # 从60%高度开始
+		lbl.anchor_bottom = 1.0
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		lbl.add_theme_font_size_override("font_size", 11)
+		lbl.add_theme_font_size_override("font_size", 10)
 		cell.add_child(lbl)
 
 		# 点击事件
@@ -167,6 +196,7 @@ func _setup_board_ui() -> void:
 		cell_rects.append(bg)
 		cell_labels.append(lbl)
 		cell_panels.append(cell)
+		cell_sprites.append(sprite)
 
 	_refresh_board_display()
 	print(">>> [GameBoard] %dx%d 棋盘格已生成" % [GRID_SIZE, GRID_SIZE])
@@ -237,6 +267,20 @@ func _refresh_dorm_panel() -> void:
 # ---- 棋盘格拖拽处理 (任务 2.3 拖拽/选中) ----
 
 func _on_cell_gui_input(event: InputEvent, cell_index: int) -> void:
+	# 目标选择模式: 点击角色使用道具
+	if is_selecting_target and event is InputEventMouseButton:
+		var mb: InputEventMouseButton = event
+		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
+			var bd: BoardData = GameManager.board_data
+			var ch: DataModels.CharacterData = bd.get_character_at_index(cell_index)
+			if ch != null:
+				_use_item_on_target(cell_index)
+				return
+			else:
+				# 点击空格子取消选择
+				_end_target_selection()
+				return
+
 	var bd: BoardData = GameManager.board_data
 	var ch: DataModels.CharacterData = bd.get_character_at_index(cell_index)
 
@@ -285,25 +329,101 @@ func _handle_cell_action(target_index: int) -> void:
 		return
 
 	if target_ch == null:
-		# 目标为空: 移动
-		var src_pos: Vector2i = BoardData.index_to_pos(selected_index)
-		var tgt_pos: Vector2i = BoardData.index_to_pos(target_index)
-		bd.swap_positions(src_pos, tgt_pos)
-		print(">>> [GameBoard] 移动 %s 从格 %d 到格 %d" % [source_ch.get_job_name(), selected_index, target_index])
+		# 目标为空: 直接移动，无需动画
+		_do_swap_or_move(selected_index, target_index)
+		selected_index = -1
+		_refresh_board_display()
+		_try_advance_tutorial(2)
 	elif target_ch.job == source_ch.job and target_ch.level == source_ch.level:
 		# 同职业同等级: 合成 (任务 2.4)
 		_merge_at(selected_index, target_index)
 	else:
 		# 不同角色: 交换位置
-		var src_pos: Vector2i = BoardData.index_to_pos(selected_index)
-		var tgt_pos: Vector2i = BoardData.index_to_pos(target_index)
-		bd.swap_positions(src_pos, tgt_pos)
-		print(">>> [GameBoard] 交换 格%d ↔ 格%d" % [selected_index, target_index])
+		_play_swap_animation(selected_index, target_index)
+
+
+## 交换角色：被换的角色播放移动动画到源位置
+func _play_swap_animation(src_index: int, tgt_index: int) -> void:
+	# 隐藏拖拽预览
+	if drag_preview != null:
+		drag_preview.queue_free()
+		drag_preview = null
+
+	# 获取被换角色（tgt_index）的sprite和位置
+	var tgt_sprite: Control = cell_sprites[tgt_index]
+	if tgt_sprite == null:
+		_do_swap_or_move(src_index, tgt_index)
+		_refresh_board_display()
+		selected_index = -1
+		_try_advance_tutorial(2)
+		return
+
+	# 记录角色B当前位置（格子tgt_index，即B原来的位置）
+	var b_start_pos: Vector2 = tgt_sprite.global_position
+
+	# 记录角色A目标位置（格子src_index，即A原来的位置，B要去的地方）
+	var b_end_pos: Vector2 = tgt_sprite.global_position  # 临时，后面会重新获取
+
+	# 执行数据交换
+	_do_swap_or_move(src_index, tgt_index)
+
+	# 刷新显示（此时src_index显示被换的角色B，tgt_index显示源角色A）
+	_refresh_board_display()
+
+	# 获取角色A的目标位置（B要去的位置 = A原来的位置 = src_index的位置）
+	var a_pos: Control = cell_sprites[src_index]
+	if a_pos == null or not is_instance_valid(a_pos):
+		selected_index = -1
+		_try_advance_tutorial(2)
+		return
+	b_end_pos = a_pos.global_position
+
+	# 角色B现在在src_index，先设置到B原来的位置（起点）
+	var b_sprite: Control = cell_sprites[src_index]
+	if b_sprite == null or not is_instance_valid(b_sprite):
+		selected_index = -1
+		_try_advance_tutorial(2)
+		return
+	b_sprite.global_position = b_start_pos
+
+	# 把sprite移到父节点最前面，避免被格子背景挡住
+	var parent: Control = b_sprite.get_parent()
+	if parent != null:
+		parent.move_child(b_sprite, parent.get_child_count() - 1)
+
+	# 让B播放移动动画到A原来的位置
+	var tween := create_tween()
+	tween.set_parallel(false)
+	tween.tween_property(b_sprite, "global_position", b_end_pos, 0.2)
+
+	await tween.finished
 
 	selected_index = -1
-	_refresh_board_display()
-	# Tutorial: advance after swap/move (step 2 = position adjustment)
 	_try_advance_tutorial(2)
+
+
+## 执行实际的交换或移动（数据层）
+func _do_swap_or_move(src_index: int, tgt_index: int) -> void:
+	var bd: BoardData = GameManager.board_data
+	var source_ch: DataModels.CharacterData = bd.get_character_at_index(src_index)
+
+	if source_ch == null:
+		return
+
+	var target_ch: DataModels.CharacterData = bd.get_character_at_index(tgt_index)
+
+	if target_ch == null:
+		# 移动
+		var src_pos: Vector2i = BoardData.index_to_pos(src_index)
+		var tgt_pos: Vector2i = BoardData.index_to_pos(tgt_index)
+		bd.swap_positions(src_pos, tgt_pos)
+		print(">>> [GameBoard] 移动 %s 从格 %d 到格 %d" % [source_ch.get_job_name(), src_index, tgt_index])
+	else:
+		# 交换
+		var src_pos: Vector2i = BoardData.index_to_pos(src_index)
+		var tgt_pos: Vector2i = BoardData.index_to_pos(tgt_index)
+		bd.swap_positions(src_pos, tgt_pos)
+		print(">>> [GameBoard] 交换 格%d ↔ 格%d" % [src_index, tgt_index])
 
 
 # ---- 角色合成 (任务 2.4) ----
@@ -332,6 +452,45 @@ func _merge_at(src_index: int, tgt_index: int) -> void:
 
 	# 发出合成信号
 	GameManager.character_merged.emit(merged.level)
+
+	# 刷新棋盘显示
+	_refresh_board_display()
+
+	# 播放合成动画: 0.8 -> 1.1 -> 1.0
+	_play_merge_animation(tgt_index)
+
+
+func _play_merge_animation(cell_index: int) -> void:
+	if cell_index < 0 or cell_index >= cell_sprites.size():
+		print(">>> [Debug] MergeAnim: invalid cell_index %d" % cell_index)
+		return
+	var sprite: Control = cell_sprites[cell_index]
+	if sprite == null:
+		print(">>> [Debug] MergeAnim: sprite is null")
+		return
+
+	print(">>> [Debug] MergeAnim: playing on cell %d" % cell_index)
+
+	# 重置scale
+	sprite.scale = Vector2(1.0, 1.0)
+	# 重置颜色
+	sprite.modulate = Color.WHITE
+
+	# 创建缩放动画 Tween (sequential by default)
+	var tween := create_tween()
+	tween.set_parallel(false)
+
+	# 0.8 -> 1.1 -> 1.0
+	tween.tween_property(sprite, "scale", Vector2(0.8, 0.8), 0.1).from(Vector2(1.0, 1.0))
+	tween.tween_property(sprite, "scale", Vector2(1.1, 1.1), 0.15)
+	tween.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.15)
+
+	# 白色闪烁
+	var tween2 := create_tween()
+	tween2.set_parallel(true)
+	tween2.tween_property(sprite, "modulate", Color(2.0, 2.0, 2.0, 1.0), 0.05)
+	tween2.tween_property(sprite, "modulate", Color(1.0, 1.0, 0.5, 1.0), 0.1)
+	tween2.tween_property(sprite, "modulate", Color.WHITE, 0.25)
 
 
 # ---- 献祭 (任务 2.5) ----
@@ -372,40 +531,36 @@ func _start_drag(cell_index: int, mouse_pos: Vector2) -> void:
 	print(">>> [GameBoard] 开始拖拽格 %d" % cell_index)
 
 
-func _create_drag_preview(cell_index: int) -> Control:
+func _create_drag_preview(cell_index: int, with_outline: bool = false) -> Control:
 	var bd: BoardData = GameManager.board_data
 	var ch: DataModels.CharacterData = bd.get_character_at_index(cell_index)
 
-	var preview := PanelContainer.new()
+	# 根节点只用于定位，不显示背景
+	var preview := Control.new()
 	preview.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
 	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE  # 让事件穿透到下层
 
-	# 背景
-	var bg := ColorRect.new()
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.color = _get_job_color(ch.job)
-	preview.add_child(bg)
+	# 精灵图
+	var sprite_folder: String = ch.get_sprite_folder()
+	var sprite_name: String = ch.get_sprite_path(1, 1)
+	var sprite_path: String = "res://art/sprites/chars/" + sprite_folder + "/" + sprite_name + ".png"
+	var tex := load(sprite_path) if FileAccess.file_exists(sprite_path) else null
+	if tex:
+		var sprite := TextureRect.new()
+		sprite.set_anchors_preset(Control.PRESET_FULL_RECT)
+		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		sprite.texture = tex
 
-	# 标签
-	var lbl := Label.new()
-	lbl.text = "%s\nLv.%d" % [ch.get_job_name(), ch.level]
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
-	lbl.add_theme_font_size_override("font_size", 11)
-	preview.add_child(lbl)
+		# 如果可合成，添加Outline效果
+		if with_outline:
+			var outline_mat := ShaderMaterial.new()
+			outline_mat.shader = preload("res://shaders/outline.gdshader")
+			outline_mat.set_shader_parameter("outline_color", Color(1.0, 0.8, 0.0, 1.0))  # 金色outline
+			outline_mat.set_shader_parameter("outline_width", 3.0)
+			sprite.material = outline_mat
 
-	# 添加阴影效果
-	var shadow := PanelContainer.new()
-	shadow.modulate.a = 0.3
-	shadow.offset_left = 3
-	shadow.offset_top = 3
-	shadow.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
-	var shadow_bg := ColorRect.new()
-	shadow_bg.color = Color(0, 0, 0, 0.5)
-	shadow.add_child(shadow_bg)
-	preview.add_child(shadow)
-	preview.move_child(shadow, 0)
+		preview.add_child(sprite)
 
 	return preview
 
@@ -417,10 +572,11 @@ func _update_drag_preview(mouse_pos: Vector2) -> void:
 
 	# 高亮悬停的格子
 	hover_index = _get_hovered_cell_index(mouse_pos)
-	is_hovering_dorm = _is_hovering_dorm_button(mouse_pos)
+	is_hovering_dorm = _is_near_dorm_button(mouse_pos)
 	_refresh_board_display()
 
-	# 临时高亮目标格子
+	# 临时高亮目标格子 & 更新拖拽预览Outline
+	var is_over_mergeable: bool = false
 	if hover_index >= 0 and hover_index != drag_index:
 		var bd: BoardData = GameManager.board_data
 		var target_ch: DataModels.CharacterData = bd.get_character_at_index(hover_index)
@@ -432,9 +588,16 @@ func _update_drag_preview(mouse_pos: Vector2) -> void:
 		elif target_ch.job == sel_ch.job and target_ch.level == sel_ch.level:
 			# 可合成
 			cell_rects[hover_index].color = COLOR_MERGE_HINT
+			is_over_mergeable = true
 		else:
 			# 交换
 			cell_rects[hover_index].color = Color("#888888")
+
+	# 更新拖拽预览的Outline效果
+	_update_drag_preview_outline(is_over_mergeable)
+
+	# 高亮宿舍按钮（靠近时）
+	_update_dorm_highlight()
 
 
 func _get_hovered_cell_index(mouse_pos: Vector2) -> int:
@@ -453,9 +616,40 @@ func _get_hovered_cell_index(mouse_pos: Vector2) -> int:
 	return row * GRID_SIZE + col
 
 
-func _is_hovering_dorm_button(mouse_pos: Vector2) -> bool:
+func _is_near_dorm_button(mouse_pos: Vector2) -> bool:
+	# 扩展检测区域：宿舍按钮本身 + 周围扩展区域
 	var dorm_rect: Rect2 = dorm_button.get_global_rect()
+	var expand: int = 50  # 扩展50像素
+	dorm_rect.position -= Vector2(expand, expand)
+	dorm_rect.size += Vector2(expand * 2, expand * 2)
 	return dorm_rect.has_point(mouse_pos)
+
+
+func _update_dorm_highlight() -> void:
+	if is_dragging:
+		if is_hovering_dorm:
+			# 高亮：金色调 + 稍亮
+			dorm_button.modulate = Color(1.3, 1.1, 0.7, 1.0)
+		else:
+			# 恢复默认
+			dorm_button.modulate = Color(1.0, 1.0, 1.0, 1.0)
+
+
+func _update_drag_preview_outline(show_outline: bool) -> void:
+	if drag_preview == null:
+		return
+	var sprite: TextureRect = drag_preview.get_child(0) as TextureRect
+	if sprite == null:
+		return
+	if show_outline:
+		if sprite.material == null:
+			var outline_mat := ShaderMaterial.new()
+			outline_mat.shader = preload("res://shaders/outline.gdshader")
+			outline_mat.set_shader_parameter("outline_color", Color(1.0, 0.8, 0.0, 1.0))
+			outline_mat.set_shader_parameter("outline_width", 3.0)
+			sprite.material = outline_mat
+	else:
+		sprite.material = null
 
 
 func _end_drag(_target_index: int) -> void:
@@ -474,6 +668,8 @@ func _end_drag(_target_index: int) -> void:
 	# 检查是否拖放到宿舍
 	if is_hovering_dorm:
 		_drag_to_dorm()
+		# 恢复宿舍按钮颜色
+		dorm_button.modulate = Color(1.0, 1.0, 1.0, 1.0)
 		is_dragging = false
 		drag_index = -1
 		hover_index = -1
@@ -493,6 +689,8 @@ func _end_drag(_target_index: int) -> void:
 	drag_index = -1
 	hover_index = -1
 	is_hovering_dorm = false
+	# 恢复宿舍按钮颜色
+	dorm_button.modulate = Color(1.0, 1.0, 1.0, 1.0)
 	print(">>> [GameBoard] 结束拖拽")
 
 
@@ -501,10 +699,15 @@ func _end_drag(_target_index: int) -> void:
 func _refresh_board_display() -> void:
 	var bd: BoardData = GameManager.board_data
 	for i in range(BoardData.BOARD_SLOTS):
+		@warning_ignore("integer_division")
+		var row := i / GRID_SIZE
+		var col := i % GRID_SIZE
+		var is_even := (row + col) % 2 == 0
+		var empty_color: Color = COLOR_EMPTY_EVEN if is_even else COLOR_EMPTY_ODD
+
 		var ch: DataModels.CharacterData = bd.get_character_at_index(i)
 		if ch != null:
-			var base_color: Color = _get_job_color(ch.job)
-			# 选中高亮
+			# 角色格子：背景使用空格子颜色（不显示职业颜色）
 			if i == selected_index:
 				cell_rects[i].color = COLOR_SELECTED
 			# 可合成提示: 与选中角色同职业同等级
@@ -513,19 +716,29 @@ func _refresh_board_display() -> void:
 				if sel_ch != null and ch.job == sel_ch.job and ch.level == sel_ch.level:
 					cell_rects[i].color = COLOR_MERGE_HINT
 				else:
-					cell_rects[i].color = base_color
+					cell_rects[i].color = empty_color
 			else:
-				cell_rects[i].color = base_color
+				cell_rects[i].color = empty_color
+
+			# 加载角色精灵图
+			var sprite_folder: String = ch.get_sprite_folder()
+			var sprite_name: String = ch.get_sprite_path(1, 1)  # 待机动画第1帧
+			var sprite_path: String = "res://art/sprites/chars/" + sprite_folder + "/" + sprite_name + ".png"
+			var tex_exists: bool = FileAccess.file_exists(sprite_path)
+			var tex := load(sprite_path) if tex_exists else null
+			cell_sprites[i].texture = tex
+			cell_sprites[i].visible = (tex != null)
+			if tex == null:
+				print(">>> [Debug] 精灵图加载失败: %s (职业=%d, 等级=%d, 文件存在=%s)" % [sprite_path, ch.job, ch.level, tex_exists])
+
 			cell_labels[i].text = "%s\nLv.%d\n%d/%d" % [
 				ch.get_job_name(), ch.level, ch.hp, ch.max_hp
 			]
 		else:
-			@warning_ignore("integer_division")
-			var row := i / GRID_SIZE
-			var col := i % GRID_SIZE
-			var is_even := (row + col) % 2 == 0
-			cell_rects[i].color = COLOR_EMPTY_EVEN if is_even else COLOR_EMPTY_ODD
+			cell_rects[i].color = empty_color
 			cell_labels[i].text = ""
+			cell_sprites[i].texture = null
+			cell_sprites[i].visible = false
 
 
 func _get_job_color(job: int) -> Color:
@@ -762,6 +975,7 @@ func _setup_item_slots() -> void:
 		var bg := ColorRect.new()
 		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 		bg.color = Color("#1A2A4A")
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE  # 让点击穿透到slot
 		slot.add_child(bg)
 
 		# 标签显示道具名
@@ -771,6 +985,7 @@ func _setup_item_slots() -> void:
 		lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
 		lbl.add_theme_font_size_override("font_size", 8)
 		lbl.clip_text = true
+		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE  # 让点击穿透到slot
 		slot.add_child(lbl)
 		item_slot_labels.append(lbl)
 
@@ -789,11 +1004,266 @@ func _refresh_item_slots() -> void:
 			item_slot_nodes[i].modulate = Color(0.5, 0.5, 0.5, 0.3)
 
 
+# ---- 道具详情弹窗 ----
+
+func _show_item_detail(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= GameManager.items.size():
+		return
+
+	# 隐藏其他弹窗
+	_hide_item_detail()
+
+	# 创建详情弹窗
+	_create_item_detail_popup(slot_index)
+	item_detail_popup_slot = slot_index
+	item_detail_visible = true
+
+
+func _hide_item_detail() -> void:
+	if item_detail_popup != null:
+		item_detail_popup.queue_free()
+		item_detail_popup = null
+	if item_detail_backdrop != null:
+		item_detail_backdrop.queue_free()
+		item_detail_backdrop = null
+	item_detail_popup_slot = -1
+	item_detail_visible = false
+	_end_target_selection()
+
+
+func _create_item_detail_popup(slot_index: int) -> void:
+	var item: DataModels.ItemData = GameManager.items[slot_index]
+
+	# 背景遮罩
+	item_detail_backdrop = ColorRect.new()
+	item_detail_backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	item_detail_backdrop.color = Color(0.0, 0.0, 0.0, 0.4)
+	item_detail_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	item_detail_backdrop.gui_input.connect(_on_backdrop_input)
+	add_child(item_detail_backdrop)
+	item_detail_backdrop.name = "ItemDetailBackdrop"
+
+	# 详情面板
+	item_detail_popup = PanelContainer.new()
+	item_detail_popup.set_anchors_preset(Control.PRESET_CENTER)
+	item_detail_popup.custom_minimum_size = Vector2(260, 160)
+	item_detail_popup.offset_left = -130
+	item_detail_popup.offset_top = -80
+	item_detail_popup.offset_right = 130
+	item_detail_popup.offset_bottom = 80
+	item_detail_popup.z_index = 100
+	add_child(item_detail_popup)
+
+	# 面板样式
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.12, 0.14, 0.22, 0.98)
+	style.border_color = Color(0.6, 0.5, 0.3, 0.9)
+	style.border_width_left = 2
+	style.border_width_right = 2
+	style.border_width_top = 2
+	style.border_width_bottom = 2
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
+	style.content_margin_left = 16
+	style.content_margin_right = 16
+	style.content_margin_top = 12
+	style.content_margin_bottom = 12
+	item_detail_popup.add_theme_stylebox_override("panel", style)
+
+	var vbox := VBoxContainer.new()
+	item_detail_popup.add_child(vbox)
+	vbox.add_theme_constant_override("separation", 10)
+
+	# 道具名称
+	var name_lbl := Label.new()
+	name_lbl.text = item.name
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_lbl.add_theme_font_size_override("font_size", 16)
+	name_lbl.add_theme_color_override("font_color", Color(1.0, 0.9, 0.5))
+	vbox.add_child(name_lbl)
+
+	# 道具描述
+	var desc_lbl := Label.new()
+	desc_lbl.text = item.description
+	desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc_lbl.custom_minimum_size.y = 50
+	vbox.add_child(desc_lbl)
+
+	# 目标提示
+	var target_lbl := Label.new()
+	var needs_target: bool = _item_needs_target(item.id)
+	if needs_target:
+		target_lbl.text = LocalizationSystem.get_text("items.target_required")
+		target_lbl.add_theme_color_override("font_color", Color(1.0, 0.6, 0.2))
+	else:
+		target_lbl.text = LocalizationSystem.get_text("items.no_target")
+		target_lbl.add_theme_color_override("font_color", Color(0.5, 0.8, 0.5))
+	target_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(target_lbl)
+
+	# 按钮行
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.custom_minimum_size.y = 36
+	vbox.add_child(btn_row)
+
+	# 使用按钮
+	var use_btn := Button.new()
+	use_btn.text = LocalizationSystem.get_text("items.use")
+	use_btn.custom_minimum_size = Vector2(90, 32)
+	use_btn.pressed.connect(_on_item_use_clicked.bind(slot_index))
+	btn_row.add_child(use_btn)
+
+	# 丢弃按钮
+	var discard_btn := Button.new()
+	discard_btn.text = LocalizationSystem.get_text("items.discard")
+	discard_btn.custom_minimum_size = Vector2(90, 32)
+	discard_btn.pressed.connect(_on_item_discard_clicked.bind(slot_index))
+	btn_row.add_child(discard_btn)
+
+	# 关闭按钮
+	var close_btn := Button.new()
+	close_btn.text = LocalizationSystem.get_text("items.close")
+	close_btn.custom_minimum_size = Vector2(90, 32)
+	close_btn.pressed.connect(_hide_item_detail)
+	btn_row.add_child(close_btn)
+
+
+func _on_backdrop_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mb: InputEventMouseButton = event
+		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
+			_hide_item_detail()
+
+
+func _on_item_use_clicked(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= GameManager.items.size():
+		_hide_item_detail()
+		return
+
+	var item: DataModels.ItemData = GameManager.items[slot_index]
+	var needs_target: bool = _item_needs_target(item.id)
+
+	if needs_target:
+		# 需要目标: 进入目标选择模式
+		_hide_item_detail()
+		_start_target_selection(slot_index)
+	else:
+		# 直接使用
+		_use_item_direct(slot_index)
+
+
+func _on_item_discard_clicked(slot_index: int) -> void:
+	_discard_item(slot_index)
+	_hide_item_detail()
+
+
+func _discard_item(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= GameManager.items.size():
+		return
+	GameManager.remove_item(slot_index)
+	_refresh_item_slots()
+	print(">>> [GameBoard] 丢弃道具: %d" % slot_index)
+
+
+func _use_item_direct(slot_index: int) -> void:
+	if slot_index < 0 or slot_index >= GameManager.items.size():
+		return
+
+	var item: DataModels.ItemData = GameManager.items[slot_index]
+	var success: bool = ItemDatabase.use_consumable(item, -1)
+	if success:
+		GameManager.remove_item(slot_index)
+		_refresh_item_slots()
+		_refresh_board_display()
+		print(">>> [GameBoard] 使用道具: %s" % item.name)
+	else:
+		print(">>> [GameBoard] 使用道具失败: %s" % item.name)
+	# 无论成功失败，都隐藏详情弹窗
+	_hide_item_detail()
+
+
+func _use_item_on_target(target_index: int) -> void:
+	var slot_index: int = target_select_item_slot
+	if slot_index < 0 or slot_index >= GameManager.items.size():
+		_end_target_selection()
+		return
+
+	var item: DataModels.ItemData = GameManager.items[slot_index]
+	var success: bool = ItemDatabase.use_consumable(item, target_index)
+	if success:
+		GameManager.remove_item(slot_index)
+		_refresh_item_slots()
+		_refresh_board_display()
+		print(">>> [GameBoard] 对格 %d 使用道具: %s" % [target_index, item.name])
+	else:
+		print(">>> [GameBoard] 使用道具失败: %s" % item.name)
+	# 无论成功失败，都结束目标选择
+	_end_target_selection()
+
+
+func _item_needs_target(item_id: int) -> bool:
+	# 需要指定目标的道具
+	match item_id:
+		1, 2, 3, 11, 13, 14, 15, 16:
+			return true
+	return false
+
+
+# ---- 目标选择模式 ----
+
+func _start_target_selection(item_slot: int) -> void:
+	is_selecting_target = true
+	target_select_item_slot = item_slot
+	_show_target_cursor()
+
+
+func _end_target_selection() -> void:
+	is_selecting_target = false
+	target_select_item_slot = -1
+	_hide_target_cursor()
+
+
+func _show_target_cursor() -> void:
+	if target_cursor == null:
+		target_cursor = Control.new()
+		target_cursor.name = "TargetCursor"
+		target_cursor.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+		var cursor_bg := ColorRect.new()
+		cursor_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		cursor_bg.color = Color(1.0, 0.8, 0.0, 0.15)
+		target_cursor.add_child(cursor_bg)
+
+		var cursor_lbl := Label.new()
+		cursor_lbl.text = LocalizationSystem.get_text("items.select_target")
+		cursor_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		cursor_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		cursor_lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+		cursor_lbl.add_theme_color_override("font_color", Color(1.0, 0.9, 0.2))
+		cursor_lbl.add_theme_font_size_override("font_size", 14)
+		target_cursor.add_child(cursor_lbl)
+
+	add_child(target_cursor)
+	target_cursor.set_anchors_preset(Control.PRESET_FULL_RECT)
+
+
+func _hide_target_cursor() -> void:
+	if target_cursor != null:
+		target_cursor.queue_free()
+		target_cursor = null
+
+
 func _on_item_slot_input(event: InputEvent, slot_index: int) -> void:
 	if event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
 		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
-			_use_item_at_slot(slot_index)
+			_show_item_detail(slot_index)
+		elif mb.button_index == MOUSE_BUTTON_RIGHT and mb.pressed:
+			_discard_item(slot_index)
 
 
 func _use_item_at_slot(slot_index: int) -> void:
@@ -842,6 +1312,8 @@ func _create_item_panel() -> void:
 
 
 func _refresh_item_panel() -> void:
+	if item_panel == null:
+		return
 	for child in item_panel.get_children():
 		child.queue_free()
 
@@ -942,11 +1414,22 @@ func _on_language_toggled() -> void:
 		LocalizationSystem.set_language("zh")
 	else:
 		LocalizationSystem.set_language("en")
+	# 注: language_changed 信号会触发 _on_localization_changed
 
+
+func _on_localization_changed(lang: String) -> void:
 	_update_language_button_text()
 	_update_settings_texts()
 	_refresh_relic_panel()
-	print(">>> [GameBoard] 语言切换为: %s" % LocalizationSystem.current_lang)
+	_update_resource_labels()
+	_refresh_game_board_texts()
+	_refresh_dorm_panel()
+	_refresh_item_slots()
+	_refresh_item_panel()
+	# 如果道具详情弹窗打开，关闭它（下次打开时会用新语言创建）
+	if item_detail_visible:
+		_hide_item_detail()
+	print(">>> [GameBoard] 语言切换为: %s" % lang)
 
 
 func _update_language_button_text() -> void:
@@ -954,6 +1437,18 @@ func _update_language_button_text() -> void:
 		language_button.text = "EN"
 	else:
 		language_button.text = "中文"
+
+
+func _refresh_game_board_texts() -> void:
+	# 更新底部按钮文本
+	spawn_warrior.text = LocalizationSystem.get_text("game_board.spawn_warrior")
+	spawn_mage.text = LocalizationSystem.get_text("game_board.spawn_mage")
+	spawn_priest.text = LocalizationSystem.get_text("game_board.spawn_priest")
+	end_turn_button.text = LocalizationSystem.get_text("game_board.end_turn")
+	back_button.text = LocalizationSystem.get_text("game_board.back")
+	dorm_button.text = LocalizationSystem.get_text("game_board.dorm")
+	shop_button.text = LocalizationSystem.get_text("game_board.shop")
+	encyclopedia_button.text = LocalizationSystem.get_text("game_board.encyclopedia")
 
 
 func _on_volume_changed(value: float) -> void:
