@@ -24,14 +24,6 @@ var target_position: Vector2 = Vector2.ZERO
 var speed: float = 800.0  # 像素/秒
 var is_active: bool = false
 
-# ---- 子弹颜色（按类型） ----
-const BULLET_COLORS: Dictionary = {
-	BulletType.ATTACK: Color("#FF4444"),   # 红色 - 物理攻击
-	BulletType.HEAL: Color("#44FF44"),     # 绿色 - 治疗
-	BulletType.BLESS: Color("#FFD700"),    # 金色 - 祝福
-	BulletType.ENEMY: Color("#9400D3"),    # 紫色 - 敌方子弹
-}
-
 # ---- 子弹精灵路径 ----
 const BULLET_SPRITE_BASE_PATH: String = "res://art/sprites/UI/items/bullet/"
 
@@ -68,9 +60,8 @@ func setup(p_bullet_type: int, p_damage: int, p_target_index: int,
 	# 设置位置
 	global_position = p_source_pos
 
-	# 设置颜色
-	var color: Color = BULLET_COLORS.get(p_bullet_type, Color.WHITE)
-	modulate = color
+	# 设置颜色为白色
+	modulate = Color.WHITE
 
 	# 创建视觉元素
 	_setup_bullet_visual()
@@ -104,10 +95,12 @@ func _setup_bullet_visual() -> void:
 		print(">>> [BattleBullet] 子弹精灵加载失败，使用默认: " + sprite_path)
 
 	add_child(sprite)
+	# 设置子弹尺寸为原来的0.3倍
+	sprite.scale = Vector2(0.3, 0.3)
 
 	# 添加发光效果
 	var glow := PointLight2D.new()
-	glow.color = BULLET_COLORS.get(bullet_type, Color.WHITE)
+	glow.color = Color.WHITE
 	glow.energy = 0.5
 	glow.range_layer_min = -1
 	glow.range_layer_max = 1
@@ -121,6 +114,9 @@ func _physics_process(delta: float) -> void:
 	# 移动向目标
 	var direction: Vector2 = (target_position - global_position).normalized()
 	var distance: float = global_position.distance_to(target_position)
+
+	# 设置子弹旋转，使上方朝向目标
+	rotation = direction.angle() - PI / 2
 
 	if distance < speed * delta:
 		# 到达目标
