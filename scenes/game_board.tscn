@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://blsuwfdclth4a" path="res://scripts/game_board.gd" id="1_game_board"]
 [ext_resource type="Texture2D" uid="uid://kvf818xd21b4" path="res://art/sprites/UI/panels/棋盘格.png" id="2_board"]
+[ext_resource type="Texture2D" uid="uid://dptl0umyb2xch" path="res://art/sprites/UI/panels/bg_0.png" id="2_sax53"]
 [ext_resource type="Texture2D" uid="uid://x4yg0g26r063" path="res://art/sprites/UI/items/smallItem/coin.png" id="3_coin"]
 [ext_resource type="Texture2D" uid="uid://cimhkfb5qgsea" path="res://art/sprites/UI/items/smallItem/engery.png" id="4_energy"]
 [ext_resource type="Texture2D" uid="uid://8q11l3kyangs" path="res://art/sprites/UI/items/smallItem/time.png" id="5_time"]
@@ -10,6 +11,11 @@
 [ext_resource type="Texture2D" uid="uid://bp2gkj73ffk72" path="res://art/sprites/UI/items/smallItem/dorm.png" id="8_dorm"]
 [ext_resource type="Texture2D" uid="uid://co48vbq7kyocc" path="res://art/sprites/UI/items/smallItem/Encyclopedia.png" id="9_encyclopedia"]
 [ext_resource type="Texture2D" uid="uid://x0btk78hil8p" path="res://art/sprites/UI/items/smallItem/close.png" id="10_close"]
+[ext_resource type="Texture2D" uid="uid://ht2vknq8ek0k" path="res://art/sprites/UI/items/item/item_013.png" id="12_item"]
+[ext_resource type="Texture2D" uid="uid://wxotl5d1lxgm" path="res://art/sprites/UI/items/smallItem/spawner0.png" id="13_cac7a"]
+[ext_resource type="Texture2D" uid="uid://brok1s4jfwo2d" path="res://art/sprites/UI/items/item/item_033.png" id="13_sacrifice"]
+[ext_resource type="Texture2D" uid="uid://b4u4vkmgj8nuw" path="res://art/sprites/UI/items/smallItem/spawner1.png" id="14_8auva"]
+[ext_resource type="Texture2D" uid="uid://c25vh10f0w554" path="res://art/sprites/UI/items/smallItem/spawner2.png" id="15_hrnlr"]
 
 [node name="GameBoard" type="Control" unique_id=2062969073]
 layout_mode = 3
@@ -27,7 +33,11 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.12, 0.12, 0.18, 1)
+color = Color(0.34917623, 0.069724604, 0.40591022, 1)
+
+[node name="BG" type="Sprite2D" parent="." unique_id=951053424]
+position = Vector2(550, 980)
+texture = ExtResource("2_sax53")
 
 [node name="BoardSprite" type="Sprite2D" parent="." unique_id=1798221776]
 position = Vector2(543.99994, 1184.9999)
@@ -44,80 +54,105 @@ grow_vertical = 2
 theme_override_constants/separation = 4
 
 [node name="TopBar" type="HBoxContainer" parent="MainLayout" unique_id=1882207637]
-custom_minimum_size = Vector2(0, 80)
+custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 theme_override_constants/separation = 12
 
+[node name="LeftMargin" type="Control" parent="MainLayout/TopBar" unique_id=77034000]
+custom_minimum_size = Vector2(10, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+
 [node name="GoldContainer" type="HBoxContainer" parent="MainLayout/TopBar" unique_id=77034164]
 layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 4
 
 [node name="GoldIcon" type="TextureRect" parent="MainLayout/TopBar/GoldContainer" unique_id=77034165]
-custom_minimum_size = Vector2(32, 32)
+custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
+size_flags_vertical = 3
 texture = ExtResource("3_coin")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="GoldLabel" type="Label" parent="MainLayout/TopBar/GoldContainer" unique_id=77034166]
+custom_minimum_size = Vector2(120, 0)
 layout_mode = 2
-text = "0"
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 40
+text = "20000"
+vertical_alignment = 1
 
 [node name="EnergyContainer" type="HBoxContainer" parent="MainLayout/TopBar" unique_id=1469920230]
 layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 4
 
 [node name="EnergyIcon" type="TextureRect" parent="MainLayout/TopBar/EnergyContainer" unique_id=1469920231]
-custom_minimum_size = Vector2(32, 32)
+custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
+size_flags_vertical = 3
 texture = ExtResource("4_energy")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="EnergyLabel" type="Label" parent="MainLayout/TopBar/EnergyContainer" unique_id=1469920232]
+custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 40
 text = "36/36"
+vertical_alignment = 1
 
 [node name="RoundContainer" type="HBoxContainer" parent="MainLayout/TopBar" unique_id=1383262398]
 layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 4
 
 [node name="RoundIcon" type="TextureRect" parent="MainLayout/TopBar/RoundContainer" unique_id=1383262399]
-custom_minimum_size = Vector2(32, 32)
+custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
+size_flags_vertical = 3
 texture = ExtResource("5_time")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="RoundLabel" type="Label" parent="MainLayout/TopBar/RoundContainer" unique_id=1383262400]
+custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
-text = "1"
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 40
+text = "36/36"
+vertical_alignment = 1
 
 [node name="Spacer" type="Control" parent="MainLayout/TopBar" unique_id=1825867427]
 layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="SettingsButton" type="Button" parent="MainLayout/TopBar" unique_id=2027233340]
+custom_minimum_size = Vector2(128, 128)
 layout_mode = 2
-text = "Settings"
+size_flags_horizontal = 0
+size_flags_vertical = 3
+theme_override_colors/icon_pressed_color = Color(0.76240367, 0.76240367, 0.76240367, 1)
+theme_override_colors/icon_hover_color = Color(0.8646748, 0.86467534, 0.86467487, 1)
 icon = ExtResource("6_setting")
+flat = true
+expand_icon = true
+
+[node name="RightMargin" type="Control" parent="MainLayout/TopBar" unique_id=77034001]
+custom_minimum_size = Vector2(10, 0)
+layout_mode = 2
+size_flags_horizontal = 0
 
 [node name="RelicBar" type="VBoxContainer" parent="MainLayout" unique_id=308367481]
 layout_mode = 2
 theme_override_constants/separation = 0
 
-[node name="RelicHeader" type="HBoxContainer" parent="MainLayout/RelicBar" unique_id=1164852766]
-custom_minimum_size = Vector2(0, 72)
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="RelicButton" type="Button" parent="MainLayout/RelicBar/RelicHeader" unique_id=1164852767]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Relics (Empty)"
-
 [node name="RelicPanel" type="PanelContainer" parent="MainLayout/RelicBar" unique_id=308367482]
-custom_minimum_size = Vector2(0, 200)
+modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(0, 144)
 layout_mode = 2
 
 [node name="ScrollContainer" type="ScrollContainer" parent="MainLayout/RelicBar/RelicPanel" unique_id=308367483]
@@ -141,17 +176,26 @@ custom_minimum_size = Vector2(240, 72)
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="ItemSlot0" type="PanelContainer" parent="MainLayout/MiddleBar/ItemBar" unique_id=657005286]
+[node name="ItemSlot0" type="TextureRect" parent="MainLayout/MiddleBar/ItemBar" unique_id=657005286]
 custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
+texture = ExtResource("12_item")
+expand_mode = 1
+stretch_mode = 5
 
-[node name="ItemSlot1" type="PanelContainer" parent="MainLayout/MiddleBar/ItemBar" unique_id=657005287]
+[node name="ItemSlot1" type="TextureRect" parent="MainLayout/MiddleBar/ItemBar" unique_id=657005287]
 custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
+texture = ExtResource("12_item")
+expand_mode = 1
+stretch_mode = 5
 
-[node name="ItemSlot2" type="PanelContainer" parent="MainLayout/MiddleBar/ItemBar" unique_id=657005288]
+[node name="ItemSlot2" type="TextureRect" parent="MainLayout/MiddleBar/ItemBar" unique_id=657005288]
 custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
+texture = ExtResource("12_item")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="DormButton" type="Button" parent="MainLayout/MiddleBar" unique_id=656967448]
 layout_mode = 2
@@ -190,19 +234,28 @@ layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="SpawnWarrior" type="Button" parent="MainLayout/BottomBar/SpawnRow" unique_id=1637935323]
+custom_minimum_size = Vector2(144, 144)
 layout_mode = 2
-size_flags_horizontal = 3
-text = "🗡️ 战士"
+icon = ExtResource("13_cac7a")
+flat = true
+icon_alignment = 1
+expand_icon = true
 
 [node name="SpawnMage" type="Button" parent="MainLayout/BottomBar/SpawnRow" unique_id=1433385036]
+custom_minimum_size = Vector2(144, 144)
 layout_mode = 2
-size_flags_horizontal = 3
-text = "🔮 法师"
+icon = ExtResource("14_8auva")
+flat = true
+icon_alignment = 1
+expand_icon = true
 
 [node name="SpawnPriest" type="Button" parent="MainLayout/BottomBar/SpawnRow" unique_id=6684100]
+custom_minimum_size = Vector2(144, 144)
 layout_mode = 2
-size_flags_horizontal = 3
-text = "⛪ 牧师"
+icon = ExtResource("15_hrnlr")
+flat = true
+icon_alignment = 1
+expand_icon = true
 
 [node name="DetailActionBar" type="HBoxContainer" parent="MainLayout" unique_id=1457240658]
 custom_minimum_size = Vector2(0, 120)
@@ -222,6 +275,13 @@ vertical_alignment = 1
 [node name="Spacer" type="Control" parent="MainLayout/DetailActionBar" unique_id=1077045357]
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="SacrificeButton" type="Button" parent="MainLayout/DetailActionBar" unique_id=945550919]
+custom_minimum_size = Vector2(150, 80)
+layout_mode = 2
+size_flags_vertical = 3
+icon = ExtResource("13_sacrifice")
+flat = true
 
 [node name="EndTurnButton" type="Button" parent="MainLayout/DetailActionBar" unique_id=945550920]
 custom_minimum_size = Vector2(300, 0)

@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://c7leaderboard_scene"]
+[gd_scene format=3 uid="uid://dqmorlpck6q0g"]
 
-[ext_resource type="Script" path="res://scripts/leaderboard_scene.gd" id="1_lb"]
+[ext_resource type="Script" uid="uid://cgkfllt2kls8b" path="res://scripts/leaderboard_scene.gd" id="1_lb"]
 
-[node name="LeaderboardScene" type="Control"]
+[node name="LeaderboardScene" type="Control" unique_id=1926520040]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,14 +11,16 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_lb")
 
-[node name="BgColor" type="ColorRect" parent="."]
+[node name="BgColor" type="ColorRect" parent="." unique_id=1139535051]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 color = Color(0.08, 0.06, 0.12, 1)
 
-[node name="VBox" type="VBoxContainer" parent="."]
+[node name="VBox" type="VBoxContainer" parent="." unique_id=1389913578]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -27,46 +29,46 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 8
 
-[node name="TopBar" type="HBoxContainer" parent="VBox"]
-layout_mode = 2
+[node name="TopBar" type="HBoxContainer" parent="VBox" unique_id=141213790]
 custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="BackButton" type="Button" parent="VBox/TopBar"]
+[node name="BackButton" type="Button" parent="VBox/TopBar" unique_id=1880818346]
 layout_mode = 2
 text = "返回"
 
-[node name="TitleLabel" type="Label" parent="VBox/TopBar"]
+[node name="TitleLabel" type="Label" parent="VBox/TopBar" unique_id=1303717137]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "排行榜"
 horizontal_alignment = 1
 
-[node name="PlayerInfo" type="Label" parent="VBox"]
+[node name="PlayerInfo" type="Label" parent="VBox" unique_id=1884588090]
 layout_mode = 2
-horizontal_alignment = 1
 text = "玩家: Guest  |  最高循环: 0"
+horizontal_alignment = 1
 
-[node name="ScrollContainer" type="ScrollContainer" parent="VBox"]
+[node name="ScrollContainer" type="ScrollContainer" parent="VBox" unique_id=1484215333]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="LeaderList" type="VBoxContainer" parent="VBox/ScrollContainer"]
+[node name="LeaderList" type="VBoxContainer" parent="VBox/ScrollContainer" unique_id=28622275]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 4
 
-[node name="BottomBar" type="HBoxContainer" parent="VBox"]
-layout_mode = 2
+[node name="BottomBar" type="HBoxContainer" parent="VBox" unique_id=585514942]
 custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="NicknameInput" type="LineEdit" parent="VBox/BottomBar"]
+[node name="NicknameInput" type="LineEdit" parent="VBox/BottomBar" unique_id=177847983]
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "输入昵称..."
 
-[node name="SetNameButton" type="Button" parent="VBox/BottomBar"]
+[node name="SetNameButton" type="Button" parent="VBox/BottomBar" unique_id=2064595508]
 layout_mode = 2
 text = "设置昵称"

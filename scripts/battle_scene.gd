@@ -954,12 +954,12 @@ func _execute_enemy_attack_phase() -> void:
 	cols.sort()  # 从左到右
 
 	# 发射子弹到各列
-	# 敌方子弹参数: job=3(敌人), tier根据category
+	# 敌方子弹参数: job=3(敌人), tier根据type
 	var enemy_job: int = 3  # ENEMY
 	var enemy_tier: int = 1  # 默认 normal
-	match engine.enemy.category:
-		"elite": enemy_tier = 2
-		"boss": enemy_tier = 3
+	match engine.enemy.type:
+		EnemyFactory.TYPE_ELITE: enemy_tier = 2
+		EnemyFactory.TYPE_BOSS: enemy_tier = 3
 
 	for i in range(bullet_count):
 		var col: int = cols[i]

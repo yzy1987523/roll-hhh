@@ -7,8 +7,8 @@ extends Control
 @onready var gold_label: Label = $MainLayout/TopBar/GoldContainer/GoldLabel
 @onready var energy_label: Label = $MainLayout/TopBar/EnergyContainer/EnergyLabel
 @onready var round_label: Label = $MainLayout/TopBar/RoundContainer/RoundLabel
+# ---- 节点引用 ----
 @onready var settings_button: Button = $MainLayout/TopBar/SettingsButton
-@onready var relic_button: Button = $MainLayout/RelicBar/RelicHeader/RelicButton
 @onready var relic_panel: PanelContainer = $MainLayout/RelicBar/RelicPanel
 @onready var relic_list: HFlowContainer = $MainLayout/RelicBar/RelicPanel/ScrollContainer/RelicList
 @onready var grid_container: GridContainer = $MainLayout/BoardCenter/GridContainer
@@ -17,6 +17,7 @@ extends Control
 @onready var spawn_mage: Button = $MainLayout/BottomBar/SpawnRow/SpawnMage
 @onready var spawn_priest: Button = $MainLayout/BottomBar/SpawnRow/SpawnPriest
 @onready var end_turn_button: Button = $MainLayout/DetailActionBar/EndTurnButton
+@onready var sacrifice_button: Button = $MainLayout/DetailActionBar/SacrificeButton
 @onready var item_bar: HBoxContainer = $MainLayout/MiddleBar/ItemBar
 @onready var dorm_button: Button = $MainLayout/MiddleBar/DormButton
 @onready var shop_button: Button = $MainLayout/MiddleBar/ShopButton
@@ -82,9 +83,6 @@ var tutorial_overlay = null
 var dorm_panel: PanelContainer = null
 var dorm_visible: bool = false
 
-# ---- 遗物栏面板 ----
-var relic_panel_visible: bool = false
-
 # ---- 道具栏格子 ----
 const ITEM_SLOT_COUNT := 3
 var item_slot_nodes: Array = []
@@ -134,9 +132,9 @@ func _connect_signals() -> void:
 	spawn_mage.pressed.connect(_on_spawn_pressed.bind(DataModels.Job.MAGE))
 	spawn_priest.pressed.connect(_on_spawn_pressed.bind(DataModels.Job.PRIEST))
 	end_turn_button.pressed.connect(_on_end_turn_pressed)
+	sacrifice_button.pressed.connect(_on_sacrifice_button_pressed)
 	dorm_button.pressed.connect(_on_dorm_pressed)
 	shop_button.pressed.connect(_on_shop_pressed)
-	relic_button.pressed.connect(_on_relic_toggle)
 	settings_button.pressed.connect(_on_settings_pressed)
 	encyclopedia_button.pressed.connect(_on_encyclopedia_pressed)
 	GameManager.gold_changed.connect(_on_gold_changed)
@@ -1142,21 +1140,10 @@ func _drag_to_dorm() -> void:
 
 # ---- 遗物栏操作（常驻显示）----
 
-func _on_relic_toggle() -> void:
-	relic_panel_visible = !relic_panel_visible
-	relic_panel.visible = relic_panel_visible
-	if relic_panel_visible:
-		_refresh_relic_panel()
-
-
 func _refresh_relic_panel() -> void:
 	# 清空旧内容
 	for child in relic_list.get_children():
 		child.queue_free()
-
-	# 更新按钮文本
-	var relic_count: int = GameManager.relics.size()
-	relic_button.text = LocalizationSystem.get_text("game_board.relics", {"count": relic_count})
 
 	# 显示遗物列表
 	for i in range(GameManager.relics.size()):
@@ -1246,7 +1233,7 @@ func _setup_item_slots() -> void:
 	item_slot_overlays.clear()
 
 	for i in range(ITEM_SLOT_COUNT):
-		var slot: PanelContainer = item_bar.get_child(i)
+		var slot: Control = item_bar.get_child(i)
 		item_slot_nodes.append(slot)
 
 		# 清除旧内容
