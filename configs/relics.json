@@ -25,6 +25,25 @@
 		{"id": 23, "stackable": false, "sprite": "element01_006"},
 		{"id": 24, "stackable": false, "sprite": "element06_003"},
 		{"id": 25, "stackable": false, "sprite": "element01_007"},
-		{"id": 26, "stackable": true, "sprite": "element06_004"}
+		{"id": 26, "stackable": true, "sprite": "element06_004"},
+		{"id": 27, "stackable": false, "sprite": "element03_001", "effect_type": "berserker_rage", "trigger": "on_low_hp", "atk_bonus": 5, "hp_threshold": 0.3},
+		{"id": 28, "stackable": false, "sprite": "element03_011", "effect_type": "arcane_mastery", "trigger": "on_attack", "damage_bonus": 2, "cost_reduction": 1},
+		{"id": 29, "stackable": false, "sprite": "element03_012", "effect_type": "divine_blessing", "trigger": "on_death_save", "heal_amount": 5, "chance": 0.3},
+		{"id": 30, "stackable": false, "sprite": "element03_019", "effect_type": "time_warp", "trigger": "on_round_start", "extra_turn_chance": 0.15},
+		{"id": 31, "stackable": false, "sprite": "element03_020", "effect_type": "poison_master", "trigger": "on_attack", "poison_stacks": 2},
+		{"id": 32, "stackable": false, "sprite": "element03_021", "effect_type": "burn_master", "trigger": "on_attack", "burn_damage": 2, "burn_duration": 2},
+		{"id": 33, "stackable": false, "sprite": "element04_001", "effect_type": "boss_slayer", "trigger": "on_attack_boss", "damage_bonus": 0.5, "lifesteal": 0.3},
+		{"id": 34, "stackable": false, "sprite": "element04_002", "effect_type": "elite_hunter", "trigger": "on_attack_elite", "damage_bonus": 0.3, "def_ignore": 1},
+		{"id": 35, "stackable": true, "sprite": "element04_003", "effect_type": "starter_bonus", "start_gold": 5, "start_xp": 2},
+		{"id": 36, "stackable": false, "sprite": "element04_020", "effect_type": "gold_rush", "trigger": "on_kill", "gold_bonus": 3},
+		{"id": 37, "stackable": false, "sprite": "element04_031", "effect_type": "shield_wall", "trigger": "on_round_start", "shield_amount": 3, "duration": 1},
+		{"id": 38, "stackable": false, "sprite": "element04_032", "effect_type": "reflect_damage", "trigger": "on_hit_received", "reflect_ratio": 0.2},
+		{"id": 39, "stackable": false, "sprite": "element04_033", "effect_type": "blade_dancer", "trigger": "on_attack", "extra_attack_chance": 0.2},
+		{"id": 40, "stackable": false, "sprite": "element04_034", "effect_type": "execute", "trigger": "on_attack", "execute_threshold": 0.2, "execute_damage": 2.0},
+		{"id": 41, "stackable": false, "sprite": "element04_049", "effect_type": "lucky", "trigger": "on_any", "crit_chance_bonus": 0.1},
+		{"id": 42, "stackable": false, "sprite": "element04_050", "effect_type": "quick_hands", "trigger": "on_shop", "discount": 0.1},
+		{"id": 43, "stackable": false, "sprite": "element04_051", "effect_type": "meta_growth", "trigger": "on_level_up", "stat_bonus": 1},
+		{"id": 44, "stackable": false, "sprite": "element04_052", "effect_type": "endless_hunger", "trigger": "on_kill", "heal_on_kill": 2},
+		{"id": 45, "stackable": false, "sprite": "element05_002", "effect_type": "boss_companion", "trigger": "on_battle_start", "summon_boss": true}
 	]
 }

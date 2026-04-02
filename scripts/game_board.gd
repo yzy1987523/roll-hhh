@@ -4,15 +4,15 @@ extends Control
 ## 任务 2.1-2.5: UI + 生成 + 拖拽 + 合成 + 献祭
 
 # ---- 节点引用 ----
-@onready var gold_label: Label = $MainLayout/TopBar/GoldLabel
-@onready var energy_label: Label = $MainLayout/TopBar/EnergyLabel
-@onready var round_label: Label = $MainLayout/TopBar/RoundLabel
+@onready var gold_label: Label = $MainLayout/TopBar/GoldContainer/GoldLabel
+@onready var energy_label: Label = $MainLayout/TopBar/EnergyContainer/EnergyLabel
+@onready var round_label: Label = $MainLayout/TopBar/RoundContainer/RoundLabel
 @onready var settings_button: Button = $MainLayout/TopBar/SettingsButton
 @onready var relic_button: Button = $MainLayout/RelicBar/RelicHeader/RelicButton
 @onready var relic_panel: PanelContainer = $MainLayout/RelicBar/RelicPanel
 @onready var relic_list: HFlowContainer = $MainLayout/RelicBar/RelicPanel/ScrollContainer/RelicList
 @onready var grid_container: GridContainer = $MainLayout/BoardCenter/GridContainer
-@onready var board_sprite: Sprite2D = %BoardSprite
+@onready var board_sprite: Sprite2D = $BoardSprite
 @onready var spawn_warrior: Button = $MainLayout/BottomBar/SpawnRow/SpawnWarrior
 @onready var spawn_mage: Button = $MainLayout/BottomBar/SpawnRow/SpawnMage
 @onready var spawn_priest: Button = $MainLayout/BottomBar/SpawnRow/SpawnPriest
@@ -40,7 +40,8 @@ extends Control
 
 # ---- 常量 ----
 const GRID_SIZE := 6
-const CELL_SIZE := 108
+const CELL_SIZE := 144
+const CHAR_SIZE := 140
 
 # ---- 棋盘格子颜色 ----
 const COLOR_EMPTY_EVEN := Color("#3A5A8A")
@@ -176,10 +177,10 @@ func _setup_board_ui() -> void:
 
 		# 角色精灵图（覆盖整个格子）
 		var sprite := TextureRect.new()
-		sprite.set_anchors_preset(Control.PRESET_CENTER)
+		sprite.set_anchors_preset(Control.PRESET_FULL_RECT)
 		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
+		sprite.custom_minimum_size = Vector2(CHAR_SIZE, CHAR_SIZE)
 		sprite.position = Vector2(0, 0)
 		sprite.pivot_offset = Vector2(CELL_SIZE / 2, CELL_SIZE / 2)  # 以中央为缩放中心
 		sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -410,9 +411,15 @@ func _handle_cell_action(target_index: int) -> void:
 		_refresh_board_display()
 		_update_character_detail_panel()
 	else:
-		# 不同角色: 交换位置
-		_play_swap_animation(selected_index, target_index)
-		# 交换后源位置（现在的目标位置）保持选中
+		# 不同角色: 尝试找最近空格移动被换角色，没有空格才交换
+		var nearest_empty: int = _find_nearest_empty_cell(target_index)
+		if nearest_empty >= 0:
+			# 有空格: 被换角色移动到空格，源角色移动到目标位置
+			_play_displace_to_empty_animation(selected_index, target_index, nearest_empty)
+		else:
+			# 没空格: 交换位置
+			_play_swap_animation(selected_index, target_index)
+		# 操作后目标位置保持选中
 		selected_index = target_index
 		_refresh_board_display()
 		_update_character_detail_panel()
@@ -482,6 +489,61 @@ func _play_swap_animation(src_index: int, tgt_index: int) -> void:
 
 	selected_index = -1
 	_try_advance_tutorial(2)
+
+
+## 查找最近空格（排除指定单元格）
+func _find_nearest_empty_cell(exclude_index: int) -> int:
+	var bd: BoardData = GameManager.board_data
+	var tgt_pos: Vector2i = BoardData.index_to_pos(exclude_index)
+
+	var nearest: int = -1
+	var nearest_dist: float = INF
+
+	for i in range(BoardData.BOARD_SLOTS):
+		if i == exclude_index:
+			continue
+		if bd.get_character_at_index(i) == null:
+			var dist: float = (BoardData.index_to_pos(i) - tgt_pos).length()
+			if dist < nearest_dist:
+				nearest_dist = dist
+				nearest = i
+
+	return nearest
+
+
+## 被换角色移动到空格动画
+func _play_displace_to_empty_animation(src_index: int, tgt_index: int, empty_index: int) -> void:
+	# 隐藏拖拽预览
+	if drag_preview != null:
+		drag_preview.queue_free()
+		drag_preview = null
+
+	# 数据层: src -> tgt, tgt -> empty
+	_do_swap_and_displace(src_index, tgt_index, empty_index)
+
+	# 刷新显示
+	_refresh_board_display()
+
+
+## 执行交换并移动到空格（数据层）
+func _do_swap_and_displace(src_index: int, tgt_index: int, empty_index: int) -> void:
+	var bd: BoardData = GameManager.board_data
+	var src_ch: DataModels.CharacterData = bd.get_character_at_index(src_index)
+	var tgt_ch: DataModels.CharacterData = bd.get_character_at_index(tgt_index)
+
+	if src_ch == null or tgt_ch == null:
+		return
+
+	# tgt角色移动到empty
+	var tgt_pos: Vector2i = BoardData.index_to_pos(tgt_index)
+	var empty_pos: Vector2i = BoardData.index_to_pos(empty_index)
+	bd.swap_positions(tgt_pos, empty_pos)
+
+	# src角色移动到tgt
+	var src_pos: Vector2i = BoardData.index_to_pos(src_index)
+	bd.swap_positions(src_pos, tgt_pos)
+
+	print(">>> [GameBoard] 置换: 格%d→格%d, 格%d→格%d(空格)" % [tgt_index, empty_index, src_index, tgt_index])
 
 
 ## 执行实际的交换或移动（数据层）
@@ -648,13 +710,14 @@ func _create_drag_preview(cell_index: int, with_outline: bool = false) -> Contro
 	var sprite_folder: String = ch.get_sprite_folder()
 	var sprite_name: String = ch.get_sprite_path(1, 1)
 	var sprite_path: String = "res://art/sprites/chars/" + sprite_folder + "/" + sprite_name + ".png"
-	var tex := load(sprite_path) if FileAccess.file_exists(sprite_path) else null
+	var tex := load(sprite_path) if ResourceLoader.exists(sprite_path) else null
 	if tex:
 		var sprite := TextureRect.new()
-		sprite.set_anchors_preset(Control.PRESET_CENTER)
+		sprite.set_anchors_preset(Control.PRESET_FULL_RECT)
 		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		sprite.texture = tex
+		sprite.custom_minimum_size = Vector2(CHAR_SIZE, CHAR_SIZE)
 
 		# 如果可合成，添加Outline效果
 		if with_outline:
@@ -815,7 +878,7 @@ func _refresh_board_display() -> void:
 			var sprite_folder: String = ch.get_sprite_folder()
 			var sprite_name: String = ch.get_sprite_path(1, 1)  # 待机动画第1帧
 			var sprite_path: String = "res://art/sprites/chars/" + sprite_folder + "/" + sprite_name + ".png"
-			var tex_exists: bool = FileAccess.file_exists(sprite_path)
+			var tex_exists: bool = ResourceLoader.exists(sprite_path)
 			var tex := load(sprite_path) if tex_exists else null
 			cell_sprites[i].texture = tex
 			cell_sprites[i].visible = (tex != null)
@@ -948,7 +1011,7 @@ func _play_spawn_animation(ch: DataModels.CharacterData, start_pos: Vector2, end
 	var sprite_folder: String = ch.get_sprite_folder()
 	var sprite_name: String = ch.get_sprite_path(1, 1)
 	var sprite_path: String = "res://art/sprites/chars/" + sprite_folder + "/" + sprite_name + ".png"
-	if FileAccess.file_exists(sprite_path):
+	if ResourceLoader.exists(sprite_path):
 		anim_sprite.texture = load(sprite_path)
 
 	add_child(anim_sprite)

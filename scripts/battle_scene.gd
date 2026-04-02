@@ -51,7 +51,8 @@ extends Control
 
 # ---- 常量 ----
 const GRID_SIZE := 6
-const CELL_SIZE := 60
+const CELL_SIZE := 144
+const CHAR_SIZE := 140
 const BASE_TURN_DELAY := 0.5  # 播放模式每回合间隔(秒)
 
 # ---- 颜色 ----
@@ -395,10 +396,10 @@ func _setup_board_display() -> void:
 
 		# 精灵图
 		var sprite := TextureRect.new()
-		sprite.set_anchors_preset(Control.PRESET_CENTER)
+		sprite.set_anchors_preset(Control.PRESET_FULL_RECT)
 		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
+		sprite.custom_minimum_size = Vector2(CHAR_SIZE, CHAR_SIZE)
 		sprite.position = Vector2(0, 0)
 		sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		sprite.visible = false
@@ -694,7 +695,7 @@ func _refresh_board_display() -> void:
 				var sprite_folder: String = ch.get_sprite_folder()
 				var sprite_name: String = ch.get_sprite_path(1, 1)
 				var sprite_path: String = "res://art/sprites/chars/" + sprite_folder + "/" + sprite_name + ".png"
-				var tex := load(sprite_path) if FileAccess.file_exists(sprite_path) else null
+				var tex := load(sprite_path) if ResourceLoader.exists(sprite_path) else null
 				cell_sprites[i].texture = tex
 				cell_sprites[i].visible = (tex != null)
 			else:
@@ -784,10 +785,17 @@ func _play_attack_animation(cell_index: int) -> void:
 
 
 ## 发射子弹（从源头到目标）
-func _fire_bullet(bullet_type: int, damage: int, source_pos: Vector2, target_pos: Vector2, target_idx: int = -1) -> void:
+## @param bullet_type: 子弹类型 (ATTACK/HEAL/BLESS/ENEMY)
+## @param damage: 伤害值
+## @param source_pos: 起始位置
+## @param target_pos: 目标位置
+## @param target_idx: 目标棋盘索引
+## @param job: 职业 (0=战士, 1=法师, 2=牧师, 3=敌人)
+## @param tier: 等级 (1=原职/普通, 2=转职/精英, 3=高阶/Boss)
+func _fire_bullet(bullet_type: int, damage: int, source_pos: Vector2, target_pos: Vector2, target_idx: int = -1, job: int = 0, tier: int = 1) -> void:
 	var bullet = bullet_pool.get_bullet()
 
-	bullet.setup(bullet_type, damage, target_idx, source_pos, target_pos)
+	bullet.setup(bullet_type, damage, target_idx, source_pos, target_pos, job, tier)
 
 	# 连接信号（确保不重复连接）
 	if not bullet.bullet_hit.is_connected(_on_bullet_hit):
@@ -884,6 +892,16 @@ func _execute_player_attack_phase() -> void:
 		if ItemDatabase.has_relic(23, GameManager.relics):
 			damage += 1
 
+		# 计算子弹职业和等级
+		# job: 0=战士, 1=法师, 2=牧师
+		# tier: 1=原职(1-3级), 2=转职(4-6级), 3=高阶(7+级)
+		var bullet_job: int = base_job
+		var bullet_tier: int = 1
+		if ch.level >= 7:
+			bullet_tier = 3
+		elif ch.level >= 4:
+			bullet_tier = 2
+
 		# 获取角色sprite位置
 		var source_pos: Vector2 = _get_cell_position(cell_idx)
 
@@ -894,7 +912,7 @@ func _execute_player_attack_phase() -> void:
 		await get_tree().create_timer(0.1).timeout
 
 		# 发射子弹
-		_fire_bullet(BULLET_TYPE_ATTACK, damage, source_pos, enemy_pos)
+		_fire_bullet(BULLET_TYPE_ATTACK, damage, source_pos, enemy_pos, -1, bullet_job, bullet_tier)
 
 	# 2. 等待所有子弹命中
 	await get_tree().create_timer(0.5).timeout
@@ -936,6 +954,13 @@ func _execute_enemy_attack_phase() -> void:
 	cols.sort()  # 从左到右
 
 	# 发射子弹到各列
+	# 敌方子弹参数: job=3(敌人), tier根据category
+	var enemy_job: int = 3  # ENEMY
+	var enemy_tier: int = 1  # 默认 normal
+	match engine.enemy.category:
+		"elite": enemy_tier = 2
+		"boss": enemy_tier = 3
+
 	for i in range(bullet_count):
 		var col: int = cols[i]
 		var target_ch: DataModels.CharacterData = col_to_target[col]
@@ -946,7 +971,7 @@ func _execute_enemy_attack_phase() -> void:
 		var damage: int = maxi(engine.enemy.attack - target_ch.defense, 1)
 
 		# 发射子弹
-		_fire_bullet(BULLET_TYPE_ENEMY, damage, enemy_pos, target_pos, target_idx)
+		_fire_bullet(BULLET_TYPE_ENEMY, damage, enemy_pos, target_pos, target_idx, enemy_job, enemy_tier)
 
 	# 等待子弹命中
 	await get_tree().create_timer(0.6).timeout

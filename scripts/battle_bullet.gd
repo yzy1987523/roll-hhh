@@ -32,12 +32,20 @@ const BULLET_COLORS: Dictionary = {
 	BulletType.ENEMY: Color("#9400D3"),    # 紫色 - 敌方子弹
 }
 
-# ---- 子弹图标（按职业） ----
-const JOB_BULLET_SHAPES: Dictionary = {
-	0: "circle",   # WARRIOR - 圆形
-	1: "diamond",  # MAGE - 菱形
-	2: "star",     # PRIEST - 星星
+# ---- 子弹精灵路径 ----
+const BULLET_SPRITE_BASE_PATH: String = "res://art/sprites/UI/items/bullet/"
+
+# ---- 子弹职业(Job)到精灵索引的映射 ----
+# job: 0=战士, 1=法师, 2=牧师, 3=敌人
+const JOB_TO_SPRITE_INDEX: Dictionary = {
+	0: 1,   # WARRIOR -> 1
+	1: 2,   # MAGE -> 2
+	2: 3,   # PRIEST -> 3
+	3: 4,   # ENEMY -> 4
 }
+
+var job: int = 0       # 子弹职业 (0-3)
+var tier: int = 1      # 子弹 tier (1-3)
 
 
 func _ready() -> void:
@@ -47,13 +55,15 @@ func _ready() -> void:
 
 
 func setup(p_bullet_type: int, p_damage: int, p_target_index: int,
-		p_source_pos: Vector2, p_target_pos: Vector2) -> void:
+		p_source_pos: Vector2, p_target_pos: Vector2, p_job: int = 0, p_tier: int = 1) -> void:
 	bullet_type = p_bullet_type
 	damage = p_damage
 	target_index = p_target_index
 	source_position = p_source_pos
 	target_position = p_target_pos
 	is_active = true
+	job = p_job
+	tier = p_tier
 
 	# 设置位置
 	global_position = p_source_pos
@@ -62,36 +72,42 @@ func setup(p_bullet_type: int, p_damage: int, p_target_index: int,
 	var color: Color = BULLET_COLORS.get(p_bullet_type, Color.WHITE)
 	modulate = color
 
-	# 设置大小
-	var base_size: float = 8.0
-	if p_bullet_type == BulletType.ENEMY:
-		base_size = 10.0  # 敌方子弹稍大
-	elif p_bullet_type == BulletType.BLESS:
-		base_size = 6.0  # 祝福子弹较小
-
 	# 创建视觉元素
-	_setup_bullet_visual(p_bullet_type, base_size)
+	_setup_bullet_visual()
 
 
-func _setup_bullet_visual(b_type: int, size: float) -> void:
-	# 创建简单的圆形精灵
-	var tex := GradientTexture2D.new()
-	tex.width = int(size * 2)
-	tex.height = int(size * 2)
+func _setup_bullet_visual() -> void:
+	# 构建子弹精灵路径: bullet_{job}_{tier}.png
+	var sprite_job: int = JOB_TO_SPRITE_INDEX.get(job, 1)
+	var sprite_path: String = BULLET_SPRITE_BASE_PATH + "bullet_%d_%d.png" % [sprite_job, tier]
 
-	var gradient := Gradient.new()
-	gradient.set_color(0, Color.WHITE)
-	gradient.set_color(1, Color(1, 1, 1, 0))
-	tex.gradient = gradient
+	# 加载精灵图
+	var tex: Texture2D = null
+	if ResourceLoader.exists(sprite_path):
+		tex = load(sprite_path)
 
 	var sprite := Sprite2D.new()
-	sprite.texture = tex
-	sprite.centered = true
+	if tex != null:
+		sprite.texture = tex
+		sprite.centered = true
+	else:
+		# Fallback: 创建简单圆形精灵
+		var fallback_tex := GradientTexture2D.new()
+		fallback_tex.width = 16
+		fallback_tex.height = 16
+		var gradient := Gradient.new()
+		gradient.set_color(0, Color.WHITE)
+		gradient.set_color(1, Color(1, 1, 1, 0))
+		fallback_tex.gradient = gradient
+		sprite.texture = fallback_tex
+		sprite.centered = true
+		print(">>> [BattleBullet] 子弹精灵加载失败，使用默认: " + sprite_path)
+
 	add_child(sprite)
 
 	# 添加发光效果
 	var glow := PointLight2D.new()
-	glow.color = BULLET_COLORS.get(b_type, Color.WHITE)
+	glow.color = BULLET_COLORS.get(bullet_type, Color.WHITE)
 	glow.energy = 0.5
 	glow.range_layer_min = -1
 	glow.range_layer_max = 1

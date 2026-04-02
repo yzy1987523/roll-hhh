@@ -2,6 +2,14 @@
 
 [ext_resource type="Script" uid="uid://blsuwfdclth4a" path="res://scripts/game_board.gd" id="1_game_board"]
 [ext_resource type="Texture2D" uid="uid://kvf818xd21b4" path="res://art/sprites/UI/panels/棋盘格.png" id="2_board"]
+[ext_resource type="Texture2D" uid="uid://x4yg0g26r063" path="res://art/sprites/UI/items/smallItem/coin.png" id="3_coin"]
+[ext_resource type="Texture2D" uid="uid://cimhkfb5qgsea" path="res://art/sprites/UI/items/smallItem/engery.png" id="4_energy"]
+[ext_resource type="Texture2D" uid="uid://8q11l3kyangs" path="res://art/sprites/UI/items/smallItem/time.png" id="5_time"]
+[ext_resource type="Texture2D" uid="uid://bmgjqqyg3keff" path="res://art/sprites/UI/items/smallItem/setting.png" id="6_setting"]
+[ext_resource type="Texture2D" uid="uid://b4fmjbt08lwkw" path="res://art/sprites/UI/items/smallItem/shop.png" id="7_shop"]
+[ext_resource type="Texture2D" uid="uid://bp2gkj73ffk72" path="res://art/sprites/UI/items/smallItem/dorm.png" id="8_dorm"]
+[ext_resource type="Texture2D" uid="uid://co48vbq7kyocc" path="res://art/sprites/UI/items/smallItem/Encyclopedia.png" id="9_encyclopedia"]
+[ext_resource type="Texture2D" uid="uid://x0btk78hil8p" path="res://art/sprites/UI/items/smallItem/close.png" id="10_close"]
 
 [node name="GameBoard" type="Control" unique_id=2062969073]
 layout_mode = 3
@@ -22,8 +30,8 @@ grow_vertical = 2
 color = Color(0.12, 0.12, 0.18, 1)
 
 [node name="BoardSprite" type="Sprite2D" parent="." unique_id=1798221776]
-position = Vector2(519, 1078)
-scale = Vector2(4.3, 4.3)
+position = Vector2(543.99994, 1184.9999)
+scale = Vector2(3.9, 3.9)
 texture = ExtResource("2_board")
 
 [node name="MainLayout" type="VBoxContainer" parent="." unique_id=1089691933]
@@ -40,17 +48,50 @@ custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="GoldLabel" type="Label" parent="MainLayout/TopBar" unique_id=77034164]
+[node name="GoldContainer" type="HBoxContainer" parent="MainLayout/TopBar" unique_id=77034164]
 layout_mode = 2
-text = "Gold: 0"
+theme_override_constants/separation = 4
 
-[node name="EnergyLabel" type="Label" parent="MainLayout/TopBar" unique_id=1469920230]
+[node name="GoldIcon" type="TextureRect" parent="MainLayout/TopBar/GoldContainer" unique_id=77034165]
+custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
-text = "Energy: 36/36"
+texture = ExtResource("3_coin")
+expand_mode = 1
+stretch_mode = 5
 
-[node name="RoundLabel" type="Label" parent="MainLayout/TopBar" unique_id=1383262398]
+[node name="GoldLabel" type="Label" parent="MainLayout/TopBar/GoldContainer" unique_id=77034166]
 layout_mode = 2
-text = "Round: 1"
+text = "0"
+
+[node name="EnergyContainer" type="HBoxContainer" parent="MainLayout/TopBar" unique_id=1469920230]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="EnergyIcon" type="TextureRect" parent="MainLayout/TopBar/EnergyContainer" unique_id=1469920231]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("4_energy")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="EnergyLabel" type="Label" parent="MainLayout/TopBar/EnergyContainer" unique_id=1469920232]
+layout_mode = 2
+text = "36/36"
+
+[node name="RoundContainer" type="HBoxContainer" parent="MainLayout/TopBar" unique_id=1383262398]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="RoundIcon" type="TextureRect" parent="MainLayout/TopBar/RoundContainer" unique_id=1383262399]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("5_time")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RoundLabel" type="Label" parent="MainLayout/TopBar/RoundContainer" unique_id=1383262400]
+layout_mode = 2
+text = "1"
 
 [node name="Spacer" type="Control" parent="MainLayout/TopBar" unique_id=1825867427]
 layout_mode = 2
@@ -59,6 +100,7 @@ size_flags_horizontal = 3
 [node name="SettingsButton" type="Button" parent="MainLayout/TopBar" unique_id=2027233340]
 layout_mode = 2
 text = "Settings"
+icon = ExtResource("6_setting")
 
 [node name="RelicBar" type="VBoxContainer" parent="MainLayout" unique_id=308367481]
 layout_mode = 2
@@ -115,16 +157,19 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Dorm"
+icon = ExtResource("8_dorm")
 
 [node name="ShopButton" type="Button" parent="MainLayout/MiddleBar" unique_id=1680004277]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Shop"
+icon = ExtResource("7_shop")
 
 [node name="EncyclopediaButton" type="Button" parent="MainLayout/MiddleBar" unique_id=1591691191]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Encyclopedia"
+icon = ExtResource("9_encyclopedia")
 
 [node name="BoardCenter" type="CenterContainer" parent="MainLayout" unique_id=277718230]
 layout_mode = 2
@@ -242,6 +287,7 @@ text = "Reset Tutorial"
 [node name="CloseButton" type="Button" parent="SettingsPanel/SettingsVBox" unique_id=2035558326]
 layout_mode = 2
 text = "Close"
+icon = ExtResource("10_close")
 
 [node name="ResetConfirmLabel" type="Label" parent="SettingsPanel" unique_id=827146354]
 unique_name_in_owner = true

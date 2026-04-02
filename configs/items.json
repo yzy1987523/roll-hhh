@@ -21,6 +21,26 @@
 		{"id": 19, "price": 20, "sprite": "element08_001"},
 		{"id": 20, "price": 25, "sprite": "element08_002"},
 		{"id": 21, "price": 30, "sprite": "element03_001"},
-		{"id": 22, "price": 50, "sprite": "element00_006"}
+		{"id": 22, "price": 50, "sprite": "element00_006"},
+		{"id": 23, "price": 35, "sprite": "element5_010", "effect_type": "remove_debuff", "target": "character"},
+		{"id": 24, "price": 35, "sprite": "element05_019", "effect_type": "remove_debuff", "target": "all"},
+		{"id": 25, "price": 60, "sprite": "element05_020", "effect_type": "purge_buff", "target": "enemy", "count": 1},
+		{"id": 26, "price": 80, "sprite": "element05_021", "effect_type": "purge_buff", "target": "enemy", "count": 2},
+		{"id": 27, "price": 45, "sprite": "element06_001", "effect_type": "transform", "target": "enemy", "duration": 1},
+		{"id": 28, "price": 100, "sprite": "element06_002", "effect_type": "silence", "target": "enemy"},
+		{"id": 29, "price": 60, "sprite": "element06_003", "effect_type": "confuse", "target": "enemy"},
+		{"id": 30, "price": 150, "sprite": "element06_004", "effect_type": "transform", "target": "enemy", "duration": 2},
+		{"id": 31, "price": 40, "sprite": "element06_016", "effect_type": "steal_gold", "target": "enemy", "value": 5},
+		{"id": 32, "price": 70, "sprite": "element06_017", "effect_type": "steal_item", "target": "enemy"},
+		{"id": 33, "price": 50, "sprite": "element06_018", "effect_type": "transfer_debuff", "target": "enemy"},
+		{"id": 34, "price": 90, "sprite": "element06_019", "effect_type": "disarm", "target": "enemy"},
+		{"id": 35, "price": 200, "sprite": "element06_028", "effect_type": "resurrect", "target": "character", "hp_ratio": 0.5},
+		{"id": 36, "price": 300, "sprite": "element06_029", "effect_type": "resurrect", "target": "character", "hp_ratio": 1.0},
+		{"id": 37, "price": 55, "sprite": "element06_030", "effect_type": "reset_cooldown", "target": "character"},
+		{"id": 38, "price": 75, "sprite": "element06_031", "effect_type": "clear_negative", "target": "character"},
+		{"id": 39, "price": 45, "sprite": "element06_037", "effect_type": "mirror_damage", "target": "character", "duration": 1},
+		{"id": 40, "price": 65, "sprite": "element06_038", "effect_type": "evade_next", "target": "character"},
+		{"id": 41, "price": 85, "sprite": "element06_039", "effect_type": "counter_attack", "target": "character", "ratio": 1.5},
+		{"id": 42, "price": 120, "sprite": "element06_040", "effect_type": "phase_shift", "target": "character"}
 	]
 }

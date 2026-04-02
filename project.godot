@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="roll_hhh"
-run/main_scene="res://scenes/main_menu.tscn"
+run/main_scene="uid://lhfpkjexs7e5"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
 
@@ -26,15 +26,17 @@ MechanicsDb="*res://scripts/mechanics_db.gd"
 
 window/size/viewport_width=1080
 window/size/viewport_height=1920
-window/stretch/mode="canvas_items"
+window/stretch/mode="viewport"
+window/stretch/aspect="expand"
 window/size/window_width=1920
 window/size/window_height=1080
 window/size/remember_window_size=true
 
 [gui]
 
+theme/custom_font="uid://dxq75khofpwb4"
 theme/default_font_names=PackedStringArray("Noto Sans SC")
-theme/fallbacks=PackedStringArray("res://fonts/NotoSansSC-Regular.ttf")
+theme/fallbacks=PackedStringArray("res://fonts/AlimamaFangYuanTiVF-Thin-2.ttf")
 
 [importer_defaults]
 
@@ -71,6 +73,7 @@ font_data_dynamic={
 
 [rendering]
 
+textures/canvas_textures/default_texture_filter=0
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"

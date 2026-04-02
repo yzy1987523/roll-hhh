@@ -10,7 +10,7 @@ extends Control
 @onready var reset_confirm_label: Label = $SettingsPanel/ResetConfirmLabel
 
 # Web 环境必须用 preload 预加载字体，不能动态 load
-@onready var chinese_font = preload("res://fonts/NotoSansSC-Regular.ttf")
+@onready var chinese_font = preload("res://fonts/AlimamaFangYuanTiVF-Thin-2.ttf")
 
 # ---- 设置状态 ----
 var settings_visible: bool = false
@@ -24,18 +24,18 @@ func _ready() -> void:
 	# 连接按钮信号
 	print(">>> [MainMenu] start_button=", start_button, " is_null=", start_button == null)
 	start_button.pressed.connect(_on_start_pressed)
-	language_button.pressed.connect(_on_language_toggled)
-	volume_slider.value_changed.connect(_on_volume_changed)
-	reset_tutorial_button.pressed.connect(_on_reset_tutorial_pressed)
-	close_button.pressed.connect(_on_close_settings)
+	#language_button.pressed.connect(_on_language_toggled)
+	#volume_slider.value_changed.connect(_on_volume_changed)
+	#reset_tutorial_button.pressed.connect(_on_reset_tutorial_pressed)
+	#close_button.pressed.connect(_on_close_settings)
 
 	# 连接语言切换信号
 	LocalizationSystem.language_changed.connect(_on_localization_changed)
 
 	# 初始化UI
-	_update_language_button()
-	_update_ui_texts()
-	_load_settings()
+	#_update_language_button()
+	#_update_ui_texts()
+	#_load_settings()
 	print(">>> [MainMenu] _ready 完成")
 
 
@@ -73,7 +73,7 @@ func _on_language_toggled() -> void:
 
 func _on_localization_changed(lang: String) -> void:
 	_update_language_button()
-	_update_ui_texts()
+	#_update_ui_texts()
 	print(">>> [MainMenu] 语言切换为: %s" % lang)
 
 

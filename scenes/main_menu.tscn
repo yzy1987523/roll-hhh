@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://dymmh01vglb0u" path="res://scripts/main_menu.gd" id="1_main_menu"]
 [ext_resource type="Texture2D" uid="uid://ci2d6e4t3ii6j" path="res://art/sprites/UI/panels/bg.png" id="2_ekxnf"]
 [ext_resource type="Texture2D" uid="uid://dexwac3e5onpy" path="res://art/sprites/UI/panels/title.png" id="3_bqqt6"]
+[ext_resource type="Texture2D" uid="uid://4xnq8jdshgeo" path="res://art/sprites/UI/items/smallItem/play.png" id="4_wu84c"]
 
 [node name="MainMenu" type="Control" unique_id=2104060072]
 layout_mode = 3
@@ -14,87 +15,23 @@ grow_vertical = 2
 script = ExtResource("1_main_menu")
 
 [node name="Background" type="Sprite2D" parent="." unique_id=1735037578]
-position = Vector2(233, 406)
-scale = Vector2(0.39858493, 0.39858493)
+position = Vector2(525.00006, 961)
+scale = Vector2(0.9425895, 0.9425895)
 texture = ExtResource("2_ekxnf")
 
 [node name="Title" type="Sprite2D" parent="." unique_id=201261626]
-position = Vector2(253.00003, 344)
-scale = Vector2(0.17317075, 0.17317073)
+position = Vector2(563, 701)
+scale = Vector2(0.59585375, 0.5958536)
 texture = ExtResource("3_bqqt6")
 
 [node name="StartButton" type="Button" parent="." unique_id=121826312]
 layout_mode = 0
-offset_left = 156.0
-offset_top = 1344.0
-offset_right = 756.0
-offset_bottom = 1406.0
-text = "Start Game"
-
-[node name="SettingsPanel" type="PanelContainer" parent="." unique_id=882517620]
-visible = false
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -360.0
-offset_top = -280.0
-offset_right = 360.0
-offset_bottom = 280.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="SettingsVBox" type="VBoxContainer" parent="SettingsPanel" unique_id=1531334446]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="SettingsTitle" type="Label" parent="SettingsPanel/SettingsVBox" unique_id=663643144]
-layout_mode = 2
-text = "Settings"
-horizontal_alignment = 1
-
-[node name="LanguageRow" type="HBoxContainer" parent="SettingsPanel/SettingsVBox" unique_id=878686614]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="LanguageLabel" type="Label" parent="SettingsPanel/SettingsVBox/LanguageRow" unique_id=843682219]
-layout_mode = 2
-text = "Language"
-
-[node name="LanguageButton" type="Button" parent="SettingsPanel/SettingsVBox/LanguageRow" unique_id=1321944902]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "EN"
-
-[node name="VolumeRow" type="HBoxContainer" parent="SettingsPanel/SettingsVBox" unique_id=133892951]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="VolumeLabel" type="Label" parent="SettingsPanel/SettingsVBox/VolumeRow" unique_id=1430660960]
-layout_mode = 2
-text = "Volume"
-
-[node name="VolumeSlider" type="HSlider" parent="SettingsPanel/SettingsVBox/VolumeRow" unique_id=1335541415]
-layout_mode = 2
-size_flags_horizontal = 3
-max_value = 1.0
-step = 0.1
-value = 1.0
-
-[node name="ResetTutorialButton" type="Button" parent="SettingsPanel/SettingsVBox" unique_id=2127225158]
-layout_mode = 2
-text = "Reset Tutorial"
-
-[node name="CloseButton" type="Button" parent="SettingsPanel/SettingsVBox" unique_id=717727986]
-layout_mode = 2
-text = "Close"
-
-[node name="ResetConfirmLabel" type="Label" parent="SettingsPanel" unique_id=705215944]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
-text = "Tutorial reset!"
-horizontal_alignment = 1
-vertical_alignment = 1
+offset_left = 432.0
+offset_top = 1142.0
+offset_right = 746.0
+offset_bottom = 1525.4691
+theme_override_colors/icon_pressed_color = Color(0.78352433, 0.783523, 0.7835237, 1)
+theme_override_colors/icon_hover_color = Color(0.92971355, 0.9297152, 0.9297144, 1)
+icon = ExtResource("4_wu84c")
+flat = true
+expand_icon = true
