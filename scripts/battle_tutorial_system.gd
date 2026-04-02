@@ -65,7 +65,7 @@ func _start_tutorial() -> void:
 func _setup_ui() -> void:
 	# 遮罩层 - 半透明黑色背景
 	overlay = ColorRect.new()
-	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.set_anchors_preset(Control.PRESET_CENTER)
 	overlay.color = Color(0.0, 0.0, 0.0, 0.6)
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(overlay)

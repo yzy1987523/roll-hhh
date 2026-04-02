@@ -122,3 +122,15 @@ static func get_relic_effect_type(relic_id: int) -> String:
 static func get_item_price(item_id: int) -> int:
 	var eff: Dictionary = get_item_effect(item_id)
 	return eff.get("price", 0)
+
+
+## 获取道具图标sprite名称
+static func get_item_sprite(item_id: int) -> String:
+	var eff: Dictionary = get_item_effect(item_id)
+	return eff.get("sprite", "")
+
+
+## 获取遗物图标sprite名称
+static func get_relic_sprite(relic_id: int) -> String:
+	var eff: Dictionary = get_relic_effect(relic_id)
+	return eff.get("sprite", "")

@@ -143,17 +143,17 @@ func _setup_item_slots() -> void:
 			child.queue_free()
 		# 背景
 		var bg := ColorRect.new()
-		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.set_anchors_preset(Control.PRESET_CENTER)
 		bg.color = Color("#1A2A3A")
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slot.add_child(bg)
 		# 图标/标签
 		var lbl := Label.new()
-		lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+		lbl.set_anchors_preset(Control.PRESET_CENTER)
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		lbl.add_theme_font_size_override("font_size", 9)
+		lbl.add_theme_font_size_override("font_size", 18)
 		slot.add_child(lbl)
 
 	_refresh_item_slots()
@@ -187,7 +187,7 @@ func _refresh_relic_display() -> void:
 		var lbl := Label.new()
 		lbl.text = relic.name
 		lbl.modulate = Color(1.0, 0.8, 0.4)
-		lbl.add_theme_font_size_override("font_size", 10)
+		lbl.add_theme_font_size_override("font_size", 20)
 		relic_list.add_child(lbl)
 
 
@@ -233,13 +233,13 @@ func _show_item_detail(slot_index: int) -> void:
 	item_detail_popup = popup_bg
 
 	var vbox := VBoxContainer.new()
-	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vbox.set_anchors_preset(Control.PRESET_CENTER)
 	popup_bg.add_child(vbox)
 
 	var name_lbl := Label.new()
 	name_lbl.text = item.name
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_lbl.add_theme_font_size_override("font_size", 16)
+	name_lbl.add_theme_font_size_override("font_size", 32)
 	vbox.add_child(name_lbl)
 
 	var desc_lbl := Label.new()
@@ -376,7 +376,7 @@ func _setup_board_display() -> void:
 		cell.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
 
 		var bg := ColorRect.new()
-		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.set_anchors_preset(Control.PRESET_CENTER)
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		@warning_ignore("integer_division")
 		var row := i / GRID_SIZE
@@ -388,14 +388,14 @@ func _setup_board_display() -> void:
 		var lbl := Label.new()
 		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+		lbl.set_anchors_preset(Control.PRESET_CENTER)
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		lbl.add_theme_font_size_override("font_size", 10)
+		lbl.add_theme_font_size_override("font_size", 20)
 		cell.add_child(lbl)
 
 		# 精灵图
 		var sprite := TextureRect.new()
-		sprite.set_anchors_preset(Control.PRESET_FULL_RECT)
+		sprite.set_anchors_preset(Control.PRESET_CENTER)
 		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
@@ -788,32 +788,48 @@ func _fire_bullet(bullet_type: int, damage: int, source_pos: Vector2, target_pos
 	var bullet = bullet_pool.get_bullet()
 
 	bullet.setup(bullet_type, damage, target_idx, source_pos, target_pos)
-	bullet.bullet_hit.connect(_on_bullet_hit)
-	bullet.bullet_finished.connect(_on_bullet_finished.bind(bullet))
+
+	# 连接信号（确保不重复连接）
+	if not bullet.bullet_hit.is_connected(_on_bullet_hit):
+		bullet.bullet_hit.connect(_on_bullet_hit)
+	var finished_callable: Callable = _on_bullet_finished.bind(bullet)
+	if not bullet.bullet_finished.is_connected(finished_callable):
+		bullet.bullet_finished.connect(finished_callable)
 
 
 ## 子弹命中回调
 func _on_bullet_hit(target_idx: int, damage: int, bullet_type: int) -> void:
+	# 安全检查：确保战斗还在进行
+	if engine == null:
+		return
+
 	match bullet_type:
 		BULLET_TYPE_ATTACK:
 			# 对敌方造成伤害
-			if engine and engine.enemy and engine.enemy.is_alive():
+			if engine.enemy != null and engine.enemy.is_alive():
 				engine.enemy.take_damage(damage)
 				_log_attack_result(engine.enemy.name, damage, engine.enemy.hp)
 		BULLET_TYPE_ENEMY:
 			# 对我方角色造成伤害
-			if target_idx >= 0 and target_idx < BoardData.BOARD_SLOTS:
-				var bd: BoardData = GameManager.board_data
-				var ch: DataModels.CharacterData = bd.get_character_at_index(target_idx)
-				if ch and ch.is_alive():
-					# 检查格挡
-					var base_job: int = ch.get_base_job()
-					if base_job == DataModels.Job.WARRIOR and ch.skill_level > 0:
-						if GameManager.battle_turn % 3 == 0:
-							_log_attack_result(ch.get_job_name(), 0, ch.hp)
-							return  # 格挡
-					ch.take_damage(damage)
-					_log_attack_result(ch.get_job_name(), damage, ch.hp)
+			if target_idx < 0 or target_idx >= BoardData.BOARD_SLOTS:
+				return
+			var bd: BoardData = GameManager.board_data
+			if bd == null:
+				return
+			var ch: DataModels.CharacterData = bd.get_character_at_index(target_idx)
+			if ch == null or not ch.is_alive():
+				return
+			# 检查格挡
+			var base_job: int = ch.get_base_job()
+			if base_job == DataModels.Job.WARRIOR and ch.skill_level > 0:
+				if GameManager.battle_turn % 3 == 0:
+					_log_attack_result(ch.get_job_name(), 0, ch.hp)
+					return  # 格挡
+			ch.take_damage(damage)
+			_log_attack_result(ch.get_job_name(), damage, ch.hp)
+		_:
+			# 未知的子弹类型，忽略
+			print(">>> [BattleScene] 未知子弹类型: %d" % bullet_type)
 
 
 func _log_attack_result(target_name: String, damage: int, remaining_hp: int) -> void:
@@ -847,9 +863,6 @@ func _execute_player_attack_phase() -> void:
 	if alive_chars.size() == 0:
 		current_phase = BattlePhase.IDLE
 		return
-
-	# 记录所有子弹的Promise
-	var bullet_promises: Array = []
 
 	# 1. 播放攻击动画并发射子弹
 	for ch in alive_chars:
