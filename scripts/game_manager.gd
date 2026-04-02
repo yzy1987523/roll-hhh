@@ -3,6 +3,10 @@ extends Node
 ## 游戏状态管理器 (Autoload 单例)
 ## 管理全局游戏状态、阶段流转、资源数据
 
+# 预加载依赖类 (Autoload 需要显式预加载)
+const BoardData = preload("res://scripts/board_data.gd")
+const DataModels = preload("res://scripts/data_models.gd")
+
 # ---- 初始化标志 ----
 var _initialized: bool = false
 

@@ -3,6 +3,10 @@ extends Node
 ## 存档系统
 ## 任务 6.1: LocalStorage 自动存档
 
+# 预加载依赖类 (Autoload 需要显式预加载)
+const BoardData = preload("res://scripts/board_data.gd")
+const DataModels = preload("res://scripts/data_models.gd")
+
 const SAVE_KEY := "roll_hhh_save"
 const ENCYCLOPEDIA_KEY := "roll_hhh_encyclopedia"
 const TUTORIAL_KEY := "roll_hhh_tutorial_done"

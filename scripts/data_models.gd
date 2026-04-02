@@ -4,6 +4,9 @@ class_name DataModels
 ## 数据模型定义
 ## 包含 BuffEffect、Character、Item 内部类
 
+# 预加载依赖类
+const JobAdvanced = preload("res://scripts/job_advanced.gd")
+
 # ---- 职业常量 ----
 enum Job { WARRIOR = 0, MAGE = 1, PRIEST = 2 }
 

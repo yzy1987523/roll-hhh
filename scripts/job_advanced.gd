@@ -4,6 +4,9 @@ class_name JobAdvanced
 ## 转职系统
 ## 任务 5.1: 7个转职分支, 独立属性成长+专属特技
 
+# 预加载依赖类
+const DataModels = preload("res://scripts/data_models.gd")
+
 # ---- 转职职业ID (从10开始, 避免与基础职业冲突) ----
 const JOB_BERSERKER := 10     # 狂战士 (战士分支)
 const JOB_KNIGHT := 11        # 骑士 (战士分支)
