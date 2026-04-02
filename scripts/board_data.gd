@@ -4,6 +4,9 @@ class_name BoardData
 ## 棋盘数据层
 ## 管理 6x6 棋盘和宿舍的角色存储与操作
 
+# 预加载依赖类
+const DataModels = preload("res://scripts/data_models.gd")
+
 const GRID_SIZE := 6
 const BOARD_SLOTS := 36  # 6x6
 
