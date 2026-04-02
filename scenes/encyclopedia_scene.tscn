@@ -22,7 +22,7 @@ color = Color(0.08, 0.08, 0.12, 1)
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 40.0
+offset_bottom = 80.0
 grow_horizontal = 2
 theme_override_constants/separation = 12
 
@@ -41,14 +41,14 @@ layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = 44.0
+offset_top = 88.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 4
 
 [node name="LeftPanel" type="PanelContainer" parent="MainHBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(120, 0)
+custom_minimum_size = Vector2(240, 0)
 
 [node name="ScrollContainer" type="ScrollContainer" parent="MainHBox/LeftPanel"]
 layout_mode = 2

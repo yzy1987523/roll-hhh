@@ -54,12 +54,26 @@ func return_bullet(bullet: CharacterBody2D) -> void:
 	if idx >= 0:
 		active_bullets.remove_at(idx)
 
-	# 清理子节点（发光效果等）- 使用循环因为节点会变化
-	while bullet.get_child_count() > 0:
-		var child = bullet.get_child(0)
+	# 断开该子弹的所有信号连接（信号在 battle_scene.gd 中连接）
+	_disconnect_bullet_signals(bullet)
+
+	# 清理子节点（发光效果等）
+	for child in bullet.get_children():
 		child.queue_free()
 
 	pool.append(bullet)
+
+
+## 断开子弹的所有信号连接
+func _disconnect_bullet_signals(bullet: CharacterBody2D) -> void:
+	# 获取所有信号的连接列表并断开
+	for signal_name in ["bullet_hit", "bullet_finished"]:
+		var signal_obj: Signal = bullet.get(signal_name)
+		if signal_obj.get_connections().size() > 0:
+			for conn in signal_obj.get_connections():
+				var callable: Callable = conn.callable
+				if callable.is_valid():
+					signal_obj.disconnect(callable)
 
 
 func return_all() -> void:

@@ -1,8 +1,6 @@
 extends Control
 
-@onready var start_button: Button = $VBoxContainer/StartButton
-@onready var settings_button: Button = $VBoxContainer/SettingsButton
-@onready var leaderboard_button: Button = $VBoxContainer/LeaderboardButton
+@onready var start_button: Button = $StartButton
 @onready var settings_panel: PanelContainer = $SettingsPanel
 @onready var settings_vbox: VBoxContainer = $SettingsPanel/SettingsVBox
 @onready var language_button: Button = $SettingsPanel/SettingsVBox/LanguageRow/LanguageButton
@@ -19,13 +17,13 @@ var settings_visible: bool = false
 
 
 func _ready() -> void:
+	print(">>> [MainMenu] _ready 开始")
 	# 全局设置中文字体（所有 Label 生效）
 	ThemeDB.set_fallback_font(chinese_font)
 
 	# 连接按钮信号
+	print(">>> [MainMenu] start_button=", start_button, " is_null=", start_button == null)
 	start_button.pressed.connect(_on_start_pressed)
-	settings_button.pressed.connect(_on_settings_pressed)
-	leaderboard_button.pressed.connect(_on_leaderboard_pressed)
 	language_button.pressed.connect(_on_language_toggled)
 	volume_slider.value_changed.connect(_on_volume_changed)
 	reset_tutorial_button.pressed.connect(_on_reset_tutorial_pressed)
@@ -38,21 +36,12 @@ func _ready() -> void:
 	_update_language_button()
 	_update_ui_texts()
 	_load_settings()
+	print(">>> [MainMenu] _ready 完成")
 
 
 func _on_start_pressed() -> void:
 	print(">>> [MainMenu] 开始游戏按钮被点击")
 	get_tree().change_scene_to_file("res://scenes/game_board.tscn")
-
-
-func _on_settings_pressed() -> void:
-	print(">>> [MainMenu] 设置按钮被点击")
-	_show_settings()
-
-
-func _on_leaderboard_pressed() -> void:
-	print(">>> [MainMenu] 排行榜按钮被点击")
-	get_tree().change_scene_to_file("res://scenes/leaderboard_scene.tscn")
 
 
 func _show_settings() -> void:
@@ -99,8 +88,6 @@ func _update_language_button() -> void:
 func _update_ui_texts() -> void:
 	# 更新主菜单按钮文本
 	start_button.text = LocalizationSystem.get_text("main_menu.start")
-	settings_button.text = LocalizationSystem.get_text("main_menu.settings")
-	leaderboard_button.text = LocalizationSystem.get_text("main_menu.leaderboard")
 
 	# 更新设置面板文本
 	var settings_title: Label = $SettingsPanel/SettingsVBox/SettingsTitle

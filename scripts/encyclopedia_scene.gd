@@ -76,7 +76,7 @@ func _show_job_details(job_id: int) -> void:
 	var job_name: String = _get_job_name(job_id)
 	name_label.text = job_name
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.add_theme_font_size_override("font_size", 20)
+	name_label.add_theme_font_size_override("font_size", 40)
 	detail_panel.add_child(name_label)
 
 	# Skill description

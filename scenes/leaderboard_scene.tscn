@@ -29,7 +29,7 @@ theme_override_constants/separation = 8
 
 [node name="TopBar" type="HBoxContainer" parent="VBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 80)
 theme_override_constants/separation = 12
 
 [node name="BackButton" type="Button" parent="VBox/TopBar"]
@@ -59,7 +59,7 @@ theme_override_constants/separation = 4
 
 [node name="BottomBar" type="HBoxContainer" parent="VBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 80)
 theme_override_constants/separation = 8
 
 [node name="NicknameInput" type="LineEdit" parent="VBox/BottomBar"]

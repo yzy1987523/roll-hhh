@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://lhfpkjexs7e5"]
 
 [ext_resource type="Script" uid="uid://blsuwfdclth4a" path="res://scripts/game_board.gd" id="1_game_board"]
+[ext_resource type="Texture2D" uid="uid://kvf818xd21b4" path="res://art/sprites/UI/panels/棋盘格.png" id="2_board"]
 
 [node name="GameBoard" type="Control" unique_id=2062969073]
 layout_mode = 3
@@ -20,6 +21,11 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.12, 0.12, 0.18, 1)
 
+[node name="BoardSprite" type="Sprite2D" parent="." unique_id=1798221776]
+position = Vector2(519, 1078)
+scale = Vector2(4.3, 4.3)
+texture = ExtResource("2_board")
+
 [node name="MainLayout" type="VBoxContainer" parent="." unique_id=1089691933]
 layout_mode = 1
 anchors_preset = 15
@@ -30,7 +36,7 @@ grow_vertical = 2
 theme_override_constants/separation = 4
 
 [node name="TopBar" type="HBoxContainer" parent="MainLayout" unique_id=1882207637]
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 theme_override_constants/separation = 12
 
@@ -59,7 +65,7 @@ layout_mode = 2
 theme_override_constants/separation = 0
 
 [node name="RelicHeader" type="HBoxContainer" parent="MainLayout/RelicBar" unique_id=1164852766]
-custom_minimum_size = Vector2(0, 36)
+custom_minimum_size = Vector2(0, 72)
 layout_mode = 2
 theme_override_constants/separation = 4
 
@@ -69,7 +75,7 @@ size_flags_horizontal = 3
 text = "Relics (Empty)"
 
 [node name="RelicPanel" type="PanelContainer" parent="MainLayout/RelicBar" unique_id=308367482]
-custom_minimum_size = Vector2(0, 100)
+custom_minimum_size = Vector2(0, 200)
 layout_mode = 2
 
 [node name="ScrollContainer" type="ScrollContainer" parent="MainLayout/RelicBar/RelicPanel" unique_id=308367483]
@@ -84,25 +90,25 @@ theme_override_constants/h_separation = 4
 theme_override_constants/v_separation = 4
 
 [node name="MiddleBar" type="HBoxContainer" parent="MainLayout" unique_id=584068900]
-custom_minimum_size = Vector2(0, 36)
+custom_minimum_size = Vector2(0, 72)
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="ItemBar" type="HBoxContainer" parent="MainLayout/MiddleBar" unique_id=657005285]
-custom_minimum_size = Vector2(120, 36)
+custom_minimum_size = Vector2(240, 72)
 layout_mode = 2
 theme_override_constants/separation = 4
 
 [node name="ItemSlot0" type="PanelContainer" parent="MainLayout/MiddleBar/ItemBar" unique_id=657005286]
-custom_minimum_size = Vector2(36, 36)
+custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
 
 [node name="ItemSlot1" type="PanelContainer" parent="MainLayout/MiddleBar/ItemBar" unique_id=657005287]
-custom_minimum_size = Vector2(36, 36)
+custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
 
 [node name="ItemSlot2" type="PanelContainer" parent="MainLayout/MiddleBar/ItemBar" unique_id=657005288]
-custom_minimum_size = Vector2(36, 36)
+custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
 
 [node name="DormButton" type="Button" parent="MainLayout/MiddleBar" unique_id=656967448]
@@ -130,45 +136,52 @@ theme_override_constants/h_separation = 2
 theme_override_constants/v_separation = 2
 
 [node name="BottomBar" type="VBoxContainer" parent="MainLayout" unique_id=152674853]
-custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 0
 
 [node name="SpawnRow" type="HBoxContainer" parent="MainLayout/BottomBar" unique_id=1992617331]
+custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="SpawnWarrior" type="Button" parent="MainLayout/BottomBar/SpawnRow" unique_id=1637935323]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Spawn:Warrior"
+text = "🗡️ 战士"
 
 [node name="SpawnMage" type="Button" parent="MainLayout/BottomBar/SpawnRow" unique_id=1433385036]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Spawn:Mage"
+text = "🔮 法师"
 
 [node name="SpawnPriest" type="Button" parent="MainLayout/BottomBar/SpawnRow" unique_id=6684100]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Spawn:Priest"
+text = "⛪ 牧师"
 
-[node name="ActionRow" type="HBoxContainer" parent="MainLayout/BottomBar" unique_id=1457240658]
+[node name="DetailActionBar" type="HBoxContainer" parent="MainLayout" unique_id=1457240658]
+custom_minimum_size = Vector2(0, 120)
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="BackButton" type="Button" parent="MainLayout/BottomBar/ActionRow" unique_id=1507788551]
-layout_mode = 2
-text = "Back"
-
-[node name="ActionSpacer" type="Control" parent="MainLayout/BottomBar/ActionRow" unique_id=1077045357]
+[node name="DetailPanel" type="PanelContainer" parent="MainLayout/DetailActionBar" unique_id=945550921]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="EndTurnButton" type="Button" parent="MainLayout/BottomBar/ActionRow" unique_id=945550920]
-custom_minimum_size = Vector2(120, 0)
+[node name="DetailLabel" type="Label" parent="MainLayout/DetailActionBar/DetailPanel" unique_id=945550922]
 layout_mode = 2
-text = "End Turn"
+text = "点击角色显示详情"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Spacer" type="Control" parent="MainLayout/DetailActionBar" unique_id=1077045357]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="EndTurnButton" type="Button" parent="MainLayout/DetailActionBar" unique_id=945550920]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+text = "🗵 结束回合"
 
 [node name="SettingsPanel" type="PanelContainer" parent="." unique_id=1089472691]
 visible = false

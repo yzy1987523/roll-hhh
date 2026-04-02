@@ -447,6 +447,7 @@
 			"game_board": {
 				"back": "返回",
 				"board_full": "棋盘已满",
+				"click_to_view_detail": "点击角色显示详情",
 				"dorm": "宿舍",
 				"dorm_close": "关闭",
 				"dorm_empty": "宿舍为空",
@@ -466,6 +467,7 @@
 				"relics": "遗物 ({count})",
 				"relics_empty": "遗物 (空)",
 				"round": "回合: {value}",
+				"sacrifice": "献祭",
 				"settings": "设置",
 				"shop": "商店",
 				"spawn_failed": "生成失败",
