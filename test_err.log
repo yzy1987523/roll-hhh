@@ -1,0 +1,28 @@
+ERROR: Node not found: "SettingsPanel" (relative to "/root/MainMenu").
+   at: get_node (scene/main/node.cpp:1963)
+   GDScript backtrace (most recent call first):
+       [0] @implicit_ready (res://scripts/main_menu.gd:4)
+ERROR: Node not found: "SettingsPanel/SettingsVBox" (relative to "/root/MainMenu").
+   at: get_node (scene/main/node.cpp:1963)
+   GDScript backtrace (most recent call first):
+       [0] @implicit_ready (res://scripts/main_menu.gd:5)
+ERROR: Node not found: "SettingsPanel/SettingsVBox/LanguageRow/LanguageButton" (relative to "/root/MainMenu").
+   at: get_node (scene/main/node.cpp:1963)
+   GDScript backtrace (most recent call first):
+       [0] @implicit_ready (res://scripts/main_menu.gd:6)
+ERROR: Node not found: "SettingsPanel/SettingsVBox/VolumeRow/VolumeSlider" (relative to "/root/MainMenu").
+   at: get_node (scene/main/node.cpp:1963)
+   GDScript backtrace (most recent call first):
+       [0] @implicit_ready (res://scripts/main_menu.gd:7)
+ERROR: Node not found: "SettingsPanel/SettingsVBox/ResetTutorialButton" (relative to "/root/MainMenu").
+   at: get_node (scene/main/node.cpp:1963)
+   GDScript backtrace (most recent call first):
+       [0] @implicit_ready (res://scripts/main_menu.gd:8)
+ERROR: Node not found: "SettingsPanel/SettingsVBox/CloseButton" (relative to "/root/MainMenu").
+   at: get_node (scene/main/node.cpp:1963)
+   GDScript backtrace (most recent call first):
+       [0] @implicit_ready (res://scripts/main_menu.gd:9)
+ERROR: Node not found: "SettingsPanel/ResetConfirmLabel" (relative to "/root/MainMenu").
+   at: get_node (scene/main/node.cpp:1963)
+   GDScript backtrace (most recent call first):
+       [0] @implicit_ready (res://scripts/main_menu.gd:10)

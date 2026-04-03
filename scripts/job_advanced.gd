@@ -5,7 +5,7 @@ class_name JobAdvanced
 ## 任务 5.1: 7个转职分支, 独立属性成长+专属特技
 
 # 预加载依赖类
-const DataModels = preload("res://scripts/data_models.gd")
+const DM = preload("res://scripts/data_models.gd")
 
 # ---- 转职职业ID (从10开始, 避免与基础职业冲突) ----
 const JOB_BERSERKER := 10     # 狂战士 (战士分支)
@@ -17,9 +17,9 @@ const JOB_PALADIN := 31       # 圣骑士 (牧师分支)
 
 # ---- 转职映射: 原始职业 → 可转职分支 ----
 const ADVANCE_MAP := {
-	DataModels.Job.WARRIOR: [JOB_BERSERKER, JOB_KNIGHT],
-	DataModels.Job.MAGE: [JOB_ICEMAGE, JOB_FIREMAGE],
-	DataModels.Job.PRIEST: [JOB_DARKPRIEST, JOB_PALADIN],
+	DM.Job.WARRIOR: [JOB_BERSERKER, JOB_KNIGHT],
+	DM.Job.MAGE: [JOB_ICEMAGE, JOB_FIREMAGE],
+	DM.Job.PRIEST: [JOB_DARKPRIEST, JOB_PALADIN],
 }
 
 # ---- 转职职业基础属性 ----
@@ -78,7 +78,7 @@ static func calc_advanced_defense(job: int, level: int) -> int:
 
 ## 执行转职: 将角色转为指定转职分支
 ## 保留原等级, 重新计算属性
-static func advance_character(ch: DataModels.CharacterData, advanced_job: int) -> bool:
+static func advance_character(ch: DM.CharacterData, advanced_job: int) -> bool:
 	if not ADVANCED_BASE.has(advanced_job):
 		print(">>> [JobAdvanced] 转职失败: 无效职业ID %d" % advanced_job)
 		return false
@@ -100,7 +100,7 @@ static func advance_character(ch: DataModels.CharacterData, advanced_job: int) -
 
 
 ## 随机转职 (根据原始职业)
-static func random_advance(ch: DataModels.CharacterData) -> bool:
+static func random_advance(ch: DM.CharacterData) -> bool:
 	var base_job: int = ch.job
 	if is_advanced_job(base_job):
 		print(">>> [JobAdvanced] 已是转职职业, 不可再转")
@@ -117,7 +117,7 @@ static func random_advance(ch: DataModels.CharacterData) -> bool:
 ## 生成角色时的转职概率检查
 ## base_chance: 基础概率 (默认5%)
 ## has_relic_17: 是否有转职令牌遗物 (+5%)
-static func check_advance_on_spawn(ch: DataModels.CharacterData, has_relic_17: bool = false) -> bool:
+static func check_advance_on_spawn(ch: DM.CharacterData, has_relic_17: bool = false) -> bool:
 	var chance: float = 0.05
 	if has_relic_17:
 		chance += 0.05

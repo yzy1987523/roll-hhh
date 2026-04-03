@@ -1,12 +1,12 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://bbsvkgl22ngi3"]
 
 [ext_resource type="Script" uid="uid://bvtkg3dgc13jj" path="res://scripts/battle_scene.gd" id="1_battle"]
-[ext_resource type="Texture2D" uid="uid://ci1oatx2j63sv" path="res://art/sprites/UI/items/pause.png" id="2_pause"]
-[ext_resource type="Texture2D" uid="uid://4xnq8jdshgeo" path="res://art/sprites/UI/items/play.png" id="3_play"]
-[ext_resource type="Texture2D" uid="uid://x0btk78hil8p" path="res://art/sprites/UI/items/smallItem/close.png" id="4_close"]
-[ext_resource type="Texture2D" path="res://art/sprites/UI/panels/bg_1.png" id="5_bg"]
+[ext_resource type="Texture2D" uid="uid://ci1oatx2j63sv" path="res://art/sprites/UI/items/smallItem/pause.png" id="2_pause"]
+[ext_resource type="Texture2D" uid="uid://4xnq8jdshgeo" path="res://art/sprites/UI/items/smallItem/play.png" id="3_play"]
+[ext_resource type="Texture2D" uid="uid://c8380p8gfo5gh" path="res://art/sprites/UI/panels/bg_1.png" id="5_bg"]
+[ext_resource type="Texture2D" uid="uid://8q11l3kyangs" path="res://art/sprites/UI/items/smallItem/time.png" id="6_time"]
 
-[node name="BattleScene" type="Control"]
+[node name="BattleScene" type="Control" unique_id=296336740]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -15,19 +15,20 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_battle")
 
-[node name="BgColor" type="ColorRect" parent="."]
+[node name="BgColor" type="ColorRect" parent="." unique_id=1379737930]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 color = Color(0.1, 0.08, 0.15, 1)
 
-[node name="BgSprite" type="Sprite2D" parent="."]
-position = Vector2(576, 512)
+[node name="BgSprite" type="Sprite2D" parent="." unique_id=1409986392]
+position = Vector2(576, 1014)
 texture = ExtResource("5_bg")
-centered = true
 
-[node name="MainLayout" type="VBoxContainer" parent="."]
+[node name="MainLayout" type="VBoxContainer" parent="." unique_id=1934575838]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -36,258 +37,242 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 4
 
-[node name="ControlBar" type="HBoxContainer" parent="MainLayout"]
+[node name="TurnContainer" type="HBoxContainer" parent="MainLayout" unique_id=98091381]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 80)
-theme_override_constants/separation = 12
+alignment = 1
 
-[node name="PauseButton" type="Button" parent="MainLayout/ControlBar"]
-layout_mode = 2
-toggle_mode = true
-icon = ExtResource("2_pause")
-text = "Pause"
-
-[node name="PlayButton" type="Button" parent="MainLayout/ControlBar"]
-layout_mode = 2
-icon = ExtResource("3_play")
-text = "Play"
-
-[node name="Spacer1" type="Control" parent="MainLayout/ControlBar"]
+[node name="LeftSpacer" type="Control" parent="MainLayout/TurnContainer" unique_id=134813124]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Speed1x" type="Button" parent="MainLayout/ControlBar"]
+[node name="TurnBox" type="HBoxContainer" parent="MainLayout/TurnContainer" unique_id=700011584]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="TurnIcon" type="TextureRect" parent="MainLayout/TurnContainer/TurnBox" unique_id=1368010604]
+custom_minimum_size = Vector2(60, 60)
+layout_mode = 2
+texture = ExtResource("6_time")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TurnLabel" type="Label" parent="MainLayout/TurnContainer/TurnBox" unique_id=2012272667]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "1"
+vertical_alignment = 1
+
+[node name="RightSpacer" type="Control" parent="MainLayout/TurnContainer" unique_id=1130350431]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="RelicBar" type="HBoxContainer" parent="MainLayout" unique_id=1869648610]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="PrevButton" type="Button" parent="MainLayout/RelicBar" unique_id=882349750]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+size_flags_vertical = 3
+text = "◀"
+
+[node name="RelicPanel" type="PanelContainer" parent="MainLayout/RelicBar" unique_id=1041189920]
+modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MainLayout/RelicBar/RelicPanel" unique_id=1271969738]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="RelicList" type="HBoxContainer" parent="MainLayout/RelicBar/RelicPanel/ScrollContainer" unique_id=1575949844]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 4
+
+[node name="NextButton" type="Button" parent="MainLayout/RelicBar" unique_id=1803434022]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+size_flags_vertical = 3
+text = "▶"
+
+[node name="EnemyArea" type="VBoxContainer" parent="MainLayout" unique_id=86723688]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="EnemySpriteRect" type="TextureRect" parent="MainLayout/EnemyArea" unique_id=2062538843]
+custom_minimum_size = Vector2(200, 200)
+layout_mode = 2
+size_flags_horizontal = 4
+stretch_mode = 5
+
+[node name="EnemyInfoPanel" type="VBoxContainer" parent="MainLayout/EnemyArea" unique_id=233914384]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 4
+
+[node name="EnemyTitle" type="HBoxContainer" parent="MainLayout/EnemyArea/EnemyInfoPanel" unique_id=535535369]
+layout_mode = 2
+alignment = 1
+
+[node name="EnemyName" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel/EnemyTitle" unique_id=348460203]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Enemy Name"
+
+[node name="EnemyType" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel/EnemyTitle" unique_id=1327508384]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "[Normal]"
+
+[node name="EnemyHpBar" type="ProgressBar" parent="MainLayout/EnemyArea/EnemyInfoPanel" unique_id=240967394]
+custom_minimum_size = Vector2(200, 24)
+layout_mode = 2
+size_flags_horizontal = 4
+value = 100.0
+show_percentage = false
+
+[node name="EnemyHpLabel" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel" unique_id=1641958415]
+layout_mode = 2
+text = "HP: 100/100"
+horizontal_alignment = 1
+
+[node name="EnemyStats" type="HBoxContainer" parent="MainLayout/EnemyArea/EnemyInfoPanel" unique_id=1439129058]
+layout_mode = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="EnemyAtk" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel/EnemyStats" unique_id=1412258613]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "ATK: 10"
+
+[node name="EnemyDef" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel/EnemyStats" unique_id=995222434]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "DEF: 5"
+
+[node name="SkillSection" type="VBoxContainer" parent="MainLayout/EnemyArea/EnemyInfoPanel" unique_id=69134612]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="SkillName" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel/SkillSection" unique_id=300410949]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0.4, 1)
+theme_override_font_sizes/font_size = 20
+text = "Special Skill"
+horizontal_alignment = 1
+
+[node name="SkillDesc" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel/SkillSection" unique_id=1242732760]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 18
+text = "Skill description here"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="BoardCenter" type="CenterContainer" parent="MainLayout" unique_id=389826666]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="GridContainer" type="GridContainer" parent="MainLayout/BoardCenter" unique_id=333593612]
+layout_mode = 2
+theme_override_constants/h_separation = 2
+theme_override_constants/v_separation = 2
+
+[node name="ControlBar" type="HBoxContainer" parent="MainLayout" unique_id=1332665711]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="PauseButton" type="Button" parent="MainLayout/ControlBar" unique_id=281702200]
+layout_mode = 2
+toggle_mode = true
+text = "Pause"
+icon = ExtResource("2_pause")
+
+[node name="PlayButton" type="Button" parent="MainLayout/ControlBar" unique_id=356421878]
+layout_mode = 2
+text = "Play"
+icon = ExtResource("3_play")
+
+[node name="Spacer1" type="Control" parent="MainLayout/ControlBar" unique_id=1988604710]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Speed1x" type="Button" parent="MainLayout/ControlBar" unique_id=702074325]
 layout_mode = 2
 toggle_mode = true
 text = "1x"
 
-[node name="Speed2x" type="Button" parent="MainLayout/ControlBar"]
+[node name="Speed2x" type="Button" parent="MainLayout/ControlBar" unique_id=1930994772]
 layout_mode = 2
 toggle_mode = true
 button_pressed = true
 text = "2x"
 
-[node name="Speed3x" type="Button" parent="MainLayout/ControlBar"]
+[node name="Speed3x" type="Button" parent="MainLayout/ControlBar" unique_id=697674778]
 layout_mode = 2
 toggle_mode = true
 text = "3x"
 
-[node name="Spacer2" type="Control" parent="MainLayout/ControlBar"]
+[node name="Spacer2" type="Control" parent="MainLayout/ControlBar" unique_id=112611127]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="SkipButton" type="Button" parent="MainLayout/ControlBar"]
+[node name="SkipButton" type="Button" parent="MainLayout/ControlBar" unique_id=846351223]
 layout_mode = 2
 text = "Skip"
 
-[node name="PauseHint" type="Label" parent="MainLayout/ControlBar"]
-layout_mode = 2
-text = ""
-
-[node name="EnemyArea" type="HBoxContainer" parent="MainLayout"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 200)
-size_flags_horizontal = 3
-theme_override_constants/separation = 16
-
-[node name="EnemySpriteRect" type="TextureRect" parent="MainLayout/EnemyArea"]
-custom_minimum_size = Vector2(200, 200)
-layout_mode = 2
-stretch_mode = 5
-
-[node name="EnemyInfoPanel" type="VBoxContainer" parent="MainLayout/EnemyArea"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 8
-
-[node name="EnemyTitle" type="HBoxContainer" parent="MainLayout/EnemyArea/EnemyInfoPanel"]
+[node name="PauseHint" type="Label" parent="MainLayout/ControlBar" unique_id=590776472]
 layout_mode = 2
 
-[node name="EnemyName" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel/EnemyTitle"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 28
-text = "Enemy Name"
-
-[node name="EnemyType" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel/EnemyTitle"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "[Normal]"
-
-[node name="EnemyStats" type="HBoxContainer" parent="MainLayout/EnemyArea/EnemyInfoPanel"]
-layout_mode = 2
-theme_override_constants/separation = 24
-
-[node name="EnemyAtk" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel/EnemyStats"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "ATK: 10"
-
-[node name="EnemyDef" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel/EnemyStats"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "DEF: 5"
-
-[node name="EnemyHpBar" type="ProgressBar" parent="MainLayout/EnemyArea/EnemyInfoPanel"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 32)
-max_value = 100.0
-value = 100.0
-show_percentage = false
-
-[node name="EnemyHpLabel" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel"]
-layout_mode = 2
-text = "HP: 100/100"
-
-[node name="SkillSection" type="VBoxContainer" parent="MainLayout/EnemyArea/EnemyInfoPanel"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 4
-
-[node name="SkillName" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel/SkillSection"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.8, 0.4, 1)
-theme_override_font_sizes/font_size = 20
-text = "Special Skill"
-
-[node name="SkillDesc" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel/SkillSection"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-theme_override_font_sizes/font_size = 18
-autowrap_mode = 2
-text = "Skill description here"
-
-[node name="BoardCenter" type="CenterContainer" parent="MainLayout"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="GridContainer" type="GridContainer" parent="MainLayout/BoardCenter"]
-layout_mode = 2
-theme_override_constants/h_separation = 2
-theme_override_constants/v_separation = 2
-
-[node name="BottomPanel" type="HBoxContainer" parent="MainLayout"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 200)
-theme_override_constants/separation = 16
-
-[node name="TurnInfo" type="VBoxContainer" parent="MainLayout/BottomPanel"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 4
-
-[node name="TurnLabel" type="Label" parent="MainLayout/BottomPanel/TurnInfo"]
-layout_mode = 2
-horizontal_alignment = 1
-theme_override_font_sizes/font_size = 24
-text = "Turn: 1"
-
-[node name="RelicLabel" type="Label" parent="MainLayout/BottomPanel/TurnInfo"]
-layout_mode = 2
-horizontal_alignment = 1
-text = "Relics"
-
-[node name="PlayerStatsBar" type="HBoxContainer" parent="MainLayout/BottomPanel/TurnInfo"]
-layout_mode = 2
-theme_override_constants/separation = 24
-
-[node name="PlayerHpLabel" type="Label" parent="MainLayout/BottomPanel/TurnInfo/PlayerStatsBar"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "HP: 100/100"
-
-[node name="PlayerAtk" type="Label" parent="MainLayout/BottomPanel/TurnInfo/PlayerStatsBar"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "ATK: 10"
-
-[node name="PlayerDef" type="Label" parent="MainLayout/BottomPanel/TurnInfo/PlayerStatsBar"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "DEF: 5"
-
-[node name="RelicBar" type="VBoxContainer" parent="MainLayout/BottomPanel"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 4
-
-[node name="RelicHeader" type="HBoxContainer" parent="MainLayout/BottomPanel/RelicBar"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 40)
-
-[node name="RelicButton" type="Button" parent="MainLayout/BottomPanel/RelicBar/RelicHeader"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Relics (0)"
-
-[node name="RelicPanel" type="ScrollContainer" parent="MainLayout/BottomPanel/RelicBar"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="RelicList" type="HFlowContainer" parent="MainLayout/BottomPanel/RelicBar/RelicPanel"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/h_separation = 4
-theme_override_constants/v_separation = 4
-
-[node name="ItemBar" type="VBoxContainer" parent="MainLayout/BottomPanel"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 4
-
-[node name="ItemHeader" type="HBoxContainer" parent="MainLayout/BottomPanel/ItemBar"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 40)
-
-[node name="ItemLabel" type="Label" parent="MainLayout/BottomPanel/ItemBar/ItemHeader"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Items"
-
-[node name="ItemSlots" type="HBoxContainer" parent="MainLayout/BottomPanel/ItemBar"]
+[node name="ItemBar" type="HBoxContainer" parent="MainLayout" unique_id=694043853]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="ItemSlot0" type="PanelContainer" parent="MainLayout/BottomPanel/ItemBar/ItemSlots"]
+[node name="ItemSlot0" type="PanelContainer" parent="MainLayout/ItemBar" unique_id=931104659]
 custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
 
-[node name="ItemSlot1" type="PanelContainer" parent="MainLayout/BottomPanel/ItemBar/ItemSlots"]
+[node name="ItemSlot1" type="PanelContainer" parent="MainLayout/ItemBar" unique_id=1353203323]
 custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
 
-[node name="ItemSlot2" type="PanelContainer" parent="MainLayout/BottomPanel/ItemBar/ItemSlots"]
+[node name="ItemSlot2" type="PanelContainer" parent="MainLayout/ItemBar" unique_id=1879906986]
 custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
 
-[node name="ItemSlot3" type="PanelContainer" parent="MainLayout/BottomPanel/ItemBar/ItemSlots"]
+[node name="ItemSlot3" type="PanelContainer" parent="MainLayout/ItemBar" unique_id=797668829]
 custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
 
-[node name="ItemSlot4" type="PanelContainer" parent="MainLayout/BottomPanel/ItemBar/ItemSlots"]
+[node name="ItemSlot4" type="PanelContainer" parent="MainLayout/ItemBar" unique_id=1568749160]
 custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
 
-[node name="ItemSlot5" type="PanelContainer" parent="MainLayout/BottomPanel/ItemBar/ItemSlots"]
+[node name="ItemSlot5" type="PanelContainer" parent="MainLayout/ItemBar" unique_id=1663034097]
 custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
 
-[node name="LogScroll" type="ScrollContainer" parent="MainLayout"]
+[node name="LogScroll" type="ScrollContainer" parent="MainLayout" unique_id=763331246]
 visible = false
-layout_mode = 2
 custom_minimum_size = Vector2(0, 160)
+layout_mode = 2
 
-[node name="LogLabel" type="RichTextLabel" parent="MainLayout/LogScroll"]
-layout_mode = 2
+[node name="LogLabel" type="RichTextLabel" parent="MainLayout/LogScroll" unique_id=1540889781]
 custom_minimum_size = Vector2(0, 160)
+layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 bbcode_enabled = true
-text = ""
 scroll_following = true
 
-[node name="BottomBar" type="HBoxContainer" parent="."]
+[node name="BottomBar" type="HBoxContainer" parent="." unique_id=1412279354]
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
@@ -295,18 +280,16 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-custom_minimum_size = Vector2(0, 80)
 theme_override_constants/separation = 8
 
-[node name="Spacer2" type="Control" parent="BottomBar"]
+[node name="Spacer2" type="Control" parent="BottomBar" unique_id=1336301839]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="ResultLabel" type="Label" parent="BottomBar"]
+[node name="ResultLabel" type="Label" parent="BottomBar" unique_id=459607785]
 layout_mode = 2
-text = ""
 
-[node name="ResultPanel" type="PanelContainer" parent="."]
+[node name="ResultPanel" type="PanelContainer" parent="." unique_id=571306840]
 visible = false
 layout_mode = 1
 anchors_preset = 8
@@ -321,21 +304,20 @@ offset_bottom = 160.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="ResultVBox" type="VBoxContainer" parent="ResultPanel"]
+[node name="ResultVBox" type="VBoxContainer" parent="ResultPanel" unique_id=596642703]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ResultTitle" type="Label" parent="ResultPanel/ResultVBox"]
+[node name="ResultTitle" type="Label" parent="ResultPanel/ResultVBox" unique_id=1225859817]
 layout_mode = 2
-horizontal_alignment = 1
 text = "Battle Result"
+horizontal_alignment = 1
 
-[node name="RewardLabel" type="Label" parent="ResultPanel/ResultVBox"]
+[node name="RewardLabel" type="Label" parent="ResultPanel/ResultVBox" unique_id=1858466791]
 layout_mode = 2
 horizontal_alignment = 1
-text = ""
 
-[node name="ContinueButton" type="Button" parent="ResultPanel/ResultVBox"]
+[node name="ContinueButton" type="Button" parent="ResultPanel/ResultVBox" unique_id=1816964633]
 layout_mode = 2
-icon = ExtResource("3_play")
 text = "Continue"
+icon = ExtResource("3_play")

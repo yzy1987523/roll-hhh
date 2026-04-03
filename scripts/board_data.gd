@@ -184,28 +184,30 @@ func can_remove_marked() -> bool:
 
 
 ## 执行移出所有标记的角色到棋盘
-## 返回成功移出的数量
-func execute_removal() -> int:
+## 返回成功移出的角色数据数组，每个元素包含 {char, board_index}
+func execute_removal() -> Array:
+	var result: Array = []
+	
 	if not can_remove_marked():
-		return 0
+		return result
 	
 	# 按索引降序排序，避免移除时索引变化
 	marked_for_removal.sort()
 	marked_for_removal.reverse()
 	
-	var removed_count := 0
 	for idx in marked_for_removal:
 		var ch: DataModels.CharacterData = take_from_dormitory(idx)
 		if ch != null:
 			var pos: Vector2i = place_character_first_empty(ch)
 			if pos != Vector2i(-1, -1):
-				removed_count += 1
+				var board_index: int = pos_to_index(pos)
+				result.append({"char": ch, "board_index": board_index})
 			else:
 				# 放置失败，放回宿舍
 				store_to_dormitory(ch)
 	
 	marked_for_removal.clear()
-	return removed_count
+	return result
 
 
 ## 获取宿舍空位数量

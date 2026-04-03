@@ -11,75 +11,92 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_enc")
 
-[node name="BgColor" type="ColorRect" parent="."]
+[node name="DarkOverlay" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.08, 0.08, 0.12, 1)
-
-[node name="TopBar" type="HBoxContainer" parent="."]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 60.0
 grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+mouse_filter = 0
+
+[node name="EncyclopediaWindow" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -500.0
+offset_top = -400.0
+offset_right = 500.0
+offset_bottom = 400.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="EncyclopediaWindow"]
+layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="BackButton" type="Button" parent="TopBar"]
+[node name="TitleBar" type="HBoxContainer" parent="EncyclopediaWindow/VBox"]
 layout_mode = 2
-text = "← 返回"
+custom_minimum_size = Vector2(0, 50)
+theme_override_constants/separation = 16
 
-[node name="TitleLabel" type="Label" parent="TopBar"]
+[node name="TitleLabel" type="Label" parent="EncyclopediaWindow/VBox/TitleBar"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "图  鉴"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Spacer" type="Control" parent="TopBar"]
+[node name="CloseButton" type="TextureButton" parent="EncyclopediaWindow/VBox/TitleBar"]
 layout_mode = 2
-size_flags_horizontal = 3
+custom_minimum_size = Vector2(40, 40)
+stretch_mode = 5
 
-[node name="MainHBox" type="HBoxContainer" parent="."]
-layout_mode = 1
-anchors_preset = -1
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_top = 68.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="MainHBox" type="HBoxContainer" parent="EncyclopediaWindow/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 16
 
-[node name="LeftPanel" type="VBoxContainer" parent="MainHBox"]
+[node name="LeftPanel" type="VBoxContainer" parent="EncyclopediaWindow/VBox/MainHBox"]
 layout_mode = 2
 custom_minimum_size = Vector2(340, 0)
 theme_override_constants/separation = 8
 
-[node name="SectionTitle" type="Label" parent="MainHBox/LeftPanel"]
+[node name="SectionTitle" type="Label" parent="EncyclopediaWindow/VBox/MainHBox/LeftPanel"]
 layout_mode = 2
 text = "角色图鉴"
 horizontal_alignment = 1
 
-[node name="JobGrid" type="GridContainer" parent="MainHBox/LeftPanel"]
+[node name="JobGrid" type="GridContainer" parent="EncyclopediaWindow/VBox/MainHBox/LeftPanel"]
 layout_mode = 2
 size_flags_vertical = 3
 columns = 3
-theme_override_constants/h_separation = 12
-theme_override_constants/v_separation = 12
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
 
-[node name="RightPanel" type="VBoxContainer" parent="MainHBox"]
+[node name="RightPanel" type="VBoxContainer" parent="EncyclopediaWindow/VBox/MainHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 12
+theme_override_constants/separation = 8
 
-[node name="EvolutionTitle" type="Label" parent="MainHBox/RightPanel"]
+[node name="EvolutionTitle" type="Label" parent="EncyclopediaWindow/VBox/MainHBox/RightPanel"]
 layout_mode = 2
 text = "选择上方角色查看进化路线"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="EvolutionContainer" type="VBoxContainer" parent="MainHBox/RightPanel"]
+[node name="ScrollContainer" type="ScrollContainer" parent="EncyclopediaWindow/VBox/MainHBox/RightPanel"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 4
+horizontal_scroll_mode = 2
+
+[node name="EvolutionContainer" type="HFlowContainer" parent="EncyclopediaWindow/VBox/MainHBox/RightPanel/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10

@@ -21,16 +21,23 @@ GameManager="*res://scripts/game_manager.gd"
 SaveSystem="*res://scripts/save_system.gd"
 LocalizationSystem="*res://scripts/localization.gd"
 MechanicsDb="*res://scripts/mechanics_db.gd"
+TipManager="*uid://7snv7bmjgwlm"
+PopupSystem="*uid://3y0djhn7sumt"
 
 [display]
 
 window/size/viewport_width=1080
 window/size/viewport_height=1920
+window/size/initial_position_type=0
 window/stretch/mode="viewport"
 window/stretch/aspect="expand"
 window/size/window_width=1920
 window/size/window_height=1080
 window/size/remember_window_size=true
+
+[editor]
+
+version_control/autoload_on_startup=true
 
 [gui]
 
