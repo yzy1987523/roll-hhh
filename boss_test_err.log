@@ -1,0 +1,10 @@
+SCRIPT ERROR: Parse Error: Function "get_node_or_null()" not found in base self.
+   at: GDScript::reload (res://scripts/test_first_boss.gd:149)
+SCRIPT ERROR: Parse Error: Function "get_node()" not found in base self.
+   at: GDScript::reload (res://scripts/test_first_boss.gd:150)
+SCRIPT ERROR: Parse Error: Function "get_node_or_null()" not found in base self.
+   at: GDScript::reload (res://scripts/test_first_boss.gd:187)
+SCRIPT ERROR: Parse Error: Function "get_node()" not found in base self.
+   at: GDScript::reload (res://scripts/test_first_boss.gd:188)
+ERROR: Failed to load script "res://scripts/test_first_boss.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript.cpp:2907)

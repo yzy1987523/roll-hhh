@@ -3,29 +3,42 @@ extends Control
 ## 备战阶段主界面
 ## 任务 2.1-2.5: UI + 生成 + 拖拽 + 合成 + 献祭
 
+# ---- 资源预加载 ----
+const CELL_BG_TEXTURE := preload("res://art/sprites/UI/items/smallItem/cell_0.png")
+const CELL_SELECT_TEXTURE := preload("res://art/sprites/UI/items/smallItem/cell_1.png")
+
+# 选中效果序列帧 (fx01)
+var SELECT_FRAMES: Array[Texture2D] = []
+
 # ---- 节点引用 ----
 @onready var gold_label: Label = $MainLayout/TopBar/GoldContainer/GoldLabel
-@onready var energy_label: Label = $MainLayout/TopBar/EnergyContainer/EnergyLabel
+@onready var energy_label: Label = $MainLayout/BottomBar/SpawnRow/EnergyContainer/EnergyLabel
 @onready var round_label: Label = $MainLayout/TopBar/RoundContainer/RoundLabel
 # ---- 节点引用 ----
 @onready var settings_button: Button = $MainLayout/TopBar/SettingsButton
 @onready var relic_panel: PanelContainer = $MainLayout/RelicBar/RelicPanel
-@onready var relic_list: HFlowContainer = $MainLayout/RelicBar/RelicPanel/ScrollContainer/RelicList
+@onready var relic_scroll: ScrollContainer = $MainLayout/RelicBar/RelicPanel/ScrollContainer
+@onready var relic_list: HBoxContainer = $MainLayout/RelicBar/RelicPanel/ScrollContainer/RelicList
+@onready var relic_prev_button: Button = $MainLayout/RelicBar/PrevButton
+@onready var relic_next_button: Button = $MainLayout/RelicBar/NextButton
+
 @onready var grid_container: GridContainer = $MainLayout/BoardCenter/GridContainer
 @onready var board_sprite: Sprite2D = $BoardSprite
-@onready var spawn_warrior: Button = $MainLayout/BottomBar/SpawnRow/SpawnWarrior
-@onready var spawn_mage: Button = $MainLayout/BottomBar/SpawnRow/SpawnMage
-@onready var spawn_priest: Button = $MainLayout/BottomBar/SpawnRow/SpawnPriest
+@onready var spawn_warrior: TextureButton = $MainLayout/BottomBar/SpawnRow/SpawnButtons/SpawnWarrior
+@onready var spawn_mage: TextureButton = $MainLayout/BottomBar/SpawnRow/SpawnButtons/SpawnMage
+@onready var spawn_priest: TextureButton = $MainLayout/BottomBar/SpawnRow/SpawnButtons/SpawnPriest
 @onready var end_turn_button: Button = $MainLayout/DetailActionBar/EndTurnButton
-@onready var sacrifice_button: Button = $MainLayout/DetailActionBar/SacrificeButton
 @onready var item_bar: HBoxContainer = $MainLayout/MiddleBar/ItemBar
-@onready var dorm_button: Button = $MainLayout/MiddleBar/DormButton
-@onready var shop_button: Button = $MainLayout/MiddleBar/ShopButton
-@onready var encyclopedia_button: Button = $MainLayout/MiddleBar/EncyclopediaButton
+@onready var dorm_button: TextureButton = $MainLayout/MiddleBar/DormButton
+@onready var shop_button: TextureButton = $MainLayout/MiddleBar/ShopButton
+@onready var encyclopedia_button: TextureButton = $MainLayout/MiddleBar/EncyclopediaButton
 
 # ---- 详情面板节点 ----
 @onready var detail_panel: PanelContainer = $MainLayout/DetailActionBar/DetailPanel
-@onready var detail_label: Label = $MainLayout/DetailActionBar/DetailPanel/DetailLabel
+@onready var name_label: Label = $MainLayout/DetailActionBar/DetailPanel/VBox/NameLabel
+@onready var detail_label: Label = $MainLayout/DetailActionBar/DetailPanel/VBox/DetailLabel
+@onready var hint_label: Label = $MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow/HintLabel
+@onready var sacrifice_button: Button = $MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow/SacrificeButton
 
 # ---- 设置面板节点 ----
 @onready var settings_panel: PanelContainer = $SettingsPanel
@@ -58,9 +71,13 @@ var cell_rects: Array = []     # ColorRect 背景
 var cell_labels: Array = []    # Label 角色信息
 var cell_panels: Array = []    # PanelContainer 格子容器
 var cell_sprites: Array = []   # TextureRect 角色精灵图
+var cell_select_frames: Array = []  # TextureRect 选中框（静态边框）
+var cell_highlight_effects: Array = []  # TextureRect 高亮效果（序列帧动画）
 
 # ---- 选中状态 (任务 2.3 拖拽) ----
 var selected_index: int = -1   # 当前选中的棋盘格索引, -1=无选中
+var _select_tween: Tween = null  # 选中动画tween
+var _highlight_frame_index: int = 0  # 当前高亮动画帧索引
 
 # ---- 拖拽状态 ----
 var is_dragging: bool = false   # 是否正在拖拽
@@ -72,6 +89,7 @@ var _drag_start_pos: Vector2 = Vector2.ZERO  # 按下时的鼠标位置
 var _press_cell_index: int = -1  # 按下的格子索引
 var _is_awaiting_drag: bool = false  # 是否等待拖拽判断
 const DRAG_THRESHOLD: float = 5.0  # 开始拖拽的移动阈值（像素）
+var merge_targets: Array = []   # 可合成的目标格子列表
 
 # ---- 生成动画锁 ----
 var is_spawning: bool = false   # 是否正在播放生成动画
@@ -82,6 +100,7 @@ var tutorial_overlay = null
 # ---- 宿舍面板 ----
 var dorm_panel: PanelContainer = null
 var dorm_visible: bool = false
+var dorm_backdrop: ColorRect = null  # 宿舍遮罩
 
 # ---- 道具栏格子 ----
 const ITEM_SLOT_COUNT := 3
@@ -106,6 +125,8 @@ var tutorial_instance: Control = null
 
 func _ready() -> void:
 	print(">>> [GameBoard] _ready 开始")
+	# 加载选中效果序列帧
+	_load_select_frames()
 	_connect_signals()
 	_setup_board_ui()
 	_setup_dorm_panel()
@@ -125,6 +146,19 @@ func _start_tutorial() -> void:
 		add_child(tutorial_instance)
 
 
+## 加载选中效果序列帧
+func _load_select_frames() -> void:
+	SELECT_FRAMES.clear()
+	for i in range(16):
+		var frame_path := "res://art/effects/fx01/FX1_%02d.png" % i
+		if ResourceLoader.exists(frame_path):
+			var tex := load(frame_path) as Texture2D
+			SELECT_FRAMES.append(tex)
+			if i == 0:
+				print(">>> [Debug] 加载选中效果序列帧: %s" % frame_path)
+	print(">>> [Debug] 加载了 %d 帧选中效果" % SELECT_FRAMES.size())
+
+
 # ---- 信号连接 ----
 
 func _connect_signals() -> void:
@@ -141,6 +175,8 @@ func _connect_signals() -> void:
 	GameManager.energy_changed.connect(_on_energy_changed)
 	GameManager.round_changed.connect(_on_round_changed)
 	GameManager.relics_changed.connect(_on_relics_changed)
+	relic_prev_button.pressed.connect(_on_relic_prev_pressed)
+	relic_next_button.pressed.connect(_on_relic_next_pressed)
 	# 设置面板信号
 	language_button.pressed.connect(_on_language_toggled)
 	volume_slider.value_changed.connect(_on_volume_changed)
@@ -148,6 +184,44 @@ func _connect_signals() -> void:
 	close_settings_button.pressed.connect(_on_close_settings)
 	# 语言切换信号
 	LocalizationSystem.language_changed.connect(_on_localization_changed)
+	
+	# 设置按钮状态反馈
+	_setup_button_feedbacks()
+
+
+## 为所有TextureButton添加hover和press视觉反馈
+func _setup_button_feedbacks() -> void:
+	var texture_buttons: Array[TextureButton] = [
+		spawn_warrior, spawn_mage, spawn_priest,
+		dorm_button, shop_button, encyclopedia_button
+	]
+	for btn in texture_buttons:
+		btn.mouse_entered.connect(_on_button_mouse_entered.bind(btn))
+		btn.mouse_exited.connect(_on_button_mouse_exited.bind(btn))
+		btn.button_down.connect(_on_button_down.bind(btn))
+		btn.button_up.connect(_on_button_up.bind(btn))
+	
+	# 为献祭按钮添加反馈
+	sacrifice_button.mouse_entered.connect(_on_button_mouse_entered.bind(sacrifice_button))
+	sacrifice_button.mouse_exited.connect(_on_button_mouse_exited.bind(sacrifice_button))
+	sacrifice_button.button_down.connect(_on_button_down.bind(sacrifice_button))
+	sacrifice_button.button_up.connect(_on_button_up.bind(sacrifice_button))
+
+
+func _on_button_mouse_entered(btn: BaseButton) -> void:
+	btn.modulate = Color(0.9, 0.9, 0.9)
+
+
+func _on_button_mouse_exited(btn: BaseButton) -> void:
+	btn.modulate = Color.WHITE
+
+
+func _on_button_down(btn: BaseButton) -> void:
+	btn.modulate = Color(0.8, 0.8, 0.8)
+
+
+func _on_button_up(btn: BaseButton) -> void:
+	btn.modulate = Color(0.9, 0.9, 0.9) if btn.get_global_rect().has_point(btn.get_viewport().get_mouse_position()) else Color.WHITE
 
 
 # ---- 棋盘 UI 构建 ----
@@ -159,19 +233,56 @@ func _setup_board_ui() -> void:
 	cell_labels.clear()
 	cell_panels.clear()
 	cell_sprites.clear()
+	cell_select_frames.clear()
+	cell_highlight_effects.clear()
 
 	grid_container.columns = GRID_SIZE
 
 	for i in range(GRID_SIZE * GRID_SIZE):
-		var cell := PanelContainer.new()
+		var cell := Control.new()
 		cell.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
+		cell.mouse_filter = Control.MOUSE_FILTER_PASS
 
-		# 背景色（透明，显示棋盘格图片）
-		var bg := ColorRect.new()
-		bg.set_anchors_preset(Control.PRESET_CENTER)
+		# 格子背景（交替灰度0.5/0.8，透明度0.9/0.7）
+		var bg := TextureRect.new()
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.texture = CELL_BG_TEXTURE
+		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		bg.modulate = Color(0.5, 0.5, 0.5, 0.9) if (i / GRID_SIZE + i % GRID_SIZE) % 2 == 0 else Color(0.8, 0.8, 0.8, 0.7)
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		bg.color = Color(0, 0, 0, 0)
+		bg.z_index = 0  # 最底层
 		cell.add_child(bg)
+		cell_rects.append(bg)
+
+		# 选中框（静态边框，初始隐藏）
+		var select_frame := TextureRect.new()
+		select_frame.set_anchors_preset(Control.PRESET_FULL_RECT)
+		select_frame.texture = CELL_SELECT_TEXTURE
+		select_frame.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		select_frame.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		select_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		select_frame.visible = false
+		select_frame.z_index = 1  # 在格子底之上
+		cell.add_child(select_frame)
+		cell_select_frames.append(select_frame)
+		
+		# 高亮效果（序列帧动画，初始隐藏）
+		var highlight_effect := TextureRect.new()
+		highlight_effect.set_anchors_preset(Control.PRESET_FULL_RECT)
+		highlight_effect.texture = null
+		highlight_effect.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		highlight_effect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		highlight_effect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		highlight_effect.visible = false
+		highlight_effect.scale = Vector2(2.6, 2.6)  # 放大2.6倍
+		highlight_effect.pivot_offset = Vector2(CELL_SIZE / 2, CELL_SIZE / 2)  # 以中心为缩放原点
+		highlight_effect.z_index = 2  # 在选中框之上
+		cell.add_child(highlight_effect)
+		cell_highlight_effects.append(highlight_effect)
+		
+		if i == 0:
+			print(">>> [Debug] 选中框纹理: %s" % CELL_SELECT_TEXTURE)
 
 		# 角色精灵图（覆盖整个格子）
 		var sprite := TextureRect.new()
@@ -183,9 +294,10 @@ func _setup_board_ui() -> void:
 		sprite.pivot_offset = Vector2(CELL_SIZE / 2, CELL_SIZE / 2)  # 以中央为缩放中心
 		sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		sprite.visible = false
+		sprite.z_index = 5  # 正常角色层级，在动画之上
 		cell.add_child(sprite)
 
-		# 角色信息标签（覆盖在精灵图下方）
+		# 角色信息标签（隐藏）
 		var lbl := Label.new()
 		lbl.set_anchors_preset(Control.PRESET_CENTER)
 		lbl.anchor_top = 0.6  # 从60%高度开始
@@ -194,6 +306,7 @@ func _setup_board_ui() -> void:
 		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		lbl.add_theme_font_size_override("font_size", 20)
+		lbl.visible = false  # 隐藏角色文字
 		cell.add_child(lbl)
 
 		# 点击事件
@@ -222,14 +335,19 @@ func _update_character_detail_panel() -> void:
 		var ch: DataModels.CharacterData = bd.get_character_at_index(selected_index)
 		if ch != null:
 			# 显示角色信息
-			detail_label.text = "%s Lv.%d  HP: %d/%d  ATK: %d  DEF: %d  [🔥献祭 +%d⚡]" % [
-				ch.get_job_name(), ch.level, ch.hp, ch.max_hp, ch.attack, ch.defense,
-				GameManager.calc_sacrifice_energy(ch.level)
+			name_label.text = ch.get_job_name()
+			detail_label.text = "Lv.%d  HP: %d/%d  ATK: %d  DEF: %d" % [
+				ch.level, ch.hp, ch.max_hp, ch.attack, ch.defense
 			]
+			var energy := GameManager.calc_sacrifice_energy(ch.level)
+			sacrifice_button.text = "献祭\n获得 %d 能量" % energy
+			sacrifice_button.visible = true
 			return
-
+	
 	# 无选中或角色已不存在
+	name_label.text = ""
 	detail_label.text = LocalizationSystem.get_text("game_board.click_to_view_detail", {})
+	sacrifice_button.visible = false
 
 
 func _on_sacrifice_button_pressed() -> void:
@@ -238,16 +356,38 @@ func _on_sacrifice_button_pressed() -> void:
 
 
 # ---- 宿舍面板 ----
+var _dorm_sort_order: Array = []  # 排序后的宿舍索引
 
 func _setup_dorm_panel() -> void:
+	# 遮罩层（先创建，放在最底层）
+	dorm_backdrop = ColorRect.new()
+	dorm_backdrop.color = Color(0, 0, 0, 0.5)
+	dorm_backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dorm_backdrop.visible = false
+	dorm_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	dorm_backdrop.gui_input.connect(_on_dorm_backdrop_clicked)
+	add_child(dorm_backdrop)
+	
 	dorm_panel = PanelContainer.new()
 	dorm_panel.visible = false
 	dorm_panel.set_anchors_preset(Control.PRESET_CENTER)
-	dorm_panel.custom_minimum_size = Vector2(300, 200)
-	dorm_panel.offset_left = -150
-	dorm_panel.offset_top = -100
-	dorm_panel.offset_right = 150
-	dorm_panel.offset_bottom = 100
+	# 宿舍尺寸：4列 * 140 + 3间隔 * 10 + padding
+	dorm_panel.custom_minimum_size = Vector2(4 * 140 + 3 * 10 + 40, 4 * 140 + 3 * 10 + 100)
+	dorm_panel.offset_left = -(dorm_panel.custom_minimum_size.x / 2)
+	dorm_panel.offset_top = -(dorm_panel.custom_minimum_size.y / 2)
+	dorm_panel.offset_right = dorm_panel.custom_minimum_size.x / 2
+	dorm_panel.offset_bottom = dorm_panel.custom_minimum_size.y / 2
+	
+	# 使用panel.png作为背景
+	var panel_texture := preload("res://art/sprites/UI/panels/panel.png")
+	var bg := TextureRect.new()
+	bg.texture = panel_texture
+	bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dorm_panel.add_child(bg)
+	
 	add_child(dorm_panel)
 
 
@@ -257,46 +397,196 @@ func _refresh_dorm_panel() -> void:
 		child.queue_free()
 
 	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
 	dorm_panel.add_child(vbox)
 
+	# 标题行
+	var title_row := HBoxContainer.new()
+	vbox.add_child(title_row)
+	
 	var title := Label.new()
-	title.text = LocalizationSystem.get_text("game_board.dorm_title", {"count": GameManager.board_data.dormitory.size()})
+	title.text = LocalizationSystem.get_text("game_board.dorm_title", {"count": GameManager.board_data.dormitory.size(), "max": BoardData.DORM_CAPACITY})
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(title)
+	title.add_theme_font_size_override("font_size", 22)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_row.add_child(title)
+	
+	# 关闭按钮（右上角）
+	var close_btn := TextureButton.new()
+	close_btn.texture_normal = load("res://art/sprites/UI/items/smallItem/close.png")
+	close_btn.custom_minimum_size = Vector2(80, 80)
+	close_btn.pressed.connect(_on_dorm_close)
+	title_row.add_child(close_btn)
 
-	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(280, 120)
-	vbox.add_child(scroll)
+	# 4x4 网格
+	var grid := GridContainer.new()
+	grid.columns = 4
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 10)
+	vbox.add_child(grid)
 
-	var list := VBoxContainer.new()
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(list)
-
+	# 获取排序后的宿舍索引（按等级从高到低）
+	_dorm_sort_order.clear()
+	var dorm_data: Array = []
 	for i in range(GameManager.board_data.dormitory.size()):
 		var ch: DataModels.CharacterData = GameManager.board_data.dormitory[i]
-		var row := HBoxContainer.new()
-		list.add_child(row)
+		dorm_data.append({"index": i, "level": ch.level, "job": ch.job})
+	
+	# 排序：等级高的在前
+	dorm_data.sort_custom(func(a, b): 
+		if a["level"] != b["level"]:
+			return a["level"] > b["level"]  # 等级降序
+		return a["job"] < b["job"]  # 同等级按职业ID排序
+	)
+	
+	for data in dorm_data:
+		_dorm_sort_order.append(data["index"])
 
-		var info := Label.new()
-		info.text = "%s Lv.%d  HP:%d/%d" % [ch.get_job_name(), ch.level, ch.hp, ch.max_hp]
-		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(info)
+	# 创建格子
+	for i in range(BoardData.DORM_CAPACITY):
+		var cell := _create_dorm_cell(i)
+		grid.add_child(cell)
 
-		var take_btn := Button.new()
-		take_btn.text = LocalizationSystem.get_text("game_board.dorm_take")
-		take_btn.pressed.connect(_on_dorm_take_pressed.bind(i))
-		row.add_child(take_btn)
 
-	if GameManager.board_data.dormitory.size() == 0:
-		var empty := Label.new()
-		empty.text = LocalizationSystem.get_text("game_board.dorm_empty")
-		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		list.add_child(empty)
+func _create_dorm_cell(index: int) -> Control:
+	# 使用 PanelContainer 作为格子容器
+	var container := PanelContainer.new()
+	container.custom_minimum_size = Vector2(140, 140)
+	container.mouse_filter = Control.MOUSE_FILTER_STOP
+	
+	# 背景层（cell_0）
+	var bg := TextureRect.new()
+	bg.texture = load("res://art/sprites/UI/items/smallItem/cell_0.png")
+	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	container.add_child(bg)
+	
+	# 选择框叠加层（cell_1）- 初始隐藏
+	var overlay := TextureRect.new()
+	overlay.name = "Overlay"
+	overlay.texture = load("res://art/sprites/UI/items/smallItem/cell_1.png")
+	overlay.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.visible = false
+	container.add_child(overlay)
+	
+	# 判断是否有角色
+	var is_occupied := index < _dorm_sort_order.size()
+	if is_occupied:
+		var dorm_idx: int = _dorm_sort_order[index]
+		var ch: DataModels.CharacterData = GameManager.board_data.dormitory[dorm_idx]
+		var is_marked: bool = GameManager.board_data.is_marked_for_removal(dorm_idx)
+		
+		# 角色居中容器
+		var center := CenterContainer.new()
+		center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		container.add_child(center)
+		
+		# 角色精灵（使用 TextureRect 便于控制尺寸和居中）
+		var sprite := TextureRect.new()
+		sprite.texture = _load_character_sprite(ch)
+		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		sprite.custom_minimum_size = Vector2(100, 100)  # 比格子小40像素
+		center.add_child(sprite)
+		
+		# 等级标签
+		var lv_label := Label.new()
+		lv_label.text = "Lv.%d" % ch.level
+		lv_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lv_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+		lv_label.add_theme_font_size_override("font_size", 14)
+		lv_label.add_theme_color_override("font_color", Color(1, 0.9, 0.6))
+		center.add_child(lv_label)
+		
+		# 标记高亮 - 叠加层显示
+		if is_marked:
+			overlay.visible = true
+		
+		# 点击事件
+		container.gui_input.connect(_on_dorm_cell_input.bind(dorm_idx))
+	
+	return container
 
-	var close_btn := Button.new()
-	close_btn.text = LocalizationSystem.get_text("game_board.back")
-	close_btn.pressed.connect(_on_dorm_close)
-	vbox.add_child(close_btn)
+
+func _on_dorm_cell_clicked(dorm_index: int) -> void:
+	_show_dorm_character_popup(dorm_index)
+
+
+func _load_character_sprite(ch: DataModels.CharacterData) -> Texture2D:
+	# 根据角色职业和等级加载 sprite
+	var folder := ch.get_sprite_folder()
+	var sprite_name := ch.get_sprite_path(1, 1)  # 待机动画第1帧
+	var path := "res://art/sprites/chars/%s/%s.png" % [folder, sprite_name]
+	var tex: Texture2D = load(path)
+	if tex == null:
+		# 回退到战士默认图
+		tex = load("res://art/sprites/chars/char_01/char_010101.png")
+	return tex
+
+
+func _get_dorm_job_color(job_id: int) -> Color:
+	match job_id:
+		0: return Color(0.85, 0.25, 0.25)  # 战士 - 红色
+		1: return Color(0.4, 0.25, 0.85)  # 法师 - 紫色
+		2: return Color(0.25, 0.7, 0.25)  # 牧师 - 绿色
+		10: return Color(0.9, 0.3, 0.1)  # 狂战士 - 深红
+		11: return Color(0.5, 0.5, 0.6)  # 骑士 - 银灰
+		20: return Color(0.3, 0.8, 0.9)  # 冰法 - 冰蓝
+		21: return Color(0.9, 0.4, 0.1)  # 火法 - 橙红
+		30: return Color(0.4, 0.2, 0.5)  # 暗牧 - 暗紫
+		31: return Color(0.9, 0.85, 0.5)  # 圣骑士 - 金色
+		_: return Color(0.5, 0.5, 0.5)
+
+
+func _on_dorm_cell_input(event: InputEvent, dorm_index: int) -> void:
+	if event is InputEventMouseButton:
+		var mb: InputEventMouseButton = event
+		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
+			_show_dorm_character_popup(dorm_index)
+
+
+func _show_dorm_character_popup(dorm_index: int) -> void:
+	var ch: DataModels.CharacterData = GameManager.board_data.dormitory[dorm_index]
+	var content := "等级: %d\n血量: %d/%d\n攻击: %d\n防御: %d" % [
+		ch.level, ch.hp, ch.max_hp, ch.attack, ch.defense
+	]
+	
+	var is_marked: bool = GameManager.board_data.is_marked_for_removal(dorm_index)
+	var btn_text := "标记移出" if not is_marked else "取消标记"
+	
+	PopupSystem.show(
+		"%s Lv.%d" % [ch.get_job_name(), ch.level],
+		content,
+		"是否移出角色到棋盘？",
+		btn_text,
+		"关闭",
+		Callable(self, "_on_dorm_popup_confirm").bind(dorm_index),
+		Callable(self, "_on_dorm_popup_close")
+	)
+
+
+func _on_dorm_popup_confirm(dorm_index: int) -> void:
+	var bd: BoardData = GameManager.board_data
+	var is_marked: bool = bd.is_marked_for_removal(dorm_index)
+	
+	if is_marked:
+		bd.unmark_for_removal(dorm_index)
+	else:
+		# 检查棋盘是否有空间
+		if bd.get_empty_board_count() <= bd.marked_for_removal.size():
+			TipManager.show_tip("棋盘格已满，无法移出")
+			return
+		bd.marked_for_removal.append(dorm_index)
+	
+	_refresh_dorm_panel()
+
+
+func _on_dorm_popup_close() -> void:
+	pass  # 关闭弹窗不做额外操作
 
 
 # ---- 棋盘格拖拽处理 (任务 2.3 拖拽/选中) ----
@@ -404,6 +694,9 @@ func _handle_cell_action(target_index: int) -> void:
 	elif target_ch.job == source_ch.job and target_ch.level == source_ch.level:
 		# 同职业同等级: 合成 (任务 2.4)
 		_merge_at(selected_index, target_index)
+		# 合成后清空拖拽状态，防止高亮动画重新显示
+		merge_targets.clear()
+		hover_index = -1
 		# 合成后目标位置的角色保持选中
 		selected_index = target_index
 		_refresh_board_display()
@@ -684,15 +977,24 @@ func _start_drag(cell_index: int, mouse_pos: Vector2) -> void:
 	drag_index = cell_index
 	selected_index = cell_index
 
-	# 创建拖拽预览
+	# 创建拖拽预览（添加到场景树根节点以确保最上层显示）
 	drag_preview = _create_drag_preview(cell_index)
-	add_child(drag_preview)
+	get_tree().root.add_child(drag_preview)
 	drag_preview.global_position = mouse_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
 
 	# 隐藏原始格子
 	cell_panels[cell_index].modulate.a = 0.3
 
-	print(">>> [GameBoard] 开始拖拽格 %d" % cell_index)
+	# 提升拖拽角色的层级到最高
+	cell_sprites[cell_index].z_index = 20
+
+	# 找到所有可合成的目标格子
+	_find_merge_targets(cell_index)
+
+	# 显示所有可合成目标的高亮动画（透明度0.5）
+	_update_merge_highlights()
+
+	print(">>> [GameBoard] 开始拖拽格 %d，可合成目标: %s" % [cell_index, merge_targets])
 
 
 func _create_drag_preview(cell_index: int, with_outline: bool = false) -> Control:
@@ -703,6 +1005,8 @@ func _create_drag_preview(cell_index: int, with_outline: bool = false) -> Contro
 	var preview := Control.new()
 	preview.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
 	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE  # 让事件穿透到下层
+	preview.z_index = 100  # 最上层
+	preview.z_as_relative = false  # 使用全局z_index
 
 	# 精灵图
 	var sprite_folder: String = ch.get_sprite_folder()
@@ -716,6 +1020,7 @@ func _create_drag_preview(cell_index: int, with_outline: bool = false) -> Contro
 		sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		sprite.texture = tex
 		sprite.custom_minimum_size = Vector2(CHAR_SIZE, CHAR_SIZE)
+		sprite.z_index = 0  # 相对于preview的层级
 
 		# 如果可合成，添加Outline效果
 		if with_outline:
@@ -739,6 +1044,9 @@ func _update_drag_preview(mouse_pos: Vector2) -> void:
 	hover_index = _get_hovered_cell_index(mouse_pos)
 	is_hovering_dorm = _is_near_dorm_button(mouse_pos)
 	_refresh_board_display()
+
+	# 更新高亮效果（拖拽悬停在可合成目标上时显示）
+	_update_merge_highlights()
 
 	# 临时高亮目标格子 & 更新拖拽预览Outline
 	var is_over_mergeable: bool = false
@@ -823,9 +1131,10 @@ func _end_drag(_target_index: int) -> void:
 	if not is_dragging:
 		return
 
-	# 恢复原始格子透明度
+	# 恢复原始格子透明度和层级
 	if drag_index >= 0 and drag_index < cell_panels.size():
 		cell_panels[drag_index].modulate.a = 1.0
+		cell_sprites[drag_index].z_index = 5  # 恢复正常层级
 
 	# 销毁拖拽预览
 	if drag_preview != null:
@@ -841,6 +1150,7 @@ func _end_drag(_target_index: int) -> void:
 		drag_index = -1
 		hover_index = -1
 		is_hovering_dorm = false
+		merge_targets.clear()
 		return
 
 	# 执行放置操作: 使用悬停的格子作为目标
@@ -857,6 +1167,9 @@ func _end_drag(_target_index: int) -> void:
 	drag_index = -1
 	hover_index = -1
 	is_hovering_dorm = false
+	merge_targets.clear()
+	# 隐藏所有高亮效果
+	_update_merge_highlights()
 	# 恢复宿舍按钮颜色
 	dorm_button.modulate = Color(1.0, 1.0, 1.0, 1.0)
 	print(">>> [GameBoard] 结束拖拽")
@@ -866,7 +1179,21 @@ func _end_drag(_target_index: int) -> void:
 
 func _refresh_board_display() -> void:
 	var bd: BoardData = GameManager.board_data
+
+	# 只在非拖拽状态下停止高亮动画和隐藏高亮
+	if not is_dragging:
+		if _select_tween and _select_tween.is_valid():
+			_select_tween.kill()
+			_select_tween = null
+
+		for i in range(BoardData.BOARD_SLOTS):
+			cell_highlight_effects[i].visible = false
+
 	for i in range(BoardData.BOARD_SLOTS):
+		# 更新选中框显示（静态边框）
+		var is_selected: bool = (i == selected_index)
+		cell_select_frames[i].visible = is_selected
+
 		var ch: DataModels.CharacterData = bd.get_character_at_index(i)
 		if ch != null:
 			# 角色格子：背景保持空格子颜色
@@ -892,6 +1219,138 @@ func _refresh_board_display() -> void:
 			cell_labels[i].text = ""
 			cell_sprites[i].texture = null
 			cell_sprites[i].visible = false
+
+	# 更新高亮效果（拖拽时动态显示）
+	_update_merge_highlights()
+
+
+## 更新可合成高亮效果（拖拽时显示）
+func _update_merge_highlights() -> void:
+	# 如果不在拖拽状态，隐藏所有高亮
+	if not is_dragging:
+		for i in range(BoardData.BOARD_SLOTS):
+			cell_highlight_effects[i].visible = false
+		return
+
+	# 显示所有可合成目标的高亮，透明度0.5，白色
+	for target_index in merge_targets:
+		cell_highlight_effects[target_index].visible = true
+		cell_highlight_effects[target_index].texture = SELECT_FRAMES[_highlight_frame_index] if not SELECT_FRAMES.is_empty() else null
+		cell_highlight_effects[target_index].modulate = Color(1, 1, 1, 0.5)
+
+	# 如果悬停在某个可合成目标上，该目标透明度改为1，颜色偏红
+	if hover_index >= 0 and merge_targets.has(hover_index):
+		cell_highlight_effects[hover_index].modulate = Color(1, 0.6, 0.6, 1.0)
+
+	# 隐藏不在目标列表中的高亮
+	for i in range(BoardData.BOARD_SLOTS):
+		if not merge_targets.has(i):
+			cell_highlight_effects[i].visible = false
+
+	# 启动动画（如果未运行）
+	if not merge_targets.is_empty() and not SELECT_FRAMES.is_empty():
+		_start_highlight_animation()
+
+
+## 查找拖拽角色可合成的目标格子
+func _find_merge_targets(drag_source_index: int) -> void:
+	merge_targets.clear()
+	var bd: BoardData = GameManager.board_data
+	var source_ch: DataModels.CharacterData = bd.get_character_at_index(drag_source_index)
+
+	if source_ch == null:
+		return
+
+	# 遍历所有格子，找到相同职业、相同等级的角色
+	for i in range(BoardData.BOARD_SLOTS):
+		if i == drag_source_index:
+			continue
+
+		var target_ch: DataModels.CharacterData = bd.get_character_at_index(i)
+		if target_ch != null and target_ch.job == source_ch.job and target_ch.level == source_ch.level:
+			merge_targets.append(i)
+
+	print(">>> [Debug] 可合成目标格子: %s" % merge_targets)
+
+
+## 查找可合成的格子
+func _find_merge_candidates() -> Array:
+	var bd: BoardData = GameManager.board_data
+	var candidates: Array = []
+
+	for i in range(BoardData.BOARD_SLOTS):
+		var ch: DataModels.CharacterData = bd.get_character_at_index(i)
+		if ch == null:
+			continue
+
+		# 检查相邻格子是否有相同角色
+		var neighbors := _get_neighbors(i)
+		for neighbor_index in neighbors:
+			var neighbor_ch: DataModels.CharacterData = bd.get_character_at_index(neighbor_index)
+			if neighbor_ch != null and neighbor_ch.job == ch.job and neighbor_ch.level == ch.level:
+				# 找到可合成的格子
+				if not candidates.has(i):
+					candidates.append(i)
+				if not candidates.has(neighbor_index):
+					candidates.append(neighbor_index)
+
+	return candidates
+
+
+## 获取相邻格子索引
+func _get_neighbors(index: int) -> Array:
+	var neighbors: Array = []
+	var pos := BoardData.index_to_pos(index)
+	var x := pos.x
+	var y := pos.y
+
+	# 上
+	if y > 0:
+		neighbors.append(BoardData.pos_to_index(Vector2i(x, y - 1)))
+	# 下
+	if y < BoardData.GRID_SIZE - 1:
+		neighbors.append(BoardData.pos_to_index(Vector2i(x, y + 1)))
+	# 左
+	if x > 0:
+		neighbors.append(BoardData.pos_to_index(Vector2i(x - 1, y)))
+	# 右
+	if x < BoardData.GRID_SIZE - 1:
+		neighbors.append(BoardData.pos_to_index(Vector2i(x + 1, y)))
+
+	return neighbors
+
+
+## 启动高亮序列帧动画（持续运行，独立于格子列表）
+func _start_highlight_animation() -> void:
+	if SELECT_FRAMES.is_empty():
+		print(">>> [Warning] 序列帧纹理未加载！")
+		return
+
+	# 如果动画已经在运行，不重复创建
+	if _select_tween and _select_tween.is_valid():
+		return
+
+	print(">>> [Debug] 启动高亮动画（持续运行模式）")
+
+	# 创建序列帧动画：循环切换帧索引
+	_select_tween = create_tween()
+	_select_tween.set_loops()
+
+	# 每帧显示 0.05 秒，循环播放
+	for i in range(SELECT_FRAMES.size()):
+		_select_tween.tween_callback(_advance_highlight_frame)
+		_select_tween.tween_interval(0.05)
+
+
+## 推进高亮帧并更新所有可见的高亮效果
+func _advance_highlight_frame() -> void:
+	_highlight_frame_index = (_highlight_frame_index + 1) % SELECT_FRAMES.size()
+
+	# 更新所有可见高亮效果的纹理
+	var frame_texture: Texture2D = SELECT_FRAMES[_highlight_frame_index]
+	for i in range(BoardData.BOARD_SLOTS):
+		if cell_highlight_effects[i].visible:
+			cell_highlight_effects[i].texture = frame_texture
 
 
 func _get_job_color(job: int) -> Color:
@@ -936,11 +1395,13 @@ func _on_spawn_pressed(job: int) -> void:
 
 	if not GameManager.spend_energy(1):
 		print(">>> [GameBoard] 生成失败: 能量不足")
+		TipManager.show_tip("能量不足")
 		return
 
 	if GameManager.board_data.is_board_full():
 		GameManager.restore_energy(1)
 		print(">>> [GameBoard] 生成失败: 棋盘已满")
+		TipManager.show_tip("棋盘格已满")
 		return
 
 	var level: int = randi_range(1, 3)
@@ -972,7 +1433,7 @@ func _on_spawn_pressed(job: int) -> void:
 		SaveSystem.unlock_encyclopedia(ch.job, ch.level)
 
 	# 获取生成按钮位置和目标格子位置
-	var spawn_btn: Button
+	var spawn_btn: BaseButton
 	match job:
 		DataModels.Job.WARRIOR: spawn_btn = spawn_warrior
 		DataModels.Job.MAGE: spawn_btn = spawn_mage
@@ -1052,7 +1513,7 @@ var _spawn_hint_tween: Tween = null
 func _play_spawn_cell_hint(target_index: int) -> void:
 	if target_index < 0 or target_index >= cell_panels.size():
 		return
-	var cell: PanelContainer = cell_panels[target_index]
+	var cell: Control = cell_panels[target_index]
 	if cell == null:
 		return
 
@@ -1101,6 +1562,7 @@ func _clear_spawn_cell_hint(_target_index: int) -> void:
 func _on_dorm_pressed() -> void:
 	dorm_visible = !dorm_visible
 	dorm_panel.visible = dorm_visible
+	dorm_backdrop.visible = dorm_visible
 	if dorm_visible:
 		_refresh_dorm_panel()
 
@@ -1108,6 +1570,7 @@ func _on_dorm_pressed() -> void:
 func _on_dorm_take_pressed(dorm_index: int) -> void:
 	if GameManager.board_data.is_board_full():
 		print(">>> [GameBoard] 取出失败: 棋盘已满")
+		TipManager.show_tip("棋盘格已满")
 		return
 	var ch: DataModels.CharacterData = GameManager.board_data.take_from_dormitory(dorm_index)
 	if ch == null:
@@ -1118,9 +1581,101 @@ func _on_dorm_take_pressed(dorm_index: int) -> void:
 	_refresh_board_display()
 
 
+func _on_dorm_backdrop_clicked(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mb: InputEventMouseButton = event
+		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
+			_on_dorm_close()
+
+
 func _on_dorm_close() -> void:
+	var bd: BoardData = GameManager.board_data
+	
+	# 执行所有标记移出的角色
+	if bd.marked_for_removal.size() > 0:
+		if not bd.can_remove_marked():
+			TipManager.show_tip("棋盘格已满，无法移出")
+			bd.marked_for_removal.clear()
+			_hide_dorm_ui()
+		else:
+			# 获取宿舍按钮中心位置作为动画起点（必须在隐藏面板之前获取）
+			var dorm_pos: Vector2 = dorm_button.global_position + Vector2(dorm_button.size.x / 2, dorm_button.size.y / 2)
+			
+			# 执行数据操作，获取每个角色被放置到的棋盘索引
+			var moved_data: Array = bd.execute_removal()
+			
+			if moved_data.size() > 0:
+				TipManager.show_tip("已移出 %d 个角色到棋盘" % moved_data.size())
+				# 先隐藏宿舍UI
+				_hide_dorm_ui()
+				# 播放动画
+				_play_dorm_to_board_animation(moved_data, dorm_pos)
+				return
+	
+	_hide_dorm_ui()
+
+
+func _hide_dorm_ui() -> void:
 	dorm_visible = false
 	dorm_panel.visible = false
+	dorm_backdrop.visible = false
+
+
+func _play_dorm_to_board_animation(moved_data: Array, start_pos: Vector2) -> void:
+	# 先刷新棋盘显示，加载角色的 texture
+	_refresh_board_display()
+	
+	# 隐藏目标格子上的角色显示（等动画结束再显示）
+	var hidden_indices: Array = []
+	for data in moved_data:
+		var board_idx: int = data["board_index"]
+		if board_idx >= 0 and board_idx < cell_sprites.size():
+			hidden_indices.append(board_idx)
+			cell_sprites[board_idx].visible = false
+	
+	# 为每个角色播放从宿舍飞到棋盘的动画
+	for data in moved_data:
+		var ch: DataModels.CharacterData = data["char"]
+		var board_idx: int = data["board_index"]
+		
+		if board_idx < 0 or board_idx >= cell_panels.size():
+			continue
+		
+		var target_cell: Control = cell_panels[board_idx]
+		var end_pos: Vector2 = target_cell.global_position + Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
+		
+		# 创建动画精灵
+		var anim_sprite := TextureRect.new()
+		anim_sprite.custom_minimum_size = Vector2(CHAR_SIZE, CHAR_SIZE)
+		anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		anim_sprite.z_index = 200
+		
+		# 加载精灵图
+		var sprite_folder: String = ch.get_sprite_folder()
+		var sprite_name: String = ch.get_sprite_path(1, 1)
+		var sprite_path: String = "res://art/sprites/chars/" + sprite_folder + "/" + sprite_name + ".png"
+		if ResourceLoader.exists(sprite_path):
+			anim_sprite.texture = load(sprite_path)
+		
+		add_child(anim_sprite)
+		anim_sprite.global_position = start_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
+		anim_sprite.scale = Vector2(0.8, 0.8)
+		
+		# 飞行动画
+		var tween := create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(anim_sprite, "global_position", end_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2), 0.4)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(anim_sprite, "scale", Vector2(1.0, 1.0), 0.4)\
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		
+		# 动画结束后恢复格子显示并播放落地动画
+		tween.finished.connect(func():
+			anim_sprite.queue_free()
+			cell_sprites[board_idx].visible = true
+			_play_land_animation(board_idx)
+		)
 
 
 func _drag_to_dorm() -> void:
@@ -1144,13 +1699,15 @@ func _refresh_relic_panel() -> void:
 	# 清空旧内容
 	for child in relic_list.get_children():
 		child.queue_free()
-
-	# 显示遗物列表
+	
+	# 显示所有遗物
 	for i in range(GameManager.relics.size()):
 		var relic: DataModels.ItemData = GameManager.relics[i]
-		var relic_item: PanelContainer = PanelContainer.new()
+		var relic_item: Button = Button.new()
 		relic_item.custom_minimum_size = Vector2(80, 60)
-
+		relic_item.tooltip_text = "%s\n%s" % [relic.name, relic.description]
+		relic_item.pressed.connect(_on_relic_pressed.bind(relic))
+		
 		var vbox := VBoxContainer.new()
 		relic_item.add_child(vbox)
 
@@ -1168,6 +1725,31 @@ func _refresh_relic_panel() -> void:
 		vbox.add_child(count_lbl)
 
 		relic_list.add_child(relic_item)
+	
+	# 更新翻页按钮状态：遗物未满时半透明禁用
+	await get_tree().process_frame  # 等待布局更新
+	var need_scroll: bool = relic_list.size.x > relic_scroll.size.x
+	relic_prev_button.disabled = not need_scroll
+	relic_next_button.disabled = not need_scroll
+	relic_prev_button.modulate = Color(1, 1, 1, 0.3) if not need_scroll else Color.WHITE
+	relic_next_button.modulate = Color(1, 1, 1, 0.3) if not need_scroll else Color.WHITE
+
+
+func _on_relic_pressed(relic: DataModels.ItemData) -> void:
+	# 按下时显示详细信息（触屏支持）
+	print(">>> [GameBoard] 遗物详情: %s - %s" % [relic.name, relic.description])
+
+
+func _on_relic_prev_pressed() -> void:
+	# 滚动到上一页
+	var scroll_width: int = int(relic_scroll.size.x)
+	relic_scroll.scroll_horizontal -= scroll_width
+
+
+func _on_relic_next_pressed() -> void:
+	# 滚动到下一页
+	var scroll_width: int = int(relic_scroll.size.x)
+	relic_scroll.scroll_horizontal += scroll_width
 
 
 func _on_relics_changed() -> void:
@@ -1210,14 +1792,16 @@ func _on_back_pressed() -> void:
 
 func _on_shop_pressed() -> void:
 	print(">>> [GameBoard] 打开商店")
-	get_tree().change_scene_to_file("res://scenes/shop_scene.tscn")
+	# 使用弹窗方式打开商店（不切换场景）
+	var shop_scene := preload("res://scenes/shop_scene.tscn").instantiate()
+	add_child(shop_scene)
 
 
 func _on_encyclopedia_pressed() -> void:
 	print(">>> [GameBoard] 打开图鉴")
-	# Tutorial: advance after opening encyclopedia (step 3)
 	_try_advance_tutorial(3)
-	get_tree().change_scene_to_file("res://scenes/encyclopedia_scene.tscn")
+	var encyclopedia := preload("res://scenes/encyclopedia_scene.tscn").instantiate()
+	add_child(encyclopedia)
 
 
 func _on_item_pressed() -> void:
@@ -1232,18 +1816,29 @@ func _setup_item_slots() -> void:
 	item_slot_labels.clear()
 	item_slot_overlays.clear()
 
+	# 加载格子背景纹理
+	var cell_texture := preload("res://art/sprites/UI/items/smallItem/cell_0.png")
+
 	for i in range(ITEM_SLOT_COUNT):
 		var slot: Control = item_bar.get_child(i)
 		item_slot_nodes.append(slot)
+		
+		# 移除PanelContainer的默认样式（如果有）
+		if slot is PanelContainer:
+			var transparent_style := StyleBoxEmpty.new()
+			slot.add_theme_stylebox_override("panel", transparent_style)
 
 		# 清除旧内容
 		for child in slot.get_children():
 			child.queue_free()
 
-		# 背景色
-		var bg := ColorRect.new()
-		bg.set_anchors_preset(Control.PRESET_CENTER)
-		bg.color = Color("#1A2A4A")
+		# 背景纹理（使用cell_0.png）
+		var bg := TextureRect.new()
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.texture = cell_texture
+		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		bg.modulate = Color(0.8, 0.8, 0.8, 0.9)
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE  # 让点击穿透到slot
 		slot.add_child(bg)
 
@@ -1577,6 +2172,17 @@ func _create_item_panel() -> void:
 	item_panel.offset_top = -110
 	item_panel.offset_right = 160
 	item_panel.offset_bottom = 110
+	
+	# 添加 panel.png 背景
+	var panel_texture := preload("res://art/sprites/UI/panels/panel.png")
+	var bg := TextureRect.new()
+	bg.texture = panel_texture
+	bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	item_panel.add_child(bg)
+	
 	add_child(item_panel)
 
 
@@ -1654,6 +2260,19 @@ func _on_settings_pressed() -> void:
 
 
 func _show_settings_panel() -> void:
+	# 添加 panel.png 背景（如果还没有）
+	if settings_panel.get_child_count() == 0 or not settings_panel.get_child(0).name == "PanelBg":
+		var panel_texture := preload("res://art/sprites/UI/panels/panel.png")
+		var bg := TextureRect.new()
+		bg.name = "PanelBg"
+		bg.texture = panel_texture
+		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		settings_panel.add_child(bg)
+		settings_panel.move_child(bg, 0)  # 移到最底层
+	
 	settings_panel.visible = true
 	_update_settings_ui()
 	_update_settings_texts()

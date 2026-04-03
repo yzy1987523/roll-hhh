@@ -5,7 +5,7 @@ class_name DataModels
 ## 包含 BuffEffect、Character、Item 内部类
 
 # 预加载依赖类
-const JobAdvanced = preload("res://scripts/job_advanced.gd")
+const JA = preload("res://scripts/job_advanced.gd")
 
 # ---- 职业常量 ----
 enum Job { WARRIOR = 0, MAGE = 1, PRIEST = 2 }
@@ -118,7 +118,7 @@ class CharacterData:
 	# 获取职业名称
 	func get_job_name() -> String:
 		# 先检查转职职业
-		var adv_name: String = JobAdvanced.get_advanced_job_name(job)
+		var adv_name: String = JA.get_advanced_job_name(job)
 		if adv_name != "":
 			return adv_name
 		match job:
@@ -129,7 +129,7 @@ class CharacterData:
 
 	# 获取基础职业 (转职前的原始职业)
 	func get_base_job() -> int:
-		if JobAdvanced.is_advanced_job(job):
+		if JA.is_advanced_job(job):
 			if job >= 30: return Job.PRIEST
 			if job >= 20: return Job.MAGE
 			return Job.WARRIOR

@@ -4,8 +4,8 @@ extends Node
 ## 任务 6.1: LocalStorage 自动存档
 
 # 预加载依赖类 (Autoload 需要显式预加载)
-const BoardData = preload("res://scripts/board_data.gd")
-const DataModels = preload("res://scripts/data_models.gd")
+const BD = preload("res://scripts/board_data.gd")
+const DM = preload("res://scripts/data_models.gd")
 
 const SAVE_KEY := "roll_hhh_save"
 const ENCYCLOPEDIA_KEY := "roll_hhh_encyclopedia"
@@ -107,7 +107,7 @@ func _build_save_data() -> Dictionary:
 
 	# 棋盘角色
 	var board_chars: Array = []
-	for i in range(BoardData.BOARD_SLOTS):
+	for i in range(BD.BOARD_SLOTS):
 		var ch = GameManager.board_data.board[i]
 		if ch != null:
 			var d: Dictionary = ch.to_dict()
@@ -154,17 +154,17 @@ func _apply_save(data: Dictionary) -> void:
 	# 恢复棋盘角色
 	var board_chars: Array = data.get("board", [])
 	for cd in board_chars:
-		var ch := DataModels.CharacterData.from_dict(cd)
+		var ch := DM.CharacterData.from_dict(cd)
 		var idx: int = cd.get("board_index", -1)
-		if idx >= 0 and idx < BoardData.BOARD_SLOTS:
-			var pos: Vector2i = BoardData.index_to_pos(idx)
+		if idx >= 0 and idx < BD.BOARD_SLOTS:
+			var pos: Vector2i = BD.index_to_pos(idx)
 			GameManager.board_data.board[idx] = ch
 			ch.position = pos
 
 	# 恢复宿舍角色
 	var dorm_chars: Array = data.get("dormitory", [])
 	for cd in dorm_chars:
-		var ch := DataModels.CharacterData.from_dict(cd)
+		var ch := DM.CharacterData.from_dict(cd)
 		ch.position = Vector2i(-1, -1)
 		GameManager.board_data.dormitory.append(ch)
 
@@ -172,14 +172,14 @@ func _apply_save(data: Dictionary) -> void:
 	GameManager.items.clear()
 	var items_data: Array = data.get("items", [])
 	for id_data in items_data:
-		var item := DataModels.ItemData.from_dict(id_data)
+		var item := DM.ItemData.from_dict(id_data)
 		GameManager.items.append(item)
 
 	# 恢复遗物
 	GameManager.relics.clear()
 	var relics_data: Array = data.get("relics", [])
 	for rd in relics_data:
-		var item := DataModels.ItemData.from_dict(rd)
+		var item := DM.ItemData.from_dict(rd)
 		GameManager.relics.append(item)
 
 	# 发射信号更新UI
@@ -226,9 +226,9 @@ func _load_from_storage(key: String) -> Dictionary:
 		print(">>> [SaveSystem] JSON解析失败: %s" % json.get_error_message())
 		return {}
 
-	var result = json.data
-	if result is Dictionary:
-		return result
+	var parsed_data = json.data
+	if parsed_data is Dictionary:
+		return parsed_data
 	return {}
 
 

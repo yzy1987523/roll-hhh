@@ -110,6 +110,10 @@ func _setup_bullet_visual() -> void:
 func _physics_process(delta: float) -> void:
 	if not is_active:
 		return
+	
+	# 检查暂停状态
+	if BattleScene.is_battle_paused():
+		return
 
 	# 移动向目标
 	var direction: Vector2 = (target_position - global_position).normalized()

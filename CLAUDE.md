@@ -164,3 +164,99 @@ When adding icons to buttons in `.tscn` files:
 [node name="CloseButton" type="Button"]
 icon = ExtResource("5_close")
 ```
+
+## 错题集 (Bug & Solutions)
+
+### 1. 宿舍格子 UI 设计
+
+**问题**: 需求变更导致格子显示异常
+- 空格子不应显示加号
+- cell_1 应叠加在 cell_0 上（选择框效果），而非替换
+- 角色 sprite 需要居中显示
+
+**解决方案**: 重构 `_create_dorm_cell()` 函数
+- 使用 PanelContainer 作为容器，而非 TextureButton
+- 添加两层 TextureRect：bg(底层 cell_0) + overlay(顶层 cell_1)
+- 使用 CenterContainer 包裹 TextureRect 实现角色居中
+- 通过 `overlay.visible` 控制选择框显示
+
+```gdscript
+# 正确结构
+PanelContainer
+├── bg (TextureRect, cell_0, 始终显示)
+├── overlay (TextureRect, cell_1, 按需显示)
+└── center (CenterContainer)
+    ├── sprite (TextureRect, 角色)
+    └── lv_label (Label, 等级)
+```
+
+### 2. 角色移出动画流程
+
+**问题**: 从宿舍关闭到角色飞入棋盘的过程中出现各种问题
+- 动画起点错误：使用宿舍面板位置而非宿舍按钮位置
+- 角色隐藏：动画结束时 sprite 消失
+
+**根本原因**:
+1. `execute_removal()` 返回值未包含目标棋盘索引
+2. 动画开始时棋盘 UI 未刷新，texture 为空
+
+**解决方案**:
+
+**Step 1**: 修改 `board_data.gd` 中 `execute_removal()` 返回值
+```gdscript
+# 返回角色数据数组，包含目标棋盘索引
+func execute_removal() -> Array:
+    var result: Array = []
+    # ... 放置角色 ...
+    result.append({"char": ch, "board_index": board_index})
+    return result
+```
+
+**Step 2**: 修改 `game_board.gd` 中动画逻辑
+```gdscript
+func _play_dorm_to_board_animation(moved_data: Array, start_pos: Vector2) -> void:
+    # 1. 先刷新棋盘显示，加载 texture
+    _refresh_board_display()
+    
+    # 2. 隐藏目标格子的 sprite
+    for data in moved_data:
+        cell_sprites[board_idx].visible = false
+    
+    # 3. 播放飞行动画
+    # ... 创建动画精灵从 start_pos 飞到目标格子 ...
+    
+    # 4. 动画结束后恢复显示 + 落地动画
+    tween.finished.connect(func():
+        cell_sprites[board_idx].visible = true
+        _play_land_animation(board_idx)
+    )
+```
+
+**动画起点**: 使用 `dorm_button.global_position + 按钮中心` 而非 `dorm_panel`
+
+### 3. 弹窗层级遮挡
+
+**问题**: 弹窗显示在商店界面背后，无法交互
+
+**原因**: 弹窗未移到根节点最前面
+
+**解决方案**: `popup_system.gd` 中显示弹窗时调用 `move_child()`
+```gdscript
+func show(...) -> void:
+    # ... 创建弹窗 ...
+    get_tree().root.add_child(popup)
+    get_tree().root.move_child(popup, get_tree().root.get_child_count() - 1)
+```
+
+### 4. 角色 sprite 不居中
+
+**问题**: TextureRect 显示的角色图片位置偏移
+
+**原因**: 使用了错误的 expand_mode 或未正确设置居中
+
+**解决方案**: 使用 CenterContainer 或正确的 stretch_mode
+```gdscript
+sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+# 或使用 CenterContainer 包裹
+```
