@@ -10,17 +10,20 @@ var _title_label: Label = null
 var _content_label: Label = null
 var _description_label: Label = null
 var _confirm_button: Button = null
-var _close_button: Button = null
+var _close_button: TextureButton = null
 var _button_container: HBoxContainer = null
+var _title_bar: Control = null
 
 # ---- 回调 ----
 var _on_confirm_cb: Callable = Callable()
 var _on_close_cb: Callable = Callable()
 
 # ---- 常量 ----
-const POPUP_WIDTH := 360
-const POPUP_PADDING := 24
-const BUTTON_HEIGHT := 44
+const POPUP_WIDTH := 800
+const POPUP_HEIGHT := 600
+const POPUP_PADDING := 32
+const BUTTON_HEIGHT := 56
+const CLOSE_TEXTURE := preload("res://art/sprites/UI/items/smallItem/close.png")
 
 
 func _ready() -> void:
@@ -45,9 +48,10 @@ func _create_popup_ui() -> void:
 	_popup_panel.anchor_right = 0.5
 	_popup_panel.anchor_bottom = 0.5
 	_popup_panel.offset_left = -POPUP_WIDTH / 2.0
-	_popup_panel.offset_top = -150.0
+	_popup_panel.offset_top = -POPUP_HEIGHT / 2.0
 	_popup_panel.offset_right = POPUP_WIDTH / 2.0
-	_popup_panel.offset_bottom = 150.0
+	_popup_panel.offset_bottom = POPUP_HEIGHT / 2.0
+	_popup_panel.custom_minimum_size = Vector2(POPUP_WIDTH, POPUP_HEIGHT)
 	_popup_panel.visible = false
 
 	# 样式
@@ -65,15 +69,37 @@ func _create_popup_ui() -> void:
 
 	# 主容器
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 16)
+	vbox.add_theme_constant_override("separation", 20)
 	_popup_panel.add_child(vbox)
+
+	# 标题栏（标题 + 关闭按钮）
+	_title_bar = Control.new()
+	_title_bar.custom_minimum_size = Vector2(POPUP_WIDTH - POPUP_PADDING * 2, 50)
+	vbox.add_child(_title_bar)
 
 	# 标题
 	_title_label = Label.new()
 	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_title_label.add_theme_font_size_override("font_size", 24)
+	_title_label.add_theme_font_size_override("font_size", 32)
 	_title_label.add_theme_color_override("font_color", Color(1, 0.95, 0.85))
-	vbox.add_child(_title_label)
+	_title_label.set_anchors_preset(Control.PRESET_CENTER)
+	_title_bar.add_child(_title_label)
+
+	# 关闭按钮（右上角）
+	_close_button = TextureButton.new()
+	_close_button.texture_normal = CLOSE_TEXTURE
+	_close_button.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_CENTERED
+	_close_button.ignore_texture_size = true
+	_close_button.custom_minimum_size = Vector2(40, 40)
+	_close_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_close_button.anchor_left = 1.0
+	_close_button.anchor_right = 1.0
+	_close_button.offset_left = -50
+	_close_button.offset_right = -10
+	_close_button.offset_top = 5
+	_close_button.offset_bottom = 45
+	_close_button.pressed.connect(_on_close_pressed)
+	_title_bar.add_child(_close_button)
 
 	# 分割线
 	var sep := HSeparator.new()
@@ -84,37 +110,32 @@ func _create_popup_ui() -> void:
 	_content_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_content_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	_content_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_content_label.add_theme_font_size_override("font_size", 16)
+	_content_label.add_theme_font_size_override("font_size", 24)
 	_content_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
-	_content_label.custom_minimum_size.y = 80
+	_content_label.custom_minimum_size.y = 200
+	_content_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(_content_label)
 
 	# 说明（用于确认键的作用）
 	_description_label = Label.new()
 	_description_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_description_label.add_theme_font_size_override("font_size", 14)
+	_description_label.add_theme_font_size_override("font_size", 20)
 	_description_label.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
 	_description_label.visible = false
 	vbox.add_child(_description_label)
 
 	# 按钮容器
 	_button_container = HBoxContainer.new()
-	_button_container.alignment = BoxContainer.ALIGNMENT_END
+	_button_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	_button_container.add_theme_constant_override("separation", 12)
 	vbox.add_child(_button_container)
 
-	# 关闭按钮
-	_close_button = Button.new()
-	_close_button.custom_minimum_size = Vector2(100, BUTTON_HEIGHT)
-	_close_button.text = "关闭"
-	_close_button.pressed.connect(_on_close_pressed)
-	_button_container.add_child(_close_button)
-
 	# 确认按钮
 	_confirm_button = Button.new()
-	_confirm_button.custom_minimum_size = Vector2(100, BUTTON_HEIGHT)
+	_confirm_button.custom_minimum_size = Vector2(150, BUTTON_HEIGHT)
 	_confirm_button.text = "确认"
+	_confirm_button.add_theme_font_size_override("font_size", 22)
 	_confirm_button.pressed.connect(_on_confirm_pressed)
 	_button_container.add_child(_confirm_button)
 
@@ -153,39 +174,29 @@ func show(
 	_on_close_cb = on_close
 
 	# 设置按钮
-	_close_button.text = close_text if close_text != "" else "关闭"
-	_close_button.visible = close_text != ""
-
 	_confirm_button.text = confirm_text if confirm_text != "" else "确认"
 	_confirm_button.visible = confirm_text != ""
 
-	# 计算弹窗高度
-	_update_popup_size()
+	# 固定尺寸，无需动态计算
+	# _update_popup_size()
 
-	# 显示
+	# 显示（确保在最上层）
 	_backdrop.visible = true
 	_popup_panel.visible = true
 	_popup_panel.modulate = Color(1, 1, 1, 0)
+	
+	# 移动到根节点最前面
+	var root: Window = get_tree().root
+	root.move_child(_backdrop, root.get_child_count() - 1)
+	root.move_child(_popup_panel, root.get_child_count() - 1)
 
 	var tween := create_tween()
 	tween.tween_property(_popup_panel, "modulate:a", 1.0, 0.15)
 
 
 func _update_popup_size() -> void:
-	# 根据内容调整高度
-	var content_height: float = max(_content_label.get_minimum_size().y, 60.0)
-	if _description_label.visible:
-		content_height += 30.0
-
-	# 估计总高度
-	var total_height: float = POPUP_PADDING * 2.0 + 40.0 + 8.0 + content_height + 8.0
-	if _description_label.visible:
-		total_height += 30.0
-	total_height += BUTTON_HEIGHT + 16.0
-
-	_popup_panel.offset_top = -total_height / 2.0
-	_popup_panel.offset_bottom = total_height / 2.0
-	_content_label.custom_minimum_size.y = content_height
+	# 固定尺寸 800x600，不再动态计算
+	pass
 
 
 ## 隐藏弹窗

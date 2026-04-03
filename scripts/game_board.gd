@@ -1117,6 +1117,7 @@ func _on_spawn_pressed(job: int) -> void:
 	if GameManager.board_data.is_board_full():
 		GameManager.restore_energy(1)
 		print(">>> [GameBoard] 生成失败: 棋盘已满")
+		TipManager.show_tip("棋盘格已满")
 		return
 
 	var level: int = randi_range(1, 3)
@@ -1285,6 +1286,7 @@ func _on_dorm_pressed() -> void:
 func _on_dorm_take_pressed(dorm_index: int) -> void:
 	if GameManager.board_data.is_board_full():
 		print(">>> [GameBoard] 取出失败: 棋盘已满")
+		TipManager.show_tip("棋盘格已满")
 		return
 	var ch: DataModels.CharacterData = GameManager.board_data.take_from_dormitory(dorm_index)
 	if ch == null:
@@ -1486,9 +1488,9 @@ func _on_shop_pressed() -> void:
 
 func _on_encyclopedia_pressed() -> void:
 	print(">>> [GameBoard] 打开图鉴")
-	# Tutorial: advance after opening encyclopedia (step 3)
 	_try_advance_tutorial(3)
-	get_tree().change_scene_to_file("res://scenes/encyclopedia_scene.tscn")
+	var encyclopedia := preload("res://scenes/encyclopedia_scene.tscn").instantiate()
+	add_child(encyclopedia)
 
 
 func _on_item_pressed() -> void:

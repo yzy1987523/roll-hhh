@@ -1,48 +1,53 @@
 extends Control
 
-## 图鉴系统
-## 9个角色图片 + 进化路线 + 详情弹窗
+## 图鉴系统（弹窗模式）
+## 9个角色图片 + 1-9级进化路线 + 详情弹窗
 
-# 职业列表（3x3 网格）
+const CELL_SIZE := 180
+const CELL_SPACING := 10
+const SPRITE_SIZE := 168
+const CELL_TEXTURE := preload("res://art/sprites/UI/items/smallItem/cell_0.png")
+const CELL_SELECTED_TEXTURE := preload("res://art/sprites/UI/items/smallItem/cell_1.png")
+const CLOSE_TEXTURE := preload("res://art/sprites/UI/items/smallItem/close.png")
+
 const ALL_JOBS := [
-	{"id": 0, "name": "战士"},
-	{"id": 1, "name": "法师"},
-	{"id": 2, "name": "牧师"},
-	{"id": 10, "name": "狂战士"},
-	{"id": 11, "name": "骑士"},
-	{"id": 20, "name": "冰法"},
-	{"id": 21, "name": "火法"},
-	{"id": 30, "name": "暗牧"},
-	{"id": 31, "name": "圣骑士"},
+	{"id": 0, "name": "战士", "char_type": 1},
+	{"id": 1, "name": "法师", "char_type": 2},
+	{"id": 2, "name": "牧师", "char_type": 3},
+	{"id": 10, "name": "狂战士", "char_type": 4},
+	{"id": 11, "name": "骑士", "char_type": 4},
+	{"id": 20, "name": "冰法", "char_type": 4},
+	{"id": 21, "name": "火法", "char_type": 4},
+	{"id": 30, "name": "暗牧", "char_type": 4},
+	{"id": 31, "name": "圣骑士", "char_type": 4},
 ]
 
-# 进化路线等级
-const EVOLUTION_LEVELS := [1, 3, 6, 9]
+const EVOLUTION_LEVELS := [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-# 职业颜色
 const JOB_COLORS := {
-	0: Color(0.85, 0.25, 0.25),   # 战士 - 红色
-	1: Color(0.4, 0.25, 0.85),   # 法师 - 紫色
-	2: Color(0.25, 0.7, 0.25),   # 牧师 - 绿色
-	10: Color(0.9, 0.3, 0.1),    # 狂战士 - 深红
-	11: Color(0.5, 0.5, 0.6),    # 骑士 - 银灰
-	20: Color(0.3, 0.8, 0.9),     # 冰法 - 冰蓝
-	21: Color(0.9, 0.4, 0.1),     # 火法 - 橙红
-	30: Color(0.4, 0.2, 0.5),     # 暗牧 - 暗紫
-	31: Color(0.9, 0.85, 0.5),    # 圣骑士 - 金色
+	0: Color(0.85, 0.25, 0.25),
+	1: Color(0.4, 0.25, 0.85),
+	2: Color(0.25, 0.7, 0.25),
+	10: Color(0.9, 0.3, 0.1),
+	11: Color(0.5, 0.5, 0.6),
+	20: Color(0.3, 0.8, 0.9),
+	21: Color(0.9, 0.4, 0.1),
+	30: Color(0.4, 0.2, 0.5),
+	31: Color(0.9, 0.85, 0.5),
 }
 
-@onready var back_button: Button = $TopBar/BackButton
-@onready var job_grid: GridContainer = $MainHBox/LeftPanel/JobGrid
-@onready var evolution_container: VBoxContainer = $MainHBox/RightPanel/EvolutionContainer
-@onready var evolution_title: Label = $MainHBox/RightPanel/EvolutionTitle
+@onready var close_button: TextureButton = $EncyclopediaWindow/VBox/TitleBar/CloseButton
+@onready var job_grid: GridContainer = $EncyclopediaWindow/VBox/MainHBox/LeftPanel/JobGrid
+@onready var evolution_container: HFlowContainer = $EncyclopediaWindow/VBox/MainHBox/RightPanel/ScrollContainer/EvolutionContainer
+@onready var evolution_title: Label = $EncyclopediaWindow/VBox/MainHBox/RightPanel/EvolutionTitle
 
-var selected_job: int = -1  # 当前选中的职业ID
-var job_cells: Array = []   # 职业格子节点列表
+var selected_job: int = -1
+var job_cells: Array = []
 
 
 func _ready() -> void:
-	back_button.pressed.connect(_on_back)
+	close_button.texture_normal = CLOSE_TEXTURE
+	close_button.pressed.connect(_on_close)
 	LocalizationSystem.language_changed.connect(_on_localization_changed)
 	_build_job_grid()
 	_update_evolution_display()
@@ -50,72 +55,108 @@ func _ready() -> void:
 
 
 func _build_job_grid() -> void:
-	# 清空旧内容
 	for child in job_grid.get_children():
 		child.queue_free()
 	job_cells.clear()
+	
+	job_grid.columns = 3
+	job_grid.add_theme_constant_override("h_separation", CELL_SPACING)
+	job_grid.add_theme_constant_override("v_separation", CELL_SPACING)
 
 	for job_info in ALL_JOBS:
 		var job_id: int = job_info["id"]
-		var cell := _create_job_cell(job_id, job_info["name"])
+		var cell := _create_job_cell(job_id, job_info["name"], job_info["char_type"])
 		job_grid.add_child(cell)
 		job_cells.append(cell)
 
 
-func _create_job_cell(job_id: int, job_name: String) -> Control:
-	var container := PanelContainer.new()
-	container.custom_minimum_size = Vector2(100, 100)
+func _create_job_cell(job_id: int, job_name: String, char_type: int) -> Control:
+	# 使用 Control 作为容器，支持纹理叠加
+	var container := Control.new()
+	container.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
+	container.size = Vector2(CELL_SIZE, CELL_SIZE)
+	container.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	container.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	container.clip_contents = true  # 裁剪超出内容
 	
-	# 检查是否解锁
 	var any_unlocked: bool = _is_any_level_unlocked(job_id)
 	
-	# 样式
-	var style := StyleBoxFlat.new()
-	style.bg_color = JOB_COLORS.get(job_id, Color(0.5, 0.5, 0.5))
-	style.corner_radius_top_left = 10
-	style.corner_radius_top_right = 10
-	style.corner_radius_bottom_left = 10
-	style.corner_radius_bottom_right = 10
-	container.add_theme_stylebox_override("panel", style)
+	# 底层：cell_0 格子背景
+	var cell_bg := TextureRect.new()
+	cell_bg.texture = CELL_TEXTURE
+	cell_bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+	cell_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	cell_bg.modulate = Color(1, 1, 1, 1)  # 保持原色
+	cell_bg.size = Vector2(CELL_SIZE, CELL_SIZE)
+	container.add_child(cell_bg)
 	
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 4)
-	container.add_child(vbox)
+	# 选中框：cell_1（在角色下方，初始隐藏）
+	var selection_frame := TextureRect.new()
+	selection_frame.texture = CELL_SELECTED_TEXTURE
+	selection_frame.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+	selection_frame.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	selection_frame.modulate = Color(1, 1, 1, 1)
+	selection_frame.size = Vector2(CELL_SIZE, CELL_SIZE)
+	selection_frame.visible = false
+	selection_frame.name = "SelectionFrame"
+	container.add_child(selection_frame)
 	
 	if any_unlocked:
-		# 已解锁 - 显示职业图标
-		var icon := ColorRect.new()
-		icon.custom_minimum_size = Vector2(80, 60)
-		icon.color = JOB_COLORS.get(job_id, Color(0.5, 0.5, 0.5))
-		vbox.add_child(icon)
+		# 角色精灵（居中显示，最上层）
+		var sprite := _create_job_sprite(job_id, 1, char_type)
+		sprite.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		sprite.custom_minimum_size = Vector2(SPRITE_SIZE, SPRITE_SIZE)
+		sprite.size = Vector2(SPRITE_SIZE, SPRITE_SIZE)
+		sprite.position = Vector2((CELL_SIZE - SPRITE_SIZE) / 2.0, (CELL_SIZE - SPRITE_SIZE) / 2.0 - 10)
+		container.add_child(sprite)
 		
-		# 职业名
+		# 角色名称（底部，最上层）
 		var name_lbl := Label.new()
 		name_lbl.text = job_name
 		name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		name_lbl.add_theme_font_size_override("font_size", 14)
-		vbox.add_child(name_lbl)
+		name_lbl.add_theme_font_size_override("font_size", 16)
+		name_lbl.position = Vector2(0, CELL_SIZE - 22)
+		name_lbl.size = Vector2(CELL_SIZE, 20)
+		container.add_child(name_lbl)
 	else:
-		# 未解锁 - 显示问号
 		var unknown := Label.new()
 		unknown.text = "?"
 		unknown.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		unknown.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		unknown.add_theme_font_size_override("font_size", 48)
 		unknown.modulate = Color(0.5, 0.5, 0.5)
+		unknown.size = Vector2(CELL_SIZE, CELL_SIZE)
 		container.add_child(unknown)
 	
-	# 点击事件
 	container.gui_input.connect(_on_job_cell_input.bind(job_id))
 	container.mouse_filter = Control.MOUSE_FILTER_STOP
 	
 	return container
 
 
+func _create_job_sprite(job_id: int, level: int, char_type: int) -> TextureRect:
+	var tex: Texture2D = null
+	
+	if job_id < 3:
+		var path := "res://art/sprites/chars/char_%02d/char_%02d%02d01.png" % [char_type, char_type, level]
+		tex = load(path) as Texture2D
+		if tex:
+			var rect := TextureRect.new()
+			rect.texture = tex
+			return rect
+	
+	var rect := TextureRect.new()
+	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	img.fill(JOB_COLORS.get(job_id, Color(0.5, 0.5, 0.5)))
+	rect.texture = ImageTexture.create_from_image(img)
+	return rect
+
+
 func _is_any_level_unlocked(job_id: int) -> bool:
 	var save_node = get_node_or_null("/root/SaveSystem")
 	if save_node == null:
-		return true  # 无存档系统时全部解锁
+		return true
 	for lv in range(1, 10):
 		if save_node.is_encyclopedia_unlocked(job_id, lv):
 			return true
@@ -132,39 +173,18 @@ func _on_job_cell_input(event: InputEvent, job_id: int) -> void:
 func _select_job(job_id: int) -> void:
 	selected_job = job_id
 	
-	# 更新格子高亮
 	for i in range(job_cells.size()):
 		var cell = job_cells[i]
 		var job_info = ALL_JOBS[i]
-		if job_info["id"] == job_id:
-			# 选中高亮
-			var style := StyleBoxFlat.new()
-			style.bg_color = JOB_COLORS.get(job_id, Color(0.5, 0.5, 0.5))
-			style.border_width_left = 3
-			style.border_width_right = 3
-			style.border_width_top = 3
-			style.border_width_bottom = 3
-			style.border_color = Color(1, 0.9, 0.5)
-			style.corner_radius_top_left = 10
-			style.corner_radius_top_right = 10
-			style.corner_radius_bottom_left = 10
-			style.corner_radius_bottom_right = 10
-			cell.add_theme_stylebox_override("panel", style)
-		else:
-			# 取消高亮
-			var style := StyleBoxFlat.new()
-			style.bg_color = JOB_COLORS.get(job_info["id"], Color(0.5, 0.5, 0.5))
-			style.corner_radius_top_left = 10
-			style.corner_radius_top_right = 10
-			style.corner_radius_bottom_left = 10
-			style.corner_radius_bottom_right = 10
-			cell.add_theme_stylebox_override("panel", style)
+		var selection_frame: TextureRect = cell.get_node_or_null("SelectionFrame")
+		
+		if selection_frame:
+			selection_frame.visible = (job_info["id"] == job_id)
 	
 	_update_evolution_display()
 
 
 func _update_evolution_display() -> void:
-	# 清空进化路线容器
 	for child in evolution_container.get_children():
 		child.queue_free()
 	
@@ -175,66 +195,67 @@ func _update_evolution_display() -> void:
 	var job_name := _get_job_name(selected_job)
 	evolution_title.text = "%s 的进化路线" % job_name
 	
-	# 获取职业颜色
 	var job_color: Color = JOB_COLORS.get(selected_job, Color(0.5, 0.5, 0.5))
-	
-	# 创建进化等级行
-	var level_row := HFlowContainer.new()
-	level_row.add_theme_constant_override("h_separation", 8)
-	evolution_container.add_child(level_row)
+	var char_type: int = 1
+	for job_info in ALL_JOBS:
+		if job_info["id"] == selected_job:
+			char_type = job_info["char_type"]
+			break
 	
 	for level in EVOLUTION_LEVELS:
-		var level_cell := _create_evolution_cell(selected_job, level, job_color)
-		level_row.add_child(level_cell)
-	
-	# 进化箭头
-	var arrow_row := HBoxContainer.new()
-	arrow_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	evolution_container.add_child(arrow_row)
-	
-	for i in range(EVOLUTION_LEVELS.size() - 1):
-		var arrow := Label.new()
-		arrow.text = "→"
-		arrow.add_theme_font_size_override("font_size", 20)
-		arrow_row.add_child(arrow)
+		var level_cell := _create_evolution_cell(selected_job, level, job_color, char_type)
+		evolution_container.add_child(level_cell)
 
 
-func _create_evolution_cell(job_id: int, level: int, job_color: Color) -> Control:
-	var container := PanelContainer.new()
-	container.custom_minimum_size = Vector2(90, 100)
+func _create_evolution_cell(job_id: int, level: int, job_color: Color, char_type: int) -> Control:
+	var container := Control.new()
+	container.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE + 20)
+	container.size = Vector2(CELL_SIZE, CELL_SIZE + 20)
+	container.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	container.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	container.clip_contents = true  # 裁剪超出内容
 	
-	# 检查是否解锁
 	var is_unlocked: bool = _is_level_unlocked(job_id, level)
 	
-	# 样式
-	var style := StyleBoxFlat.new()
-	style.bg_color = job_color if is_unlocked else Color(0.3, 0.3, 0.3)
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	container.add_theme_stylebox_override("panel", style)
+	# 底层：cell_0 格子背景
+	var cell_bg := TextureRect.new()
+	cell_bg.texture = CELL_TEXTURE
+	cell_bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+	cell_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	cell_bg.modulate = Color(1, 1, 1, 1) if is_unlocked else Color(0.5, 0.5, 0.5, 1)
+	cell_bg.size = Vector2(CELL_SIZE, CELL_SIZE)
+	container.add_child(cell_bg)
 	
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 2)
-	container.add_child(vbox)
+	if is_unlocked:
+		# 角色精灵（居中显示）
+		var sprite := _create_job_sprite(job_id, level, char_type)
+		sprite.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		sprite.custom_minimum_size = Vector2(SPRITE_SIZE, SPRITE_SIZE)
+		sprite.size = Vector2(SPRITE_SIZE, SPRITE_SIZE)
+		sprite.position = Vector2((CELL_SIZE - SPRITE_SIZE) / 2.0, (CELL_SIZE - SPRITE_SIZE) / 2.0 - 10)
+		container.add_child(sprite)
+	else:
+		var unknown := Label.new()
+		unknown.text = "?"
+		unknown.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		unknown.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		unknown.add_theme_font_size_override("font_size", 32)
+		unknown.modulate = Color(0.5, 0.5, 0.5)
+		unknown.size = Vector2(CELL_SIZE, CELL_SIZE)
+		container.add_child(unknown)
 	
-	# 等级图标
-	var icon := ColorRect.new()
-	icon.custom_minimum_size = Vector2(70, 55)
-	icon.color = job_color if is_unlocked else Color(0.4, 0.4, 0.4)
-	vbox.add_child(icon)
-	
-	# 等级标签
+	# 等级标签（底部）
 	var level_lbl := Label.new()
 	level_lbl.text = "Lv.%d" % level
 	level_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	level_lbl.add_theme_font_size_override("font_size", 14)
 	if not is_unlocked:
 		level_lbl.modulate = Color(0.5, 0.5, 0.5)
-	vbox.add_child(level_lbl)
+	level_lbl.position = Vector2(0, CELL_SIZE)
+	level_lbl.size = Vector2(CELL_SIZE, 20)
+	container.add_child(level_lbl)
 	
-	# 点击事件
 	container.gui_input.connect(_on_evolution_input.bind(job_id, level))
 	container.mouse_filter = Control.MOUSE_FILTER_STOP
 	
@@ -244,7 +265,7 @@ func _create_evolution_cell(job_id: int, level: int, job_color: Color) -> Contro
 func _is_level_unlocked(job_id: int, level: int) -> bool:
 	var save_node = get_node_or_null("/root/SaveSystem")
 	if save_node == null:
-		return true  # 无存档系统时全部解锁
+		return true
 	return save_node.is_encyclopedia_unlocked(job_id, level)
 
 
@@ -336,8 +357,9 @@ func _calc_defense(job_id: int, level: int) -> int:
 	return CharacterFactory.calc_defense(job_id, level)
 
 
-func _on_back() -> void:
-	get_tree().change_scene_to_file("res://scenes/game_board.tscn")
+func _on_close() -> void:
+	print(">>> [Encyclopedia] 关闭图鉴")
+	queue_free()
 
 
 func _on_localization_changed(lang: String) -> void:

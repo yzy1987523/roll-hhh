@@ -146,15 +146,19 @@ func _create_item_cell(item: DataModels.ItemData, index: int, sold: bool = false
 		# 已售完：显示check标记
 		sprite = TextureRect.new()
 		sprite.texture = CHECK_TEXTURE
-		sprite.custom_minimum_size = Vector2(80, 80)
+		sprite.expand_mode = TextureRect.EXPAND_FIT_WIDTH
 		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		sprite.custom_minimum_size = Vector2(80, 80)
+		sprite.size = Vector2(80, 80)
 	else:
 		# 未售完：显示物品图片
 		sprite = TextureRect.new()
+		sprite.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		sprite.custom_minimum_size = Vector2(180, 180)
+		sprite.size = Vector2(180, 180)
 		sprite.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		sprite.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		
 		# 加载物品纹理
 		var item_texture: Texture2D = _get_item_texture(item)

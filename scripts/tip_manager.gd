@@ -24,11 +24,11 @@ func _create_tip_ui() -> void:
 	_tip_container.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	_tip_container.anchor_left = 0.5
 	_tip_container.anchor_right = 0.5
-	_tip_container.offset_left = -150
+	_tip_container.offset_left = -400
 	_tip_container.offset_top = 20
-	_tip_container.offset_right = 150
-	_tip_container.offset_bottom = 60
-	_tip_container.custom_minimum_size = Vector2(300, 40)
+	_tip_container.offset_right = 400
+	_tip_container.offset_bottom = 100
+	_tip_container.custom_minimum_size = Vector2(800, 80)
 	_tip_container.modulate = Color(1, 1, 1, 0)  # 初始隐藏
 
 	# 样式
@@ -53,8 +53,10 @@ func _create_tip_ui() -> void:
 	_tip_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tip_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_tip_label.add_theme_color_override("font_color", TEXT_COLOR)
-	_tip_label.add_theme_font_size_override("font_size", 18)
+	_tip_label.add_theme_font_size_override("font_size", 28)
 	_tip_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tip_label.custom_minimum_size = Vector2(760, 60)
+	_tip_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	center.add_child(_tip_label)
 
 	# 添加到根节点
