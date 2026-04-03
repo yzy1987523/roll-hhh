@@ -4,8 +4,8 @@ extends Node
 ## 管理全局游戏状态、阶段流转、资源数据
 
 # 预加载依赖类 (Autoload 需要显式预加载)
-const BoardData = preload("res://scripts/board_data.gd")
-const DataModels = preload("res://scripts/data_models.gd")
+const BD = preload("res://scripts/board_data.gd")
+const DM = preload("res://scripts/data_models.gd")
 
 # ---- 初始化标志 ----
 var _initialized: bool = false
@@ -15,6 +15,7 @@ signal phase_changed(new_phase: String)
 signal gold_changed(new_gold: int)
 signal energy_changed(new_energy: int)
 signal round_changed(new_round: int)
+@warning_ignore("unused_signal")
 signal character_merged(merged_level: int)  # 角色合成信号
 
 # ---- 游戏阶段常量 ----
@@ -25,7 +26,7 @@ const PHASE_GAME_OVER := "game_over"
 
 # ---- 默认数值 ----
 const DEFAULT_MAX_ENERGY := 36
-const DEFAULT_GOLD := 0
+const DEFAULT_GOLD := 200
 const DEFAULT_ROUND := 1
 const MAX_BATTLE_TURNS := 999
 const MAX_ITEM_SLOTS := 3
@@ -102,14 +103,14 @@ func add_item(item: DataModels.ItemData) -> bool:
 ## 移除道具
 func remove_item(index: int) -> void:
 	if index >= 0 and index < items.size():
-		var item: DataModels.ItemData = items[index]
+		var item: DM.ItemData = items[index]
 		items.remove_at(index)
 		items_changed.emit()
 		print(">>> [GameManager] 移除道具: %s" % item.name)
 
 
 ## 添加遗物
-func add_relic(relic: DataModels.ItemData) -> void:
+func add_relic(relic: DM.ItemData) -> void:
 	# 唯一性检查 (战绩徽章可叠加)
 	if not relic.stackable:
 		for r in relics:
