@@ -46,6 +46,20 @@ var job_cells: Array = []
 
 
 func _ready() -> void:
+	# 添加 panel.png 背景
+	var encyclopedia_window = $EncyclopediaWindow
+	if encyclopedia_window and (encyclopedia_window.get_child_count() == 0 or not encyclopedia_window.get_child(0).name == "PanelBg"):
+		var panel_texture := preload("res://art/sprites/UI/panels/panel.png")
+		var bg := TextureRect.new()
+		bg.name = "PanelBg"
+		bg.texture = panel_texture
+		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		encyclopedia_window.add_child(bg)
+		encyclopedia_window.move_child(bg, 0)  # 移到最底层
+	
 	close_button.texture_normal = CLOSE_TEXTURE
 	close_button.pressed.connect(_on_close)
 	LocalizationSystem.language_changed.connect(_on_localization_changed)

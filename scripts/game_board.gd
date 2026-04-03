@@ -2172,6 +2172,17 @@ func _create_item_panel() -> void:
 	item_panel.offset_top = -110
 	item_panel.offset_right = 160
 	item_panel.offset_bottom = 110
+	
+	# 添加 panel.png 背景
+	var panel_texture := preload("res://art/sprites/UI/panels/panel.png")
+	var bg := TextureRect.new()
+	bg.texture = panel_texture
+	bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	item_panel.add_child(bg)
+	
 	add_child(item_panel)
 
 
@@ -2249,6 +2260,19 @@ func _on_settings_pressed() -> void:
 
 
 func _show_settings_panel() -> void:
+	# 添加 panel.png 背景（如果还没有）
+	if settings_panel.get_child_count() == 0 or not settings_panel.get_child(0).name == "PanelBg":
+		var panel_texture := preload("res://art/sprites/UI/panels/panel.png")
+		var bg := TextureRect.new()
+		bg.name = "PanelBg"
+		bg.texture = panel_texture
+		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		settings_panel.add_child(bg)
+		settings_panel.move_child(bg, 0)  # 移到最底层
+	
 	settings_panel.visible = true
 	_update_settings_ui()
 	_update_settings_texts()
