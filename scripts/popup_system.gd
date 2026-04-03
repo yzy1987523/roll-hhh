@@ -34,7 +34,8 @@ func _create_popup_ui() -> void:
 	_backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_backdrop.visible = false
 	_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
-	get_tree().root.add_child(_backdrop)
+	# 添加到根节点 (延迟到场景树准备好)
+	get_tree().root.call_deferred("add_child", _backdrop)
 
 	# 弹窗面板
 	_popup_panel = PanelContainer.new()
@@ -117,7 +118,8 @@ func _create_popup_ui() -> void:
 	_confirm_button.pressed.connect(_on_confirm_pressed)
 	_button_container.add_child(_confirm_button)
 
-	get_tree().root.add_child(_popup_panel)
+	# 添加到根节点 (延迟到场景树准备好)
+	get_tree().root.call_deferred("add_child", _popup_panel)
 
 
 ## 显示弹窗

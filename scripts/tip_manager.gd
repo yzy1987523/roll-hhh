@@ -58,7 +58,9 @@ func _create_tip_ui() -> void:
 	center.add_child(_tip_label)
 
 	# 添加到根节点
-	get_tree().root.add_child(_tip_container)
+	# 添加到根节点 (延迟到场景树准备好)
+	if not _tip_container.get_parent() == get_tree().root:
+		get_tree().root.call_deferred("add_child", _tip_container)
 
 
 ## 显示提示信息（默认1秒后自动隐藏）
