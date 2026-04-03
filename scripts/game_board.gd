@@ -49,6 +49,7 @@ var SELECT_FRAMES: Array[Texture2D] = []
 @onready var volume_slider: HSlider = $SettingsPanel/SettingsVBox/VolumeRow/VolumeSlider
 @onready var volume_label: Label = $SettingsPanel/SettingsVBox/VolumeRow/VolumeLabel
 @onready var reset_tutorial_button: Button = $SettingsPanel/SettingsVBox/ResetTutorialButton
+@onready var clear_save_button: Button = $SettingsPanel/SettingsVBox/ClearSaveButton
 @onready var close_settings_button: Button = $SettingsPanel/SettingsVBox/CloseButton
 @onready var reset_confirm_label: Label = $SettingsPanel/ResetConfirmLabel
 
@@ -181,6 +182,7 @@ func _connect_signals() -> void:
 	language_button.pressed.connect(_on_language_toggled)
 	volume_slider.value_changed.connect(_on_volume_changed)
 	reset_tutorial_button.pressed.connect(_on_reset_tutorial_pressed)
+	clear_save_button.pressed.connect(_on_clear_save_pressed)
 	close_settings_button.pressed.connect(_on_close_settings)
 	# 语言切换信号
 	LocalizationSystem.language_changed.connect(_on_localization_changed)
@@ -2303,6 +2305,7 @@ func _update_settings_texts() -> void:
 	language_label.text = LocalizationSystem.get_text("settings.language")
 	volume_label.text = LocalizationSystem.get_text("settings.volume")
 	reset_tutorial_button.text = LocalizationSystem.get_text("settings.reset_tutorial")
+	clear_save_button.text = LocalizationSystem.get_text("settings.clear_save")
 	close_settings_button.text = LocalizationSystem.get_text("settings.close")
 	_reset_confirm_label_visible(false)
 
@@ -2355,13 +2358,28 @@ func _on_volume_changed(value: float) -> void:
 
 func _on_reset_tutorial_pressed() -> void:
 	GameManager.reset_tutorial()
-	_reset_confirm_label_visible(true)
+	_reset_confirm_label_visible(true, "settings.reset_confirm")
 
 
-func _reset_confirm_label_visible(visible: bool) -> void:
+func _on_clear_save_pressed() -> void:
+	# 清空存档（保留图鉴）
+	SaveSystem.clear_game_save()
+	# 重置游戏状态
+	GameManager.reset_game()
+	# 刷新UI
+	_refresh_board_display()
+	_on_gold_changed(GameManager.gold)
+	_on_energy_changed(GameManager.energy)
+	_on_round_changed(GameManager.current_round)
+	# 显示提示
+	_reset_confirm_label_visible(true, "settings.clear_save_confirm")
+	print(">>> [GameBoard] 存档已清空")
+
+
+func _reset_confirm_label_visible(visible: bool, text_key: String = "") -> void:
 	reset_confirm_label.visible = visible
-	if visible:
-		reset_confirm_label.text = LocalizationSystem.get_text("settings.reset_confirm")
+	if visible and text_key != "":
+		reset_confirm_label.text = LocalizationSystem.get_text(text_key)
 
 
 func _on_close_settings() -> void:
