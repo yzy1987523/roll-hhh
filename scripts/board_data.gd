@@ -15,6 +15,10 @@ const BOARD_SLOTS := 36  # 6x6
 # ---- 数据存储 ----
 var board: Array = []           # 长度36, 每个元素为 CharacterData 或 null
 var dormitory: Array = []       # 宿舍, 动态长度
+var marked_for_removal: Array = []  # 标记移出的角色索引列表
+
+# ---- 宿舍容量 ----
+const DORM_CAPACITY := 16  # 4x4 宿舍容量
 
 # ---- 初始化 ----
 
@@ -148,6 +152,70 @@ func board_to_dormitory(pos: Vector2i) -> bool:
 		return false
 	store_to_dormitory(ch)
 	return true
+
+
+## ---- 标记移出功能 ----
+
+## 标记角色待移出
+func mark_for_removal(dorm_index: int) -> void:
+	if dorm_index >= 0 and dorm_index < dormitory.size():
+		if not marked_for_removal.has(dorm_index):
+			marked_for_removal.append(dorm_index)
+
+
+## 取消标记
+func unmark_for_removal(dorm_index: int) -> void:
+	marked_for_removal.erase(dorm_index)
+
+
+## 检查是否已标记
+func is_marked_for_removal(dorm_index: int) -> bool:
+	return marked_for_removal.has(dorm_index)
+
+
+## 获取空棋盘格子数量
+func get_empty_board_count() -> int:
+	return get_empty_count()
+
+
+## 检查是否可以移出标记的角色
+func can_remove_marked() -> bool:
+	return get_empty_board_count() >= marked_for_removal.size()
+
+
+## 执行移出所有标记的角色到棋盘
+## 返回成功移出的数量
+func execute_removal() -> int:
+	if not can_remove_marked():
+		return 0
+	
+	# 按索引降序排序，避免移除时索引变化
+	marked_for_removal.sort()
+	marked_for_removal.reverse()
+	
+	var removed_count := 0
+	for idx in marked_for_removal:
+		var ch: DataModels.CharacterData = take_from_dormitory(idx)
+		if ch != null:
+			var pos: Vector2i = place_character_first_empty(ch)
+			if pos != Vector2i(-1, -1):
+				removed_count += 1
+			else:
+				# 放置失败，放回宿舍
+				store_to_dormitory(ch)
+	
+	marked_for_removal.clear()
+	return removed_count
+
+
+## 获取宿舍空位数量
+func get_empty_dorm_count() -> int:
+	return DORM_CAPACITY - dormitory.size()
+
+
+## 检查宿舍是否已满
+func is_dorm_full() -> bool:
+	return dormitory.size() >= DORM_CAPACITY
 
 
 ## 宿舍角色移入棋盘指定位置

@@ -238,16 +238,31 @@ func _on_sacrifice_button_pressed() -> void:
 
 
 # ---- 宿舍面板 ----
+var _dorm_sort_order: Array = []  # 排序后的宿舍索引
 
 func _setup_dorm_panel() -> void:
 	dorm_panel = PanelContainer.new()
 	dorm_panel.visible = false
 	dorm_panel.set_anchors_preset(Control.PRESET_CENTER)
-	dorm_panel.custom_minimum_size = Vector2(300, 200)
-	dorm_panel.offset_left = -150
-	dorm_panel.offset_top = -100
-	dorm_panel.offset_right = 150
-	dorm_panel.offset_bottom = 100
+	dorm_panel.custom_minimum_size = Vector2(420, 380)
+	dorm_panel.offset_left = -210
+	dorm_panel.offset_top = -190
+	dorm_panel.offset_right = 210
+	dorm_panel.offset_bottom = 190
+	
+	# 样式
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.12, 0.14, 0.18, 0.98)
+	style.corner_radius_top_left = 16
+	style.corner_radius_top_right = 16
+	style.corner_radius_bottom_left = 16
+	style.corner_radius_bottom_right = 16
+	style.content_margin_left = 16
+	style.content_margin_right = 16
+	style.content_margin_top = 16
+	style.content_margin_bottom = 16
+	dorm_panel.add_theme_stylebox_override("panel", style)
+	
 	add_child(dorm_panel)
 
 
@@ -257,46 +272,175 @@ func _refresh_dorm_panel() -> void:
 		child.queue_free()
 
 	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
 	dorm_panel.add_child(vbox)
 
+	# 标题行
+	var title_row := HBoxContainer.new()
+	vbox.add_child(title_row)
+	
 	var title := Label.new()
-	title.text = LocalizationSystem.get_text("game_board.dorm_title", {"count": GameManager.board_data.dormitory.size()})
+	title.text = LocalizationSystem.get_text("game_board.dorm_title", {"count": GameManager.board_data.dormitory.size(), "max": BoardData.DORM_CAPACITY})
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(title)
+	title.add_theme_font_size_override("font_size", 22)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_row.add_child(title)
 
-	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(280, 120)
-	vbox.add_child(scroll)
+	# 4x4 网格
+	var grid := GridContainer.new()
+	grid.columns = 4
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	vbox.add_child(grid)
 
-	var list := VBoxContainer.new()
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.add_child(list)
-
+	# 获取排序后的宿舍索引（按等级从高到低）
+	_dorm_sort_order.clear()
+	var dorm_data: Array = []
 	for i in range(GameManager.board_data.dormitory.size()):
 		var ch: DataModels.CharacterData = GameManager.board_data.dormitory[i]
-		var row := HBoxContainer.new()
-		list.add_child(row)
+		dorm_data.append({"index": i, "level": ch.level, "job": ch.job_id})
+	
+	# 排序：等级高的在前
+	dorm_data.sort_custom(func(a, b): 
+		if a["level"] != b["level"]:
+			return a["level"] > b["level"]  # 等级降序
+		return a["job"] < b["job"]  # 同等级按职业ID排序
+	)
+	
+	for data in dorm_data:
+		_dorm_sort_order.append(data["index"])
 
-		var info := Label.new()
-		info.text = "%s Lv.%d  HP:%d/%d" % [ch.get_job_name(), ch.level, ch.hp, ch.max_hp]
-		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(info)
+	# 创建格子
+	for i in range(BoardData.DORM_CAPACITY):
+		var cell := _create_dorm_cell(i)
+		grid.add_child(cell)
 
-		var take_btn := Button.new()
-		take_btn.text = LocalizationSystem.get_text("game_board.dorm_take")
-		take_btn.pressed.connect(_on_dorm_take_pressed.bind(i))
-		row.add_child(take_btn)
-
-	if GameManager.board_data.dormitory.size() == 0:
-		var empty := Label.new()
-		empty.text = LocalizationSystem.get_text("game_board.dorm_empty")
-		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		list.add_child(empty)
-
+	# 关闭按钮
 	var close_btn := Button.new()
-	close_btn.text = LocalizationSystem.get_text("game_board.back")
+	close_btn.text = LocalizationSystem.get_text("game_board.dorm_close")
+	close_btn.custom_minimum_size = Vector2(0, 44)
 	close_btn.pressed.connect(_on_dorm_close)
 	vbox.add_child(close_btn)
+
+
+func _create_dorm_cell(index: int) -> Control:
+	var container := PanelContainer.new()
+	container.custom_minimum_size = Vector2(80, 80)
+	
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.2, 0.22, 0.28, 0.8)
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
+	container.add_theme_stylebox_override("panel", style)
+
+	if index < _dorm_sort_order.size():
+		var dorm_idx: int = _dorm_sort_order[index]
+		var ch: DataModels.CharacterData = GameManager.board_data.dormitory[dorm_idx]
+		var is_marked: bool = GameManager.board_data.is_marked_for_removal(dorm_idx)
+		
+		# 角色图片容器
+		var vbox := VBoxContainer.new()
+		vbox.add_theme_constant_override("separation", 2)
+		container.add_child(vbox)
+		
+		# 角色精灵（用颜色块代替）
+		var sprite := ColorRect.new()
+		sprite.custom_minimum_size = Vector2(60, 50)
+		sprite.color = _get_dorm_job_color(ch.job_id)
+		
+		# 标记高亮
+		if is_marked:
+			var highlight := StyleBoxFlat.new()
+			highlight.bg_color = Color(1, 0.8, 0, 0.3)
+			highlight.border_width_all = 2
+			highlight.border_color = Color(1, 0.8, 0, 1)
+			container.add_theme_stylebox_override("panel", highlight)
+		
+		vbox.add_child(sprite)
+		
+		# 等级标签
+		var lv_label := Label.new()
+		lv_label.text = "Lv.%d" % ch.level
+		lv_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lv_label.add_theme_font_size_override("font_size", 12)
+		vbox.add_child(lv_label)
+		
+		# 点击事件
+		container.gui_input.connect(_on_dorm_cell_input.bind(dorm_idx))
+		container.mouse_filter = Control.MOUSE_FILTER_STOP
+	else:
+		# 空格子
+		var empty := Label.new()
+		empty.text = "空"
+		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		empty.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		empty.modulate = Color(0.4, 0.4, 0.4)
+		container.add_child(empty)
+
+	return container
+
+
+func _get_dorm_job_color(job_id: int) -> Color:
+	match job_id:
+		0: return Color(0.85, 0.25, 0.25)  # 战士 - 红色
+		1: return Color(0.4, 0.25, 0.85)  # 法师 - 紫色
+		2: return Color(0.25, 0.7, 0.25)  # 牧师 - 绿色
+		10: return Color(0.9, 0.3, 0.1)  # 狂战士 - 深红
+		11: return Color(0.5, 0.5, 0.6)  # 骑士 - 银灰
+		20: return Color(0.3, 0.8, 0.9)  # 冰法 - 冰蓝
+		21: return Color(0.9, 0.4, 0.1)  # 火法 - 橙红
+		30: return Color(0.4, 0.2, 0.5)  # 暗牧 - 暗紫
+		31: return Color(0.9, 0.85, 0.5)  # 圣骑士 - 金色
+		_: return Color(0.5, 0.5, 0.5)
+
+
+func _on_dorm_cell_input(event: InputEvent, dorm_index: int) -> void:
+	if event is InputEventMouseButton:
+		var mb: InputEventMouseButton = event
+		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
+			_show_dorm_character_popup(dorm_index)
+
+
+func _show_dorm_character_popup(dorm_index: int) -> void:
+	var ch: DataModels.CharacterData = GameManager.board_data.dormitory[dorm_index]
+	var content := "等级: %d\n血量: %d/%d\n攻击: %d\n防御: %d" % [
+		ch.level, ch.hp, ch.max_hp, ch.attack, ch.defense
+	]
+	
+	var is_marked: bool = GameManager.board_data.is_marked_for_removal(dorm_index)
+	var btn_text := "标记移出" if not is_marked else "取消标记"
+	
+	PopupSystem.show(
+		"%s Lv.%d" % [ch.get_job_name(), ch.level],
+		content,
+		"是否移出角色到棋盘？",
+		btn_text,
+		"关闭",
+		Callable(self, "_on_dorm_popup_confirm").bind(dorm_index),
+		Callable(self, "_on_dorm_popup_close")
+	)
+
+
+func _on_dorm_popup_confirm(dorm_index: int) -> void:
+	var bd: BoardData = GameManager.board_data
+	var is_marked: bool = bd.is_marked_for_removal(dorm_index)
+	
+	if is_marked:
+		bd.unmark_for_removal(dorm_index)
+	else:
+		# 检查棋盘是否有空间
+		if bd.get_empty_board_count() <= bd.marked_for_removal.size():
+			TipManager.show_tip("棋盘格已满，无法移出")
+			return
+		bd.marked_for_removal.append(dorm_index)
+	
+	_refresh_dorm_panel()
+
+
+func _on_dorm_popup_close() -> void:
+	pass  # 关闭弹窗不做额外操作
 
 
 # ---- 棋盘格拖拽处理 (任务 2.3 拖拽/选中) ----
@@ -1119,6 +1263,19 @@ func _on_dorm_take_pressed(dorm_index: int) -> void:
 
 
 func _on_dorm_close() -> void:
+	var bd: BoardData = GameManager.board_data
+	
+	# 执行所有标记移出的角色
+	if bd.marked_for_removal.size() > 0:
+		if not bd.can_remove_marked():
+			TipManager.show_tip("棋盘格已满，无法移出")
+			bd.marked_for_removal.clear()
+		else:
+			var removed := bd.execute_removal()
+			if removed > 0:
+				TipManager.show_tip("已移出 %d 个角色到棋盘" % removed)
+				_refresh_board_display()
+	
 	dorm_visible = false
 	dorm_panel.visible = false
 
