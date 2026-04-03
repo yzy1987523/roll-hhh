@@ -4,7 +4,6 @@ extends Control
 ## 任务 3.3: 战斗UI + 任务 3.5: 胜负结算
 
 # ---- 节点引用 ----
-@onready var turn_label: Label = $MainLayout/BattleInfoBar/TurnCenter/TurnLabel
 @onready var grid_container: GridContainer = $MainLayout/BoardCenter/GridContainer
 @onready var log_label: RichTextLabel = $MainLayout/LogScroll/LogLabel
 @onready var play_button: Button = $MainLayout/ControlBar/PlayButton
@@ -20,21 +19,23 @@ extends Control
 @onready var speed_3x: Button = $MainLayout/ControlBar/Speed3x
 @onready var pause_hint: Label = $MainLayout/ControlBar/PauseHint
 
-# ---- Enemy Panel 节点 ----
-@onready var enemy_name: Label = $MainLayout/BattleInfoBar/EnemyPanel/EnemyTitle/EnemyName
-@onready var enemy_type: Label = $MainLayout/BattleInfoBar/EnemyPanel/EnemyTitle/EnemyType
-@onready var enemy_atk: Label = $MainLayout/BattleInfoBar/EnemyPanel/EnemyStats/EnemyAtk
-@onready var enemy_def: Label = $MainLayout/BattleInfoBar/EnemyPanel/EnemyStats/EnemyDef
-@onready var enemy_hp_bar: ProgressBar = $MainLayout/BattleInfoBar/EnemyPanel/EnemyHpBar
-@onready var enemy_hp_label: Label = $MainLayout/BattleInfoBar/EnemyPanel/EnemyHpLabel
+# ---- Enemy Area 节点 ----
+@onready var enemy_sprite_rect: TextureRect = $MainLayout/EnemyArea/EnemySpriteRect
+@onready var enemy_name: Label = $MainLayout/EnemyArea/EnemyInfoPanel/EnemyTitle/EnemyName
+@onready var enemy_type: Label = $MainLayout/EnemyArea/EnemyInfoPanel/EnemyTitle/EnemyType
+@onready var enemy_atk: Label = $MainLayout/EnemyArea/EnemyInfoPanel/EnemyStats/EnemyAtk
+@onready var enemy_def: Label = $MainLayout/EnemyArea/EnemyInfoPanel/EnemyStats/EnemyDef
+@onready var enemy_hp_bar: ProgressBar = $MainLayout/EnemyArea/EnemyInfoPanel/EnemyHpBar
+@onready var enemy_hp_label: Label = $MainLayout/EnemyArea/EnemyInfoPanel/EnemyHpLabel
+@onready var skill_name_label: Label = $MainLayout/EnemyArea/EnemyInfoPanel/SkillSection/SkillName
+@onready var skill_desc_label: Label = $MainLayout/EnemyArea/EnemyInfoPanel/SkillSection/SkillDesc
 
-# ---- Player Panel 节点 ----
-@onready var player_name: Label = $MainLayout/BattleInfoBar/PlayerPanel/PlayerTitle/PlayerName
-@onready var player_level: Label = $MainLayout/BattleInfoBar/PlayerPanel/PlayerTitle/PlayerLevel
-@onready var player_atk: Label = $MainLayout/BattleInfoBar/PlayerPanel/PlayerStats/PlayerAtk
-@onready var player_def: Label = $MainLayout/BattleInfoBar/PlayerPanel/PlayerStats/PlayerDef
-@onready var player_hp_bar: ProgressBar = $MainLayout/BattleInfoBar/PlayerPanel/PlayerHpBar
-@onready var player_hp_label: Label = $MainLayout/BattleInfoBar/PlayerPanel/PlayerHpLabel
+# ---- Player Stats 节点 (底部) ----
+@onready var turn_label: Label = $MainLayout/BottomPanel/TurnInfo/TurnLabel
+@onready var relic_label: Label = $MainLayout/BottomPanel/TurnInfo/RelicLabel
+@onready var player_hp_label: Label = $MainLayout/BottomPanel/TurnInfo/PlayerStatsBar/PlayerHpLabel
+@onready var player_atk: Label = $MainLayout/BottomPanel/TurnInfo/PlayerStatsBar/PlayerAtk
+@onready var player_def: Label = $MainLayout/BottomPanel/TurnInfo/PlayerStatsBar/PlayerDef
 
 # ---- ItemBar 节点 ----
 @onready var item_slot0: PanelContainer = $MainLayout/BottomPanel/ItemBar/ItemSlots/ItemSlot0
@@ -45,7 +46,6 @@ extends Control
 @onready var item_slot5: PanelContainer = $MainLayout/BottomPanel/ItemBar/ItemSlots/ItemSlot5
 
 # ---- RelicBar 节点 ----
-@onready var relic_label: Label = $MainLayout/BattleInfoBar/TurnCenter/RelicLabel
 @onready var relic_button: Button = $MainLayout/BottomPanel/RelicBar/RelicHeader/RelicButton
 @onready var relic_list: HFlowContainer = $MainLayout/BottomPanel/RelicBar/RelicPanel/RelicList
 
@@ -54,6 +54,9 @@ const GRID_SIZE := 6
 const CELL_SIZE := 144
 const CHAR_SIZE := 140
 const BASE_TURN_DELAY := 0.5  # 播放模式每回合间隔(秒)
+
+# ---- 格子背景纹理 ----
+const CELL_BG_TEXTURE := preload("res://art/sprites/UI/items/smallItem/cell_0.png")
 
 # ---- 颜色 ----
 const COLOR_EMPTY_EVEN := Color("#2A3A5A")
@@ -376,14 +379,20 @@ func _setup_board_display() -> void:
 		var cell := PanelContainer.new()
 		cell.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
 
-		var bg := ColorRect.new()
-		bg.set_anchors_preset(Control.PRESET_CENTER)
+		# 格子背景纹理
+		var bg := TextureRect.new()
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.texture = CELL_BG_TEXTURE
+		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+		# 交替灰度和透明度
 		@warning_ignore("integer_division")
 		var row := i / GRID_SIZE
 		var col := i % GRID_SIZE
 		var is_even := (row + col) % 2 == 0
-		bg.color = COLOR_EMPTY_EVEN if is_even else COLOR_EMPTY_ODD
+		bg.modulate = Color(0.5, 0.5, 0.5, 0.9) if is_even else Color(0.8, 0.8, 0.8, 0.7)
 		cell.add_child(bg)
 
 		var lbl := Label.new()
@@ -644,6 +653,104 @@ func _update_enemy_display() -> void:
 	enemy_hp_bar.value = e.hp
 	enemy_hp_label.text = "HP: %d/%d" % [e.hp, e.max_hp]
 
+	# 加载敌人精灵图
+	_load_enemy_sprite(e)
+
+	# 显示特技信息
+	_update_skill_display(e)
+
+
+## 加载敌人精灵图
+func _load_enemy_sprite(e: EnemyFactory.EnemyData) -> void:
+	var enemy_id: int = e.enemy_id
+	var category: String = "normal"
+	match e.type:
+		EnemyFactory.TYPE_ELITE: category = "elite"
+		EnemyFactory.TYPE_BOSS: category = "elite"  # BOSS暂时使用精英图
+
+	var sprite_path: String = "res://art/sprites/UI/items/enemy/%s/enemy_%03d.png" % [category, enemy_id]
+	if ResourceLoader.exists(sprite_path):
+		enemy_sprite_rect.texture = load(sprite_path)
+	else:
+		enemy_sprite_rect.texture = null
+
+
+## 更新特技显示
+func _update_skill_display(e: EnemyFactory.EnemyData) -> void:
+	var skill_id: int = e.skill_id
+	if skill_id == 0:
+		# 普通敌人没有特技
+		skill_name_label.text = LocalizationSystem.get_text("enemy.no_skill")
+		skill_desc_label.text = ""
+		return
+
+	# 获取特技名称和描述
+	var skill_info: Dictionary = _get_skill_info(skill_id)
+	skill_name_label.text = skill_info.get("name", "Skill %d" % skill_id)
+	skill_desc_label.text = skill_info.get("description", "")
+
+
+## 获取特技信息
+func _get_skill_info(skill_id: int) -> Dictionary:
+	# 特技ID范围: 2001-2008 精英, 3001-3008 BOSS
+	var skill_name: String = ""
+	var skill_desc: String = ""
+
+	match skill_id:
+		2001:
+			skill_name = LocalizationSystem.get_text("skill.2001_name")
+			skill_desc = LocalizationSystem.get_text("skill.2001_desc")
+		2002:
+			skill_name = LocalizationSystem.get_text("skill.2002_name")
+			skill_desc = LocalizationSystem.get_text("skill.2002_desc")
+		2003:
+			skill_name = LocalizationSystem.get_text("skill.2003_name")
+			skill_desc = LocalizationSystem.get_text("skill.2003_desc")
+		2004:
+			skill_name = LocalizationSystem.get_text("skill.2004_name")
+			skill_desc = LocalizationSystem.get_text("skill.2004_desc")
+		2005:
+			skill_name = LocalizationSystem.get_text("skill.2005_name")
+			skill_desc = LocalizationSystem.get_text("skill.2005_desc")
+		2006:
+			skill_name = LocalizationSystem.get_text("skill.2006_name")
+			skill_desc = LocalizationSystem.get_text("skill.2006_desc")
+		2007:
+			skill_name = LocalizationSystem.get_text("skill.2007_name")
+			skill_desc = LocalizationSystem.get_text("skill.2007_desc")
+		2008:
+			skill_name = LocalizationSystem.get_text("skill.2008_name")
+			skill_desc = LocalizationSystem.get_text("skill.2008_desc")
+		3001:
+			skill_name = LocalizationSystem.get_text("skill.3001_name")
+			skill_desc = LocalizationSystem.get_text("skill.3001_desc")
+		3002:
+			skill_name = LocalizationSystem.get_text("skill.3002_name")
+			skill_desc = LocalizationSystem.get_text("skill.3002_desc")
+		3003:
+			skill_name = LocalizationSystem.get_text("skill.3003_name")
+			skill_desc = LocalizationSystem.get_text("skill.3003_desc")
+		3004:
+			skill_name = LocalizationSystem.get_text("skill.3004_name")
+			skill_desc = LocalizationSystem.get_text("skill.3004_desc")
+		3005:
+			skill_name = LocalizationSystem.get_text("skill.3005_name")
+			skill_desc = LocalizationSystem.get_text("skill.3005_desc")
+		3006:
+			skill_name = LocalizationSystem.get_text("skill.3006_name")
+			skill_desc = LocalizationSystem.get_text("skill.3006_desc")
+		3007:
+			skill_name = LocalizationSystem.get_text("skill.3007_name")
+			skill_desc = LocalizationSystem.get_text("skill.3007_desc")
+		3008:
+			skill_name = LocalizationSystem.get_text("skill.3008_name")
+			skill_desc = LocalizationSystem.get_text("skill.3008_desc")
+		_:
+			skill_name = LocalizationSystem.get_text("enemy.no_skill")
+			skill_desc = ""
+
+	return {"name": skill_name, "description": skill_desc}
+
 
 func _update_player_display() -> void:
 	var bd: BoardData = GameManager.board_data
@@ -652,7 +759,6 @@ func _update_player_display() -> void:
 	var total_def: int = 0
 	var total_hp: int = 0
 	var total_max_hp: int = 0
-	var alive_count: int = 0
 
 	for i in range(BoardData.BOARD_SLOTS):
 		var ch: DataModels.CharacterData = bd.get_character_at_index(i)
@@ -661,24 +767,10 @@ func _update_player_display() -> void:
 			total_def += ch.defense
 			total_hp += ch.hp
 			total_max_hp += ch.max_hp
-			alive_count += 1
 
-	if alive_count > 0:
-		player_name.text = "Team"
-		player_level.text = "x%d" % alive_count
-		player_atk.text = "ATK: %d" % total_atk
-		player_def.text = "DEF: %d" % total_def
-		player_hp_bar.max_value = total_max_hp
-		player_hp_bar.value = total_hp
-		player_hp_label.text = "HP: %d/%d" % [total_hp, total_max_hp]
-	else:
-		player_name.text = "Team"
-		player_level.text = "x0"
-		player_atk.text = "ATK: 0"
-		player_def.text = "DEF: 0"
-		player_hp_bar.max_value = 1
-		player_hp_bar.value = 0
-		player_hp_label.text = "HP: 0/0"
+	player_hp_label.text = "HP: %d/%d" % [total_hp, total_max_hp]
+	player_atk.text = "ATK: %d" % total_atk
+	player_def.text = "DEF: %d" % total_def
 
 
 func _refresh_board_display() -> void:
@@ -687,7 +779,8 @@ func _refresh_board_display() -> void:
 		var ch: DataModels.CharacterData = bd.get_character_at_index(i)
 		if ch != null:
 			if ch.is_alive():
-				cell_rects[i].color = _get_job_color(ch.job)
+				# 角色格子：设置背景颜色（通过modulate）
+				cell_rects[i].modulate = Color(_get_job_color(ch.job), 0.9)
 				cell_labels[i].text = "%s\nLv.%d\n%d/%d" % [
 					ch.get_job_name(), ch.level, ch.hp, ch.max_hp
 				]
@@ -699,16 +792,18 @@ func _refresh_board_display() -> void:
 				cell_sprites[i].texture = tex
 				cell_sprites[i].visible = (tex != null)
 			else:
-				cell_rects[i].color = COLOR_DEAD
+				# 死亡角色：灰暗显示
+				cell_rects[i].modulate = Color(COLOR_DEAD, 0.9)
 				cell_labels[i].text = "%s\n%s" % [ch.get_job_name(), LocalizationSystem.get_text("battle.dead")]
 				cell_sprites[i].texture = null
 				cell_sprites[i].visible = false
 		else:
+			# 空格子：恢复交替灰度
 			@warning_ignore("integer_division")
 			var row := i / GRID_SIZE
 			var col := i % GRID_SIZE
 			var is_even := (row + col) % 2 == 0
-			cell_rects[i].color = COLOR_EMPTY_EVEN if is_even else COLOR_EMPTY_ODD
+			cell_rects[i].modulate = Color(0.5, 0.5, 0.5, 0.9) if is_even else Color(0.8, 0.8, 0.8, 0.7)
 			cell_labels[i].text = ""
 			cell_sprites[i].texture = null
 			cell_sprites[i].visible = false
@@ -737,12 +832,12 @@ func _on_battle_log(msg: String) -> void:
 
 ## 获取敌方面板的世界位置（用于计算子弹目标）
 func _get_enemy_position() -> Vector2:
-	var enemy_panel: Control = get_node_or_null("MainLayout/BattleInfoBar/EnemyPanel")
-	if enemy_panel:
-		var rect: Rect2 = enemy_panel.get_global_rect()
+	var enemy_sprite: Control = get_node_or_null("MainLayout/EnemyArea/EnemySpriteRect")
+	if enemy_sprite:
+		var rect: Rect2 = enemy_sprite.get_global_rect()
 		return rect.position + rect.size * 0.5
-	# 默认位置：屏幕顶部中央
-	return get_viewport().get_visible_rect().size * 0.5 + Vector2(0, -100)
+	# 默认位置：屏幕顶部左侧
+	return get_viewport().get_visible_rect().size * 0.25 + Vector2(0, 50)
 
 
 ## 获取棋盘格子的世界位置

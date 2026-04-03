@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://ci1oatx2j63sv" path="res://art/sprites/UI/items/pause.png" id="2_pause"]
 [ext_resource type="Texture2D" uid="uid://4xnq8jdshgeo" path="res://art/sprites/UI/items/play.png" id="3_play"]
 [ext_resource type="Texture2D" uid="uid://x0btk78hil8p" path="res://art/sprites/UI/items/smallItem/close.png" id="4_close"]
+[ext_resource type="Texture2D" path="res://art/sprites/UI/panels/bg_1.png" id="5_bg"]
 
 [node name="BattleScene" type="Control"]
 layout_mode = 3
@@ -21,6 +22,11 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0.1, 0.08, 0.15, 1)
 
+[node name="BgSprite" type="Sprite2D" parent="."]
+position = Vector2(576, 512)
+texture = ExtResource("5_bg")
+centered = true
+
 [node name="MainLayout" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
@@ -28,11 +34,11 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 4
 
 [node name="ControlBar" type="HBoxContainer" parent="MainLayout"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 160)
+custom_minimum_size = Vector2(0, 80)
 theme_override_constants/separation = 12
 
 [node name="PauseButton" type="Button" parent="MainLayout/ControlBar"]
@@ -78,105 +84,78 @@ text = "Skip"
 layout_mode = 2
 text = ""
 
-[node name="BattleInfoBar" type="HBoxContainer" parent="MainLayout"]
+[node name="EnemyArea" type="HBoxContainer" parent="MainLayout"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 160)
-theme_override_constants/separation = 20
+custom_minimum_size = Vector2(0, 200)
+size_flags_horizontal = 3
+theme_override_constants/separation = 16
 
-[node name="EnemyPanel" type="VBoxContainer" parent="MainLayout/BattleInfoBar"]
+[node name="EnemySpriteRect" type="TextureRect" parent="MainLayout/EnemyArea"]
+custom_minimum_size = Vector2(200, 200)
+layout_mode = 2
+stretch_mode = 5
+
+[node name="EnemyInfoPanel" type="VBoxContainer" parent="MainLayout/EnemyArea"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 4
+theme_override_constants/separation = 8
 
-[node name="EnemyTitle" type="HBoxContainer" parent="MainLayout/BattleInfoBar/EnemyPanel"]
+[node name="EnemyTitle" type="HBoxContainer" parent="MainLayout/EnemyArea/EnemyInfoPanel"]
 layout_mode = 2
 
-[node name="EnemyName" type="Label" parent="MainLayout/BattleInfoBar/EnemyPanel/EnemyTitle"]
+[node name="EnemyName" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel/EnemyTitle"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 28
 text = "Enemy Name"
 
-[node name="EnemyType" type="Label" parent="MainLayout/BattleInfoBar/EnemyPanel/EnemyTitle"]
+[node name="EnemyType" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel/EnemyTitle"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 24
 text = "[Normal]"
 
-[node name="EnemyStats" type="HBoxContainer" parent="MainLayout/BattleInfoBar/EnemyPanel"]
+[node name="EnemyStats" type="HBoxContainer" parent="MainLayout/EnemyArea/EnemyInfoPanel"]
 layout_mode = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 24
 
-[node name="EnemyAtk" type="Label" parent="MainLayout/BattleInfoBar/EnemyPanel/EnemyStats"]
+[node name="EnemyAtk" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel/EnemyStats"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 22
 text = "ATK: 10"
 
-[node name="EnemyDef" type="Label" parent="MainLayout/BattleInfoBar/EnemyPanel/EnemyStats"]
+[node name="EnemyDef" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel/EnemyStats"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 22
 text = "DEF: 5"
 
-[node name="EnemyHpBar" type="ProgressBar" parent="MainLayout/BattleInfoBar/EnemyPanel"]
+[node name="EnemyHpBar" type="ProgressBar" parent="MainLayout/EnemyArea/EnemyInfoPanel"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 32)
 max_value = 100.0
 value = 100.0
 show_percentage = false
 
-[node name="EnemyHpLabel" type="Label" parent="MainLayout/BattleInfoBar/EnemyPanel"]
+[node name="EnemyHpLabel" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel"]
 layout_mode = 2
 text = "HP: 100/100"
 
-[node name="TurnCenter" type="VBoxContainer" parent="MainLayout/BattleInfoBar"]
+[node name="SkillSection" type="VBoxContainer" parent="MainLayout/EnemyArea/EnemyInfoPanel"]
 layout_mode = 2
-custom_minimum_size = Vector2(160, 0)
+size_flags_vertical = 3
 theme_override_constants/separation = 4
 
-[node name="TurnLabel" type="Label" parent="MainLayout/BattleInfoBar/TurnCenter"]
+[node name="SkillName" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel/SkillSection"]
 layout_mode = 2
-horizontal_alignment = 1
-text = "Turn: 1"
+theme_override_colors/font_color = Color(1, 0.8, 0.4, 1)
+theme_override_font_sizes/font_size = 20
+text = "Special Skill"
 
-[node name="RelicLabel" type="Label" parent="MainLayout/BattleInfoBar/TurnCenter"]
+[node name="SkillDesc" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel/SkillSection"]
 layout_mode = 2
-horizontal_alignment = 1
-text = "Relics"
-
-[node name="PlayerPanel" type="VBoxContainer" parent="MainLayout/BattleInfoBar"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 4
-
-[node name="PlayerTitle" type="HBoxContainer" parent="MainLayout/BattleInfoBar/PlayerPanel"]
-layout_mode = 2
-
-[node name="PlayerName" type="Label" parent="MainLayout/BattleInfoBar/PlayerPanel/PlayerTitle"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Player"
-
-[node name="PlayerLevel" type="Label" parent="MainLayout/BattleInfoBar/PlayerPanel/PlayerTitle"]
-layout_mode = 2
-text = "Lv.1"
-
-[node name="PlayerStats" type="HBoxContainer" parent="MainLayout/BattleInfoBar/PlayerPanel"]
-layout_mode = 2
-theme_override_constants/separation = 16
-
-[node name="PlayerAtk" type="Label" parent="MainLayout/BattleInfoBar/PlayerPanel/PlayerStats"]
-layout_mode = 2
-text = "ATK: 10"
-
-[node name="PlayerDef" type="Label" parent="MainLayout/BattleInfoBar/PlayerPanel/PlayerStats"]
-layout_mode = 2
-text = "DEF: 5"
-
-[node name="PlayerHpBar" type="ProgressBar" parent="MainLayout/BattleInfoBar/PlayerPanel"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 40)
-max_value = 100.0
-value = 100.0
-show_percentage = false
-
-[node name="PlayerHpLabel" type="Label" parent="MainLayout/BattleInfoBar/PlayerPanel"]
-layout_mode = 2
-text = "HP: 100/100"
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 18
+autowrap_mode = 2
+text = "Skill description here"
 
 [node name="BoardCenter" type="CenterContainer" parent="MainLayout"]
 layout_mode = 2
@@ -189,8 +168,43 @@ theme_override_constants/v_separation = 2
 
 [node name="BottomPanel" type="HBoxContainer" parent="MainLayout"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 240)
+custom_minimum_size = Vector2(0, 200)
 theme_override_constants/separation = 16
+
+[node name="TurnInfo" type="VBoxContainer" parent="MainLayout/BottomPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="TurnLabel" type="Label" parent="MainLayout/BottomPanel/TurnInfo"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 24
+text = "Turn: 1"
+
+[node name="RelicLabel" type="Label" parent="MainLayout/BottomPanel/TurnInfo"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "Relics"
+
+[node name="PlayerStatsBar" type="HBoxContainer" parent="MainLayout/BottomPanel/TurnInfo"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="PlayerHpLabel" type="Label" parent="MainLayout/BottomPanel/TurnInfo/PlayerStatsBar"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "HP: 100/100"
+
+[node name="PlayerAtk" type="Label" parent="MainLayout/BottomPanel/TurnInfo/PlayerStatsBar"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "ATK: 10"
+
+[node name="PlayerDef" type="Label" parent="MainLayout/BottomPanel/TurnInfo/PlayerStatsBar"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "DEF: 5"
 
 [node name="RelicBar" type="VBoxContainer" parent="MainLayout/BottomPanel"]
 layout_mode = 2
@@ -199,7 +213,7 @@ theme_override_constants/separation = 4
 
 [node name="RelicHeader" type="HBoxContainer" parent="MainLayout/BottomPanel/RelicBar"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 60)
+custom_minimum_size = Vector2(0, 40)
 
 [node name="RelicButton" type="Button" parent="MainLayout/BottomPanel/RelicBar/RelicHeader"]
 layout_mode = 2
@@ -224,7 +238,7 @@ theme_override_constants/separation = 4
 
 [node name="ItemHeader" type="HBoxContainer" parent="MainLayout/BottomPanel/ItemBar"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 60)
+custom_minimum_size = Vector2(0, 40)
 
 [node name="ItemLabel" type="Label" parent="MainLayout/BottomPanel/ItemBar/ItemHeader"]
 layout_mode = 2
@@ -260,6 +274,7 @@ custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
 
 [node name="LogScroll" type="ScrollContainer" parent="MainLayout"]
+visible = false
 layout_mode = 2
 custom_minimum_size = Vector2(0, 160)
 
