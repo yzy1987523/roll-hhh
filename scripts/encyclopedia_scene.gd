@@ -140,7 +140,10 @@ func _select_job(job_id: int) -> void:
 			# 选中高亮
 			var style := StyleBoxFlat.new()
 			style.bg_color = JOB_COLORS.get(job_id, Color(0.5, 0.5, 0.5))
-			style.border_width_all = 3
+			style.border_width_left = 3
+			style.border_width_right = 3
+			style.border_width_top = 3
+			style.border_width_bottom = 3
 			style.border_color = Color(1, 0.9, 0.5)
 			style.corner_radius_top_left = 10
 			style.corner_radius_top_right = 10

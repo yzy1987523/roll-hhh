@@ -354,7 +354,10 @@ func _create_dorm_cell(index: int) -> Control:
 		if is_marked:
 			var highlight := StyleBoxFlat.new()
 			highlight.bg_color = Color(1, 0.8, 0, 0.3)
-			highlight.border_width_all = 2
+			highlight.border_width_left = 2
+			highlight.border_width_right = 2
+			highlight.border_width_top = 2
+			highlight.border_width_bottom = 2
 			highlight.border_color = Color(1, 0.8, 0, 1)
 			container.add_theme_stylebox_override("panel", highlight)
 		
