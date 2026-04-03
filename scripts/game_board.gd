@@ -1395,11 +1395,9 @@ func _on_spawn_pressed(job: int) -> void:
 	if is_spawning:
 		return
 	
-	# 检查棋盘是否有空位（考虑宿舍标记移出的占用）
-	var empty_count: int = GameManager.board_data.get_empty_board_count()
-	var marked_count: int = GameManager.board_data.marked_for_removal.size()
-	if empty_count <= marked_count:
-		print(">>> [GameBoard] 生成失败: 棋盘已满（预留宿舍移出空间）")
+	# 检查棋盘是否已满
+	if GameManager.board_data.is_board_full():
+		print(">>> [GameBoard] 生成失败: 棋盘已满")
 		TipManager.show_tip("棋盘格已满")
 		return
 
