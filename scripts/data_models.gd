@@ -149,9 +149,15 @@ class CharacterData:
 
 	# 职业ID转换为精灵图职业代码
 	func _job_to_sprite_code(_j: int) -> int:
-		# 暗牧师有独立的精灵图
-		if _j == 30:  # JobAdvanced.JOB_DARKPRIEST
-			return 4
+		# 转职职业: 每个职业有独立的精灵图文件夹
+		match _j:
+			JobAdvanced.JOB_KNIGHT: return 4       # 骑士
+			JobAdvanced.JOB_BERSERKER: return 5    # 狂战士
+			JobAdvanced.JOB_ICEMAGE: return 6     # 冰法师
+			JobAdvanced.JOB_FIREMAGE: return 7    # 火法师
+			JobAdvanced.JOB_DARKPRIEST: return 8   # 暗牧师
+			JobAdvanced.JOB_PALADIN: return 9      # 圣骑士
+		# 基础职业
 		var base: int = get_base_job()
 		match base:
 			Job.WARRIOR: return 1
