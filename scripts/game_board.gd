@@ -1818,18 +1818,29 @@ func _setup_item_slots() -> void:
 	item_slot_labels.clear()
 	item_slot_overlays.clear()
 
+	# 加载格子背景纹理
+	var cell_texture := preload("res://art/sprites/UI/items/smallItem/cell_0.png")
+
 	for i in range(ITEM_SLOT_COUNT):
 		var slot: Control = item_bar.get_child(i)
 		item_slot_nodes.append(slot)
+		
+		# 移除PanelContainer的默认样式（如果有）
+		if slot is PanelContainer:
+			var transparent_style := StyleBoxEmpty.new()
+			slot.add_theme_stylebox_override("panel", transparent_style)
 
 		# 清除旧内容
 		for child in slot.get_children():
 			child.queue_free()
 
-		# 背景色
-		var bg := ColorRect.new()
-		bg.set_anchors_preset(Control.PRESET_CENTER)
-		bg.color = Color("#1A2A4A")
+		# 背景纹理（使用cell_0.png）
+		var bg := TextureRect.new()
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.texture = cell_texture
+		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		bg.modulate = Color(0.8, 0.8, 0.8, 0.9)
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE  # 让点击穿透到slot
 		slot.add_child(bg)
 

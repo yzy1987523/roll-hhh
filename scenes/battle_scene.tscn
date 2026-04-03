@@ -5,6 +5,21 @@
 [ext_resource type="Texture2D" uid="uid://4xnq8jdshgeo" path="res://art/sprites/UI/items/smallItem/play.png" id="3_play"]
 [ext_resource type="Texture2D" uid="uid://c8380p8gfo5gh" path="res://art/sprites/UI/panels/bg_1.png" id="5_bg"]
 [ext_resource type="Texture2D" uid="uid://8q11l3kyangs" path="res://art/sprites/UI/items/smallItem/time.png" id="6_time"]
+[ext_resource type="Texture2D" uid="uid://dxh8kqjw5yjrn" path="res://art/sprites/UI/items/smallItem/skip.png" id="7_skip"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_bg"]
+bg_color = Color(0.2, 0.2, 0.2, 0.8)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_left = 4
+corner_radius_bottom_right = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_fill"]
+bg_color = Color(0.9, 0.2, 0.2, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_left = 4
+corner_radius_bottom_right = 4
 
 [node name="BattleScene" type="Control" unique_id=296336740]
 layout_mode = 3
@@ -134,8 +149,11 @@ layout_mode = 2
 size_flags_horizontal = 4
 value = 100.0
 show_percentage = false
+theme_override_styles/background = SubResource("StyleBox_bg")
+theme_override_styles/fill = SubResource("StyleBox_fill")
 
 [node name="EnemyHpLabel" type="Label" parent="MainLayout/EnemyArea/EnemyInfoPanel" unique_id=1641958415]
+visible = false
 layout_mode = 2
 text = "HP: 100/100"
 horizontal_alignment = 1
@@ -183,80 +201,82 @@ layout_mode = 2
 theme_override_constants/h_separation = 2
 theme_override_constants/v_separation = 2
 
+[node name="PauseHintBar" type="HBoxContainer" parent="MainLayout" unique_id=555666777]
+layout_mode = 2
+alignment = 1
+
+[node name="PauseHint" type="Label" parent="MainLayout/PauseHintBar" unique_id=590776472]
+custom_minimum_size = Vector2(300, 40)
+layout_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="ControlBar" type="HBoxContainer" parent="MainLayout" unique_id=1332665711]
-custom_minimum_size = Vector2(0, 60)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="PauseButton" type="Button" parent="MainLayout/ControlBar" unique_id=281702200]
+[node name="ItemSlot0" type="PanelContainer" parent="MainLayout/ControlBar" unique_id=931104659]
+custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
-toggle_mode = true
-text = "Pause"
-icon = ExtResource("2_pause")
 
-[node name="PlayButton" type="Button" parent="MainLayout/ControlBar" unique_id=356421878]
+[node name="ItemSlot1" type="PanelContainer" parent="MainLayout/ControlBar" unique_id=1353203323]
+custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
-text = "Play"
-icon = ExtResource("3_play")
+
+[node name="ItemSlot2" type="PanelContainer" parent="MainLayout/ControlBar" unique_id=1879906986]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
 
 [node name="Spacer1" type="Control" parent="MainLayout/ControlBar" unique_id=1988604710]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Speed1x" type="Button" parent="MainLayout/ControlBar" unique_id=702074325]
+[node name="PauseButton" type="Button" parent="MainLayout/ControlBar" unique_id=281702200]
+custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
 toggle_mode = true
-text = "1x"
-
-[node name="Speed2x" type="Button" parent="MainLayout/ControlBar" unique_id=1930994772]
-layout_mode = 2
-toggle_mode = true
-button_pressed = true
-text = "2x"
-
-[node name="Speed3x" type="Button" parent="MainLayout/ControlBar" unique_id=697674778]
-layout_mode = 2
-toggle_mode = true
-text = "3x"
+text = "Pause"
+icon = ExtResource("2_pause")
 
 [node name="Spacer2" type="Control" parent="MainLayout/ControlBar" unique_id=112611127]
 layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="SkipButton" type="Button" parent="MainLayout/ControlBar" unique_id=846351223]
+custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
 text = "Skip"
+icon = ExtResource("7_skip")
 
-[node name="PauseHint" type="Label" parent="MainLayout/ControlBar" unique_id=590776472]
+[node name="Spacer3" type="Control" parent="MainLayout/ControlBar" unique_id=888999111]
 layout_mode = 2
+size_flags_horizontal = 3
 
-[node name="ItemBar" type="HBoxContainer" parent="MainLayout" unique_id=694043853]
+[node name="PlayButton" type="Button" parent="MainLayout/ControlBar" unique_id=356421878]
+visible = false
 layout_mode = 2
-theme_override_constants/separation = 4
+text = "Play"
+icon = ExtResource("3_play")
 
-[node name="ItemSlot0" type="PanelContainer" parent="MainLayout/ItemBar" unique_id=931104659]
-custom_minimum_size = Vector2(80, 80)
+[node name="Speed1x" type="Button" parent="MainLayout/ControlBar" unique_id=702074325]
+visible = false
 layout_mode = 2
+toggle_mode = true
+text = "1x"
 
-[node name="ItemSlot1" type="PanelContainer" parent="MainLayout/ItemBar" unique_id=1353203323]
-custom_minimum_size = Vector2(80, 80)
+[node name="Speed2x" type="Button" parent="MainLayout/ControlBar" unique_id=1930994772]
+visible = false
 layout_mode = 2
+toggle_mode = true
+button_pressed = true
+text = "2x"
 
-[node name="ItemSlot2" type="PanelContainer" parent="MainLayout/ItemBar" unique_id=1879906986]
-custom_minimum_size = Vector2(80, 80)
+[node name="Speed3x" type="Button" parent="MainLayout/ControlBar" unique_id=697674778]
+visible = false
 layout_mode = 2
-
-[node name="ItemSlot3" type="PanelContainer" parent="MainLayout/ItemBar" unique_id=797668829]
-custom_minimum_size = Vector2(80, 80)
-layout_mode = 2
-
-[node name="ItemSlot4" type="PanelContainer" parent="MainLayout/ItemBar" unique_id=1568749160]
-custom_minimum_size = Vector2(80, 80)
-layout_mode = 2
-
-[node name="ItemSlot5" type="PanelContainer" parent="MainLayout/ItemBar" unique_id=1663034097]
-custom_minimum_size = Vector2(80, 80)
-layout_mode = 2
+toggle_mode = true
+text = "3x"
 
 [node name="LogScroll" type="ScrollContainer" parent="MainLayout" unique_id=763331246]
 visible = false

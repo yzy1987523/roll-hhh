@@ -18,7 +18,7 @@ class_name BattleScene
 @onready var speed_1x: Button = $MainLayout/ControlBar/Speed1x
 @onready var speed_2x: Button = $MainLayout/ControlBar/Speed2x
 @onready var speed_3x: Button = $MainLayout/ControlBar/Speed3x
-@onready var pause_hint: Label = $MainLayout/ControlBar/PauseHint
+@onready var pause_hint: Label = $MainLayout/PauseHintBar/PauseHint
 
 # ---- Turn & Relic Area 节点 ----
 @onready var turn_label: Label = $MainLayout/TurnContainer/TurnBox/TurnLabel
@@ -40,12 +40,9 @@ class_name BattleScene
 @onready var skill_desc_label: Label = $MainLayout/EnemyArea/EnemyInfoPanel/SkillSection/SkillDesc
 
 # ---- ItemBar 节点 ----
-@onready var item_slot0: PanelContainer = $MainLayout/ItemBar/ItemSlot0
-@onready var item_slot1: PanelContainer = $MainLayout/ItemBar/ItemSlot1
-@onready var item_slot2: PanelContainer = $MainLayout/ItemBar/ItemSlot2
-@onready var item_slot3: PanelContainer = $MainLayout/ItemBar/ItemSlot3
-@onready var item_slot4: PanelContainer = $MainLayout/ItemBar/ItemSlot4
-@onready var item_slot5: PanelContainer = $MainLayout/ItemBar/ItemSlot5
+@onready var item_slot0: PanelContainer = $MainLayout/ControlBar/ItemSlot0
+@onready var item_slot1: PanelContainer = $MainLayout/ControlBar/ItemSlot1
+@onready var item_slot2: PanelContainer = $MainLayout/ControlBar/ItemSlot2
 
 # ---- 常量 ----
 const GRID_SIZE := 6
@@ -168,6 +165,15 @@ func _setup_continue_button_style() -> void:
 	continue_button.add_theme_font_size_override("font_size", 24)
 
 
+## 设置按钮透明背景样式（用于图标按钮）
+func _set_button_transparent_style(button: Button) -> void:
+	var transparent_style := StyleBoxEmpty.new()
+	button.add_theme_stylebox_override("normal", transparent_style)
+	button.add_theme_stylebox_override("hover", transparent_style)
+	button.add_theme_stylebox_override("pressed", transparent_style)
+	button.add_theme_stylebox_override("disabled", transparent_style)
+
+
 func _setup_bullet_container() -> void:
 	# 创建子弹容器节点
 	bullet_container = Node2D.new()
@@ -189,16 +195,23 @@ func _start_tutorial() -> void:
 # ---- 道具栏 & 遗物栏初始化 ----
 
 func _setup_item_slots() -> void:
-	var slots := [item_slot0, item_slot1, item_slot2, item_slot3, item_slot4, item_slot5]
+	var slots := [item_slot0, item_slot1, item_slot2]
 	for i in range(GameManager.MAX_ITEM_SLOTS):
 		var slot: PanelContainer = slots[i]
+		# 移除PanelContainer的默认样式
+		var transparent_style := StyleBoxEmpty.new()
+		slot.add_theme_stylebox_override("panel", transparent_style)
+		
 		# 清除旧内容
 		for child in slot.get_children():
 			child.queue_free()
-		# 背景
-		var bg := ColorRect.new()
-		bg.set_anchors_preset(Control.PRESET_CENTER)
-		bg.color = Color("#1A2A3A")
+		# 背景纹理（使用cell_0.png）
+		var bg := TextureRect.new()
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.texture = CELL_BG_TEXTURE
+		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		bg.modulate = Color(0.8, 0.8, 0.8, 0.9)
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slot.add_child(bg)
 		# 图标/标签
@@ -215,7 +228,7 @@ func _setup_item_slots() -> void:
 
 func _refresh_item_slots() -> void:
 	var items: Array = GameManager.items
-	var slots := [item_slot0, item_slot1, item_slot2, item_slot3, item_slot4, item_slot5]
+	var slots := [item_slot0, item_slot1, item_slot2]
 	for i in range(GameManager.MAX_ITEM_SLOTS):
 		var slot: PanelContainer = slots[i]
 		var lbl: Label = slot.get_node_or_null(Label_path_from_index(slot, 1))  # 第二个子节点是Label
@@ -408,9 +421,6 @@ func _connect_signals() -> void:
 	item_slot0.gui_input.connect(_on_item_slot_input.bind(0))
 	item_slot1.gui_input.connect(_on_item_slot_input.bind(1))
 	item_slot2.gui_input.connect(_on_item_slot_input.bind(2))
-	item_slot3.gui_input.connect(_on_item_slot_input.bind(3))
-	item_slot4.gui_input.connect(_on_item_slot_input.bind(4))
-	item_slot5.gui_input.connect(_on_item_slot_input.bind(5))
 	# 遗物栏翻页
 	relic_prev_button.pressed.connect(_on_relic_prev_pressed)
 	relic_next_button.pressed.connect(_on_relic_next_pressed)
@@ -529,11 +539,26 @@ func _start_battle() -> void:
 	# 隐藏播放按钮，使用暂停按钮作为播放/暂停切换
 	play_button.visible = false
 	
-	# 初始化暂停按钮状态（显示暂停图标）
-	pause_button.text = LocalizationSystem.get_text("battle.pause")
-	pause_button.icon = preload("res://art/sprites/UI/items/smallItem/pause.png")
+	# 隐藏速度按钮
+	speed_1x.visible = false
+	speed_2x.visible = false
+	speed_3x.visible = false
+	
+	# 初始化暂停按钮状态（显示播放图标，隐藏文字）
+	# 初始状态：显示播放图标（点击开始战斗）
+	pause_button.text = ""
+	pause_button.icon = preload("res://art/sprites/UI/items/smallItem/play.png")
 	pause_button.button_pressed = false
 	pause_button.disabled = false
+	# 设置透明背景
+	_set_button_transparent_style(pause_button)
+	
+	# 初始化暂停提示字体大小（放大到2.5倍）
+	pause_hint.add_theme_font_size_override("font_size", 40)
+	
+	# 初始化跳过按钮（使用图标，不显示文字）
+	skip_button.text = ""
+	_set_button_transparent_style(skip_button)
 	
 	speed_1x.button_pressed = true
 	speed_2x.button_pressed = false
@@ -550,13 +575,16 @@ func _start_battle() -> void:
 
 func _on_localization_changed(lang: String) -> void:
 	# 更新战斗界面文本
-	if is_paused:
-		pause_button.text = LocalizationSystem.get_text("battle.resume")
-		pause_button.icon = preload("res://art/sprites/UI/items/smallItem/play.png")
-	else:
-		pause_button.text = LocalizationSystem.get_text("battle.pause")
+	# 暂停按钮不显示文字，只更新图标
+	# 播放中显示暂停图标，暂停或未开始显示播放图标
+	if is_playing and not is_paused:
+		pause_button.text = ""
 		pause_button.icon = preload("res://art/sprites/UI/items/smallItem/pause.png")
-	skip_button.text = LocalizationSystem.get_text("battle.skip")
+	else:
+		pause_button.text = ""
+		pause_button.icon = preload("res://art/sprites/UI/items/smallItem/play.png")
+	# 跳过按钮不显示文字，只使用图标
+	skip_button.text = ""
 	speed_1x.text = LocalizationSystem.get_text("battle.speed_1x")
 	speed_2x.text = LocalizationSystem.get_text("battle.speed_2x")
 	speed_3x.text = LocalizationSystem.get_text("battle.speed_3x")
@@ -629,8 +657,9 @@ func _on_pause_pressed() -> void:
 	# 如果战斗未开始，开始战斗
 	if not is_playing:
 		is_playing = true
+		# 开始播放后显示暂停图标
 		pause_button.icon = preload("res://art/sprites/UI/items/smallItem/pause.png")
-		pause_button.text = LocalizationSystem.get_text("battle.pause")
+		pause_button.text = ""
 		_play_turns()
 		return
 	
@@ -638,16 +667,16 @@ func _on_pause_pressed() -> void:
 	is_paused = !is_paused
 	_static_is_paused = is_paused  # 同步静态变量
 	
-	# 更新按钮图标和文字
+	# 更新按钮图标（不显示文字）
 	if is_paused:
-		# 暂停状态：显示播放图标
+		# 暂停状态：显示播放图标（点击继续）
 		pause_button.icon = preload("res://art/sprites/UI/items/smallItem/play.png")
-		pause_button.text = LocalizationSystem.get_text("battle.resume")
+		pause_button.text = ""
 		pause_hint.text = LocalizationSystem.get_text("battle.battle_paused")
 	else:
-		# 播放状态：显示暂停图标
+		# 播放状态：显示暂停图标（点击暂停）
 		pause_button.icon = preload("res://art/sprites/UI/items/smallItem/pause.png")
-		pause_button.text = LocalizationSystem.get_text("battle.pause")
+		pause_button.text = ""
 		pause_hint.text = ""
 	# 不需要在恢复时调用 _play_turns()
 	# 因为 _wait_with_pause() 会自动在暂停时阻塞，恢复后继续
@@ -762,8 +791,12 @@ func _update_enemy_display() -> void:
 	var e: EnemyFactory.EnemyData = engine.enemy
 	enemy_name.text = e.name
 	enemy_type.text = "[%s]" % e.get_type_name()
-	enemy_atk.text = "ATK: %d" % e.attack
-	enemy_def.text = "DEF: %d" % e.defense
+	
+	# 隐藏原来的攻防文字标签（现在使用图标叠加显示）
+	enemy_atk.visible = false
+	enemy_def.visible = false
+	
+	# 更新血条
 	enemy_hp_bar.max_value = e.max_hp
 	enemy_hp_bar.value = e.hp
 	enemy_hp_label.text = "HP: %d/%d" % [e.hp, e.max_hp]
@@ -771,9 +804,37 @@ func _update_enemy_display() -> void:
 	# 血条长度：根据血量计算，范围100-600
 	var hp_bar_width: int = clampi(int(e.max_hp * 2), 100, 600)
 	enemy_hp_bar.custom_minimum_size = Vector2(hp_bar_width, 24)
+	
+	# 在血条上叠加血量文字（字号2倍，去掉HP字样）
+	_update_enemy_hp_label(e, hp_bar_width)
 
 	# 加载敌人精灵图
 	_load_enemy_sprite(e)
+
+
+## 更新敌人血条上的血量文字
+func _update_enemy_hp_label(e: EnemyFactory.EnemyData, hp_bar_width: int) -> void:
+	# 清除旧的血量文字
+	var old_label: Node = enemy_hp_bar.get_node_or_null("HpText")
+	if old_label != null:
+		old_label.queue_free()
+	
+	# 创建血量文字（叠加在血条上）
+	var hp_text := Label.new()
+	hp_text.name = "HpText"
+	hp_text.text = "%d/%d" % [e.hp, e.max_hp]
+	hp_text.custom_minimum_size = Vector2(hp_bar_width, 24)
+	hp_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hp_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hp_text.add_theme_font_size_override("font_size", 32)  # 2倍字号
+	hp_text.add_theme_color_override("font_color", Color.WHITE)
+	hp_text.add_theme_color_override("font_outline_color", Color.BLACK)
+	hp_text.add_theme_constant_override("outline_size", 3)
+	hp_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	enemy_hp_bar.add_child(hp_text)
+	
+	# 更新敌人精灵图上的攻防图标
+	_update_enemy_sprite_ui(e)
 
 	# 显示特技信息
 	_update_skill_display(e)
@@ -851,14 +912,89 @@ func _load_enemy_sprite(e: EnemyFactory.EnemyData) -> void:
 	enemy_sprite_rect.texture = null
 
 
+## 更新敌人精灵图上的攻防图标
+func _update_enemy_sprite_ui(e: EnemyFactory.EnemyData) -> void:
+	# 清除旧的UI元素
+	var children_to_remove := []
+	for j in range(enemy_sprite_rect.get_child_count()):
+		var child := enemy_sprite_rect.get_child(j)
+		if child.name.begins_with("AtkBox") or child.name.begins_with("DefBox"):
+			children_to_remove.append(child)
+	for child in children_to_remove:
+		child.queue_free()
+	
+	# 攻击图标+数值（左下角，尺寸50）
+	var atk_container := Control.new()
+	atk_container.position = Vector2(4, 148)
+	atk_container.custom_minimum_size = Vector2(50, 50)
+	atk_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	enemy_sprite_rect.add_child(atk_container)
+	atk_container.name = "AtkBox"
+
+	var atk_icon := TextureRect.new()
+	atk_icon.texture = load("res://art/sprites/UI/items/smallItem/attack.png")
+	atk_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+	atk_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	atk_icon.custom_minimum_size = Vector2(50, 50)
+	atk_icon.position = Vector2(0, 0)
+	atk_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	atk_container.add_child(atk_icon)
+
+	var atk_label := Label.new()
+	atk_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	atk_label.text = "%d" % e.attack
+	atk_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	atk_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	atk_label.add_theme_font_size_override("font_size", 32)
+	atk_label.add_theme_color_override("font_color", Color.WHITE)
+	atk_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	atk_label.add_theme_constant_override("outline_size", 3)
+	atk_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	atk_container.add_child(atk_label)
+
+	# 防御图标+数值（右下角，尺寸50）
+	# 敌人精灵图尺寸为200x200，所以右下角位置是 200 - 50 - 2 = 148
+	var def_container := Control.new()
+	def_container.position = Vector2(148, 148)
+	def_container.custom_minimum_size = Vector2(50, 50)
+	def_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	enemy_sprite_rect.add_child(def_container)
+	def_container.name = "DefBox"
+
+	var def_icon := TextureRect.new()
+	def_icon.texture = load("res://art/sprites/UI/items/smallItem/defend.png")
+	def_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+	def_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	def_icon.custom_minimum_size = Vector2(50, 50)
+	def_icon.position = Vector2(0, 0)
+	def_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	def_container.add_child(def_icon)
+
+	var def_label := Label.new()
+	def_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	def_label.text = "%d" % e.defense
+	def_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	def_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	def_label.add_theme_font_size_override("font_size", 32)
+	def_label.add_theme_color_override("font_color", Color.WHITE)
+	def_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	def_label.add_theme_constant_override("outline_size", 3)
+	def_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	def_container.add_child(def_label)
+
+
 ## 更新特技显示
 func _update_skill_display(e: EnemyFactory.EnemyData) -> void:
 	var skill_id: int = e.skill_id
 	if skill_id == 0:
-		# 普通敌人没有特技
-		skill_name_label.text = LocalizationSystem.get_text("enemy.no_skill")
-		skill_desc_label.text = ""
+		# 普通敌人没有特技，隐藏文字
+		skill_name_label.visible = false
+		skill_desc_label.visible = false
 		return
+	
+	# 有特技时显示文字
+	skill_name_label.visible = true
+	skill_desc_label.visible = true
 
 	# 获取特技名称和描述
 	var skill_info: Dictionary = _get_skill_info(skill_id)
@@ -1078,10 +1214,10 @@ func _update_cell_ui(cell: Control, ch: DataModels.CharacterData) -> void:
 	if lbl:
 		lbl.text = ""
 
-	# 血条容器（底部，宽度=格子宽度-10）
+	# 血条容器（底部，宽度=格子宽度-40，左右边距各20）
 	var hp_container := Control.new()
-	hp_container.custom_minimum_size = Vector2(CELL_SIZE - 10, 20)
-	hp_container.position = Vector2(5, CELL_SIZE - 25)
+	hp_container.custom_minimum_size = Vector2(CELL_SIZE - 40, 20)
+	hp_container.position = Vector2(20, CELL_SIZE - 25)
 	hp_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# 不设置z_index，保持在格子层级内
 	cell.add_child(hp_container)
@@ -1089,7 +1225,7 @@ func _update_cell_ui(cell: Control, ch: DataModels.CharacterData) -> void:
 
 	# 血条背景
 	var hp_bar := ProgressBar.new()
-	hp_bar.custom_minimum_size = Vector2(CELL_SIZE - 10, 16)
+	hp_bar.custom_minimum_size = Vector2(CELL_SIZE - 40, 16)
 	hp_bar.max_value = ch.max_hp
 	hp_bar.value = ch.hp
 	hp_bar.show_percentage = false
@@ -1116,11 +1252,11 @@ func _update_cell_ui(cell: Control, ch: DataModels.CharacterData) -> void:
 
 	# 血量文字叠加在血条上
 	var hp_label := Label.new()
-	hp_label.size = Vector2(CELL_SIZE - 10, 16)
+	hp_label.size = Vector2(CELL_SIZE - 40, 16)
 	hp_label.text = "%d/%d" % [ch.hp, ch.max_hp]
 	hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	hp_label.add_theme_font_size_override("font_size", 12)
+	hp_label.add_theme_font_size_override("font_size", 24)
 	hp_label.add_theme_color_override("font_color", Color.WHITE)
 	hp_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	hp_label.add_theme_constant_override("outline_size", 2)
@@ -1128,10 +1264,10 @@ func _update_cell_ui(cell: Control, ch: DataModels.CharacterData) -> void:
 	hp_container.add_child(hp_label)
 	hp_label.name = "HpLabel"
 
-	# 攻击图标+数值（左上角）
+	# 攻击图标+数值（左上角，数值叠加在图标上，尺寸为0.7倍）
 	var atk_container := Control.new()
 	atk_container.position = Vector2(4, 4)
-	atk_container.custom_minimum_size = Vector2(50, 28)
+	atk_container.custom_minimum_size = Vector2(39, 39)
 	atk_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cell.add_child(atk_container)
 	atk_container.name = "AtkBox"
@@ -1140,25 +1276,27 @@ func _update_cell_ui(cell: Control, ch: DataModels.CharacterData) -> void:
 	atk_icon.texture = load("res://art/sprites/UI/items/smallItem/attack.png")
 	atk_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
 	atk_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	atk_icon.custom_minimum_size = Vector2(24, 24)
-	atk_icon.position = Vector2(0, 2)
+	atk_icon.custom_minimum_size = Vector2(39, 39)
+	atk_icon.position = Vector2(0, 0)
 	atk_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	atk_container.add_child(atk_icon)
 	
 	var atk_label := Label.new()
-	atk_label.position = Vector2(26, 4)
+	atk_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	atk_label.text = "%d" % ch.attack
-	atk_label.add_theme_font_size_override("font_size", 20)
-	atk_label.add_theme_color_override("font_color", Color("#FF6060"))
+	atk_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	atk_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	atk_label.add_theme_font_size_override("font_size", 25)
+	atk_label.add_theme_color_override("font_color", Color.WHITE)
 	atk_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	atk_label.add_theme_constant_override("outline_size", 2)
 	atk_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	atk_container.add_child(atk_label)
 
-	# 防御图标+数值（右上角）
+	# 防御图标+数值（右上角，数值叠加在图标上，尺寸为0.7倍）
 	var def_container := Control.new()
-	def_container.position = Vector2(CELL_SIZE - 54, 4)
-	def_container.custom_minimum_size = Vector2(50, 28)
+	def_container.position = Vector2(CELL_SIZE - 43, 4)
+	def_container.custom_minimum_size = Vector2(39, 39)
 	def_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cell.add_child(def_container)
 	def_container.name = "DefBox"
@@ -1167,16 +1305,18 @@ func _update_cell_ui(cell: Control, ch: DataModels.CharacterData) -> void:
 	def_icon.texture = load("res://art/sprites/UI/items/smallItem/defend.png")
 	def_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
 	def_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	def_icon.custom_minimum_size = Vector2(24, 24)
-	def_icon.position = Vector2(0, 2)
+	def_icon.custom_minimum_size = Vector2(39, 39)
+	def_icon.position = Vector2(0, 0)
 	def_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	def_container.add_child(def_icon)
 	
 	var def_label := Label.new()
-	def_label.position = Vector2(26, 4)
+	def_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	def_label.text = "%d" % ch.defense
-	def_label.add_theme_font_size_override("font_size", 20)
-	def_label.add_theme_color_override("font_color", Color("#6090FF"))
+	def_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	def_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	def_label.add_theme_font_size_override("font_size", 25)
+	def_label.add_theme_color_override("font_color", Color.WHITE)
 	def_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	def_label.add_theme_constant_override("outline_size", 2)
 	def_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1432,8 +1572,8 @@ func _execute_player_attack_phase() -> void:
 		# 等待动画Phase 1完成后发射子弹（暂停感知）
 		await _wait_with_pause(0.1)
 
-		# 牧师系：发射治疗子弹到需要治疗的队友
-		if base_job == DataModels.Job.PRIEST:
+		# 牧师系（牧师、暗牧师、圣骑士）：发射治疗子弹到需要治疗的队友
+		if base_job == DataModels.Job.PRIEST or ch.job == JobAdvanced.JOB_PALADIN:
 			var heal_target: DataModels.CharacterData = _find_heal_target(ch, alive_chars)
 			if heal_target != null:
 				var target_pos: Vector2 = _get_cell_position(heal_target.get_board_index())
