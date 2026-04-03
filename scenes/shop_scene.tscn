@@ -1,4 +1,4 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://gh82crrqi2o2"]
 
 [ext_resource type="Script" uid="uid://no2ggulwp0l0" path="res://scripts/shop_scene.gd" id="1_shop"]
 
@@ -11,97 +11,101 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_shop")
 
-[node name="BgColor" type="ColorRect" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-color = Color(0.08, 0.1, 0.12, 1)
-
-[node name="VBox" type="VBoxContainer" parent="."]
+[node name="DarkOverlay" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+mouse_filter = 0
+
+[node name="ShopWindow" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -600.0
+offset_right = 400.0
+offset_bottom = 600.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="ShopWindow"]
+layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="TitleBar" type="HBoxContainer" parent="VBox"]
+[node name="TitleBar" type="HBoxContainer" parent="ShopWindow/VBox"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 60)
+theme_override_constants/separation = 16
 
-[node name="Spacer" type="Control" parent="VBox/TitleBar"]
+[node name="ShopTitle" type="Label" parent="ShopWindow/VBox/TitleBar"]
 layout_mode = 2
 size_flags_horizontal = 3
+text = "商  店"
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="GoldLabel" type="Label" parent="VBox/TitleBar"]
+[node name="GoldLabel" type="Label" parent="ShopWindow/VBox/TitleBar"]
 layout_mode = 2
+custom_minimum_size = Vector2(150, 0)
 text = "💰 0"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Spacer2" type="Control" parent="VBox/TitleBar"]
+[node name="CloseButton" type="TextureButton" parent="ShopWindow/VBox/TitleBar"]
 layout_mode = 2
-size_flags_horizontal = 3
+custom_minimum_size = Vector2(40, 40)
+stretch_mode = 5
 
-[node name="ItemSection" type="VBoxContainer" parent="VBox"]
+[node name="ItemSection" type="VBoxContainer" parent="ShopWindow/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 8
 
-[node name="SectionTitle" type="Label" parent="VBox/ItemSection"]
+[node name="SectionTitle" type="Label" parent="ShopWindow/VBox/ItemSection"]
 layout_mode = 2
 text = "道  具"
 horizontal_alignment = 1
 
-[node name="ItemScroll" type="ScrollContainer" parent="VBox/ItemSection"]
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 2
-
-[node name="ItemContainer" type="HFlowContainer" parent="VBox/ItemSection/ItemScroll"]
+[node name="ItemContainer" type="HFlowContainer" parent="ShopWindow/VBox/ItemSection"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/h_separation = 12
-theme_override_constants/v_separation = 8
+theme_override_constants/h_separation = 30
+theme_override_constants/v_separation = 30
 
-[node name="RelicSection" type="VBoxContainer" parent="VBox"]
+[node name="RelicSection" type="VBoxContainer" parent="ShopWindow/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 8
 
-[node name="SectionTitle" type="Label" parent="VBox/RelicSection"]
+[node name="SectionTitle" type="Label" parent="ShopWindow/VBox/RelicSection"]
 layout_mode = 2
 text = "遗  物"
 horizontal_alignment = 1
 
-[node name="RelicScroll" type="ScrollContainer" parent="VBox/RelicSection"]
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 2
-
-[node name="RelicContainer" type="HFlowContainer" parent="VBox/RelicSection/RelicScroll"]
+[node name="RelicContainer" type="HFlowContainer" parent="ShopWindow/VBox/RelicSection"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/h_separation = 12
-theme_override_constants/v_separation = 8
+theme_override_constants/h_separation = 30
+theme_override_constants/v_separation = 30
 
-[node name="BottomBar" type="HBoxContainer" parent="VBox"]
+[node name="BottomBar" type="HBoxContainer" parent="ShopWindow/VBox"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 70)
 theme_override_constants/separation = 16
 
-[node name="RefreshButton" type="Button" parent="VBox/BottomBar"]
+[node name="RefreshButton" type="Button" parent="ShopWindow/VBox/BottomBar"]
 layout_mode = 2
 text = "🔄 刷新 (10💰)"
 
-[node name="Spacer" type="Control" parent="VBox/BottomBar"]
+[node name="Spacer" type="Control" parent="ShopWindow/VBox/BottomBar"]
 layout_mode = 2
 size_flags_horizontal = 3
-
-[node name="CloseButton" type="Button" parent="VBox/BottomBar"]
-layout_mode = 2
-text = "关闭商店"

@@ -2,31 +2,51 @@ extends Control
 
 ## 商店系统
 ## 上下分区显示道具和遗物，图片+价格布局，点击调用弹窗
+## 改进版：商品图片、256尺寸、窗口模式、遮罩、close按钮、cell_0背景、售完移除、回合刷新
 
 const SHOP_SLOTS := 6  # 每次刷新6个商品
 const REFRESH_COST := 10  # 手动刷新费用
+const ITEM_SIZE := 200  # 商品尺寸
+const ITEM_SPACING := 30  # 商品间隔
 
 var shop_items: Array = []   # 当前商品列表
 
 # 节点引用
-@onready var gold_label: Label = $VBox/TitleBar/GoldLabel
-@onready var item_container: HFlowContainer = $VBox/ItemSection/ItemScroll/ItemContainer
-@onready var relic_container: HFlowContainer = $VBox/RelicSection/RelicScroll/RelicContainer
+@onready var gold_label: Label = $ShopWindow/VBox/TitleBar/GoldLabel
+@onready var item_container: HFlowContainer = $ShopWindow/VBox/ItemSection/ItemContainer
+@onready var relic_container: HFlowContainer = $ShopWindow/VBox/RelicSection/RelicContainer
+@onready var close_button: TextureButton = $ShopWindow/VBox/TitleBar/CloseButton
 
-# 道具颜色映射（用于显示占位图）
-const ITEM_COLORS := {
-	"potion": Color(0.3, 0.8, 0.3),
-	"scroll": Color(0.3, 0.5, 0.9),
-	"bomb": Color(0.9, 0.4, 0.2),
-	"default": Color(0.6, 0.6, 0.6)
-}
+# 预加载纹理
+const CELL_TEXTURE := preload("res://art/sprites/UI/items/smallItem/cell_0.png")
+const CHECK_TEXTURE := preload("res://art/sprites/UI/items/smallItem/check.png")
+const CLOSE_TEXTURE := preload("res://art/sprites/UI/items/smallItem/close.png")
 
 
 func _ready() -> void:
 	GameManager.gold_changed.connect(_on_gold_changed)
-	_refresh_shop()
+	GameManager.round_changed.connect(_on_round_changed)
 	_update_gold()
+
+	# 设置关闭按钮纹理
+	if close_button:
+		close_button.texture_normal = CLOSE_TEXTURE
+		close_button.pressed.connect(_on_close_pressed)
+
+	# 连接刷新按钮
+	var refresh_btn: Button = $ShopWindow/VBox/BottomBar/RefreshButton
+	if refresh_btn:
+		refresh_btn.pressed.connect(_on_refresh_pressed)
+
+	# 初始打开商店时刷新
+	_refresh_shop()
 	print(">>> [Shop] 商店已打开")
+
+
+func _on_round_changed(new_round: int) -> void:
+	# 只在新回合开始时刷新商店
+	_refresh_shop()
+	print(">>> [Shop] 回合 %d 开始，商店已刷新" % new_round)
 
 
 func _refresh_shop() -> void:
@@ -51,9 +71,9 @@ func _refresh_shop() -> void:
 	var relic_count := mini(SHOP_SLOTS - item_count, available_relics.size())
 
 	for i in range(item_count):
-		shop_items.append({"item": all_consumables[i], "is_relic": false})
+		shop_items.append({"item": all_consumables[i], "is_relic": false, "sold": false})
 	for i in range(relic_count):
-		shop_items.append({"item": available_relics[i], "is_relic": true})
+		shop_items.append({"item": available_relics[i], "is_relic": true, "sold": false})
 
 	shop_items.shuffle()
 	_rebuild_shop_display()
@@ -67,107 +87,133 @@ func _rebuild_shop_display() -> void:
 	for child in relic_container.get_children():
 		child.queue_free()
 
+	# 设置容器鼠标过滤，让事件传递到商品
+	item_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	relic_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	# 设置容器间隔
+	item_container.add_theme_constant_override("h_separation", ITEM_SPACING)
+	item_container.add_theme_constant_override("v_separation", ITEM_SPACING)
+	relic_container.add_theme_constant_override("h_separation", ITEM_SPACING)
+	relic_container.add_theme_constant_override("v_separation", ITEM_SPACING)
+
 	for i in range(shop_items.size()):
 		var shop_entry = shop_items[i]
 		var item: DataModels.ItemData = shop_entry["item"]
 		var is_relic: bool = shop_entry["is_relic"]
+		var sold: bool = shop_entry["sold"]
+		
+		if sold:
+			continue  # 跳过已售完的商品
 		
 		if is_relic:
-			relic_container.add_child(_create_item_cell(item, i))
+			relic_container.add_child(_create_item_cell(item, i, sold))
 		else:
-			item_container.add_child(_create_item_cell(item, i))
+			item_container.add_child(_create_item_cell(item, i, sold))
 
 
-func _create_item_cell(item: DataModels.ItemData, index: int) -> Control:
+func _create_item_cell(item: DataModels.ItemData, index: int, sold: bool = false) -> Control:
 	var container := PanelContainer.new()
-	container.custom_minimum_size = Vector2(100, 120)
+	container.custom_minimum_size = Vector2(ITEM_SIZE, ITEM_SIZE)
+	container.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	container.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	container.mouse_filter = Control.MOUSE_FILTER_STOP
 	
-	# 样式
-	var style := StyleBoxFlat.new()
-	if item.is_relic():
-		style.bg_color = Color(0.3, 0.25, 0.35, 0.9)  # 遗物紫色调
-	else:
-		style.bg_color = Color(0.2, 0.25, 0.35, 0.9)  # 道具蓝色调
-	style.corner_radius_top_left = 10
-	style.corner_radius_top_right = 10
-	style.corner_radius_bottom_left = 10
-	style.corner_radius_bottom_right = 10
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
+	# 使用 cell_0.png 作为背景
+	var style := StyleBoxTexture.new()
+	style.texture = CELL_TEXTURE
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 10
+	style.content_margin_bottom = 10
 	container.add_theme_stylebox_override("panel", style)
 	
 	# 主容器
 	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_theme_constant_override("separation", 4)
 	container.add_child(vbox)
 	
-	# 物品图片区域（用颜色块代替）
-	var sprite := ColorRect.new()
-	sprite.custom_minimum_size = Vector2(84, 70)
-	var item_color := _get_item_display_color(item)
-	sprite.color = item_color
-	vbox.add_child(sprite)
+	# 图片区域
+	var center := CenterContainer.new()
+	center.custom_minimum_size = Vector2(180, 180)
+	center.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	center.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	vbox.add_child(center)
 	
-	# 价格标签
-	var price_bg := ColorRect.new()
-	price_bg.color = Color(0.1, 0.1, 0.1, 0.8)
-	price_bg.custom_minimum_size = Vector2(84, 24)
-	vbox.add_child(price_bg)
+	var sprite: Control
+	if sold:
+		# 已售完：显示check标记
+		sprite = TextureRect.new()
+		sprite.texture = CHECK_TEXTURE
+		sprite.custom_minimum_size = Vector2(80, 80)
+		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	else:
+		# 未售完：显示物品图片
+		sprite = TextureRect.new()
+		sprite.custom_minimum_size = Vector2(180, 180)
+		sprite.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		sprite.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		
+		# 加载物品纹理
+		var item_texture: Texture2D = _get_item_texture(item)
+		sprite.texture = item_texture
+		
+		# 添加点击区域（透明但可点击）
+		var click_area := Control.new()
+		click_area.mouse_filter = Control.MOUSE_FILTER_STOP
+		center.add_child(click_area)
+		click_area.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		click_area.size_flags_vertical = Control.SIZE_EXPAND_FILL
+
+	# 统一添加sprite（售完/未售完都在此处添加）
+	center.add_child(sprite)
 	
-	var price_container := CenterContainer.new()
-	price_bg.add_child(price_container)
-	
-	var price_label := Label.new()
-	price_label.text = "💰 %d" % _get_actual_price(item)
-	price_label.add_theme_font_size_override("font_size", 14)
-	price_label.add_theme_color_override("font_color", Color(1, 0.9, 0.5))
-	price_container.add_child(price_label)
-	
-	# 点击事件
-	container.gui_input.connect(_on_item_clicked.bind(index))
-	container.mouse_filter = Control.MOUSE_FILTER_STOP
+	# 价格标签区域（仅未售完时显示）
+	if not sold:
+		var price_container := CenterContainer.new()
+		price_container.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		vbox.add_child(price_container)
+		
+		var price_label := Label.new()
+		price_label.text = "💰 %d" % _get_actual_price(item)
+		price_label.add_theme_font_size_override("font_size", 40)
+		price_label.add_theme_color_override("font_color", Color(1, 0.9, 0.5))
+		price_container.add_child(price_label)
 	
 	return container
 
 
-func _get_item_display_color(item: DataModels.ItemData) -> Color:
-	var color_key := "default"
+func _get_item_texture(item: DataModels.ItemData) -> Texture2D:
+	# 可用的道具图片ID列表
+	var available_item_ids := [13, 15, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42]
+	# 可用的遗物图片ID列表
+	var available_relic_ids := [4, 5, 6, 7, 8, 9, 20, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45]
 	
-	# 根据物品类型和ID设置颜色
 	if item.is_relic():
-		match item.id:
-			1: color_key = "potion"  # 生命护符
-			2: color_key = "scroll"  # 经验书
-			3: color_key = "bomb"   # 攻击护符
-			4: color_key = "potion"  # 防御护符
-			5: color_key = "scroll"  # 速度之靴
-			6: color_key = "bomb"   # 暴击之刃
-			7: color_key = "potion"  # 生命汲取
-			8: color_key = "scroll"  # 法力源泉
-			9: color_key = "bomb"   # 力量手套
-			10: color_key = "potion" # 黄金护符
-			11: color_key = "scroll"  # 治疗图腾
-			12: color_key = "bomb"   # 治疗图腾
-			13: color_key = "potion"  # 命运骰子
-			14: color_key = "scroll"  # 商店折扣券
-			15: color_key = "bomb"   # 刷新令牌
-			_: color_key = "default"
+		# 遗物：根据item.id映射到可用图片ID
+		var img_id: int = available_relic_ids[item.id % available_relic_ids.size()]
+		var path := "res://art/sprites/UI/items/relic/relic_%03d.png" % img_id
+		var tex := load(path) as Texture2D
+		if tex:
+			return tex
+		return _create_color_texture(Color(0.4, 0.3, 0.5))
 	else:
-		# 道具颜色
-		match item.id:
-			1: color_key = "potion"  # 小血瓶
-			2: color_key = "potion"  # 中血瓶
-			3: color_key = "potion"  # 大血瓶
-			4: color_key = "scroll"  # 传送卷轴
-			5: color_key = "bomb"   # 治疗卷轴
-			6: color_key = "scroll"  # 传送卷轴
-			7: color_key = "bomb"   # 治疗卷轴
-			8: color_key = "scroll"  # 商店折扣券
-			_: color_key = "default"
-	
-	return ITEM_COLORS.get(color_key, ITEM_COLORS["default"])
+		# 道具：根据item.id映射到可用图片ID
+		var img_id: int = available_item_ids[item.id % available_item_ids.size()]
+		var path := "res://art/sprites/UI/items/item/item_%03d.png" % img_id
+		var tex := load(path) as Texture2D
+		if tex:
+			return tex
+		return _create_color_texture(Color(0.3, 0.4, 0.6))
+
+
+func _create_color_texture(color: Color) -> Texture2D:
+	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	img.fill(color)
+	var tex := ImageTexture.create_from_image(img)
+	return tex
 
 
 func _get_actual_price(item: DataModels.ItemData) -> int:
@@ -182,11 +228,48 @@ func _get_actual_price(item: DataModels.ItemData) -> int:
 	return maxi(price, 1)
 
 
-func _on_item_clicked(event: InputEvent, index: int) -> void:
+func _input(event: InputEvent) -> void:
+	# 处理商品点击
 	if event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
 		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
-			_show_item_popup(index)
+			_check_item_click()
+
+
+func _check_item_click() -> void:
+	var mouse_pos := get_global_mouse_position()
+	
+	# 遍历道具容器
+	var child_index := 0
+	for child in item_container.get_children():
+		if child is PanelContainer:
+			var rect: Rect2 = child.get_global_rect()
+			if rect.has_point(mouse_pos):
+				# 找到对应索引的道具商品
+				var idx := 0
+				for shop_entry in shop_items:
+					if not shop_entry["is_relic"] and not shop_entry["sold"]:
+						if idx == child_index:
+							_show_item_popup(shop_items.find(shop_entry))
+							return
+						idx += 1
+		child_index += 1
+	
+	# 遍历遗物容器
+	child_index = 0
+	for child in relic_container.get_children():
+		if child is PanelContainer:
+			var rect: Rect2 = child.get_global_rect()
+			if rect.has_point(mouse_pos):
+				# 找到对应索引的遗物商品
+				var idx := 0
+				for shop_entry in shop_items:
+					if shop_entry["is_relic"] and not shop_entry["sold"]:
+						if idx == child_index:
+							_show_item_popup(shop_items.find(shop_entry))
+							return
+						idx += 1
+		child_index += 1
 
 
 func _show_item_popup(index: int) -> void:
@@ -196,6 +279,11 @@ func _show_item_popup(index: int) -> void:
 	var shop_entry = shop_items[index]
 	var item: DataModels.ItemData = shop_entry["item"]
 	var is_relic: bool = shop_entry["is_relic"]
+	var sold: bool = shop_entry["sold"]
+	
+	if sold:
+		return  # 已售完的商品不能购买
+	
 	var price: int = _get_actual_price(item)
 	
 	var item_type_text := "遗物" if is_relic else "道具"
@@ -252,7 +340,10 @@ func _on_confirm_buy(index: int) -> void:
 
 	print(">>> [Shop] 购买: %s, 花费 %d 金币" % [item.name, price])
 	TipManager.show_tip("购买成功: %s" % item.name)
-	_refresh_shop()
+	
+	# 标记为已售完（从显示中移除）
+	shop_items[index]["sold"] = true
+	_rebuild_shop_display()
 
 
 func _on_popup_close() -> void:
@@ -267,21 +358,17 @@ func _update_gold() -> void:
 	gold_label.text = "💰 %d" % GameManager.gold
 
 
-func _on_refresh_pressed() -> void:
-	# 检查是否有刷新令牌
-	if GameManager.has_meta("shop_refresh"):
-		GameManager.remove_meta("shop_refresh")
-		_refresh_shop()
-		TipManager.show_tip("使用刷新令牌刷新商店")
-		return
-
-	if not GameManager.spend_gold(REFRESH_COST):
-		TipManager.show_tip("金币不足，需要 %d 金币" % REFRESH_COST)
-		return
-	
-	_refresh_shop()
-	TipManager.show_tip("花费 %d 金币刷新商店" % REFRESH_COST)
-
-
 func _on_close_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/game_board.tscn")
+	print(">>> [Shop] 关闭商店")
+	# 作为弹窗关闭时，移除自己
+	queue_free()
+
+
+func _on_refresh_pressed() -> void:
+	# 检查金币是否足够刷新
+	if GameManager.gold >= REFRESH_COST:
+		GameManager.spend_gold(REFRESH_COST)
+		_refresh_shop()
+		print(">>> [Shop] 刷新商店，花费 %d 金币" % REFRESH_COST)
+	else:
+		TipManager.show_tip("金币不足，无法刷新")

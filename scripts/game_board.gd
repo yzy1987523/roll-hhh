@@ -82,6 +82,7 @@ var tutorial_overlay = null
 # ---- 宿舍面板 ----
 var dorm_panel: PanelContainer = null
 var dorm_visible: bool = false
+var dorm_backdrop: ColorRect = null  # 宿舍遮罩
 
 # ---- 道具栏格子 ----
 const ITEM_SLOT_COUNT := 3
@@ -241,14 +242,24 @@ func _on_sacrifice_button_pressed() -> void:
 var _dorm_sort_order: Array = []  # 排序后的宿舍索引
 
 func _setup_dorm_panel() -> void:
+	# 遮罩层（先创建，放在最底层）
+	dorm_backdrop = ColorRect.new()
+	dorm_backdrop.color = Color(0, 0, 0, 0.5)
+	dorm_backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dorm_backdrop.visible = false
+	dorm_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	dorm_backdrop.gui_input.connect(_on_dorm_backdrop_clicked)
+	add_child(dorm_backdrop)
+	
 	dorm_panel = PanelContainer.new()
 	dorm_panel.visible = false
 	dorm_panel.set_anchors_preset(Control.PRESET_CENTER)
-	dorm_panel.custom_minimum_size = Vector2(420, 380)
-	dorm_panel.offset_left = -210
-	dorm_panel.offset_top = -190
-	dorm_panel.offset_right = 210
-	dorm_panel.offset_bottom = 190
+	# 宿舍尺寸：4列 * 140 + 3间隔 * 10 + padding
+	dorm_panel.custom_minimum_size = Vector2(4 * 140 + 3 * 10 + 40, 4 * 140 + 3 * 10 + 100)
+	dorm_panel.offset_left = -(dorm_panel.custom_minimum_size.x / 2)
+	dorm_panel.offset_top = -(dorm_panel.custom_minimum_size.y / 2)
+	dorm_panel.offset_right = dorm_panel.custom_minimum_size.x / 2
+	dorm_panel.offset_bottom = dorm_panel.custom_minimum_size.y / 2
 	
 	# 样式
 	var style := StyleBoxFlat.new()
@@ -285,12 +296,19 @@ func _refresh_dorm_panel() -> void:
 	title.add_theme_font_size_override("font_size", 22)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_row.add_child(title)
+	
+	# 关闭按钮（右上角）
+	var close_btn := TextureButton.new()
+	close_btn.texture_normal = load("res://art/sprites/UI/items/smallItem/close.png")
+	close_btn.custom_minimum_size = Vector2(32, 32)
+	close_btn.pressed.connect(_on_dorm_close)
+	title_row.add_child(close_btn)
 
 	# 4x4 网格
 	var grid := GridContainer.new()
 	grid.columns = 4
-	grid.add_theme_constant_override("h_separation", 8)
-	grid.add_theme_constant_override("v_separation", 8)
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 10)
 	vbox.add_child(grid)
 
 	# 获取排序后的宿舍索引（按等级从高到低）
@@ -315,74 +333,85 @@ func _refresh_dorm_panel() -> void:
 		var cell := _create_dorm_cell(i)
 		grid.add_child(cell)
 
-	# 关闭按钮
-	var close_btn := Button.new()
-	close_btn.text = LocalizationSystem.get_text("game_board.dorm_close")
-	close_btn.custom_minimum_size = Vector2(0, 44)
-	close_btn.pressed.connect(_on_dorm_close)
-	vbox.add_child(close_btn)
-
 
 func _create_dorm_cell(index: int) -> Control:
+	# 使用 PanelContainer 作为格子容器
 	var container := PanelContainer.new()
-	container.custom_minimum_size = Vector2(80, 80)
+	container.custom_minimum_size = Vector2(140, 140)
+	container.mouse_filter = Control.MOUSE_FILTER_STOP
 	
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.2, 0.22, 0.28, 0.8)
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	container.add_theme_stylebox_override("panel", style)
-
-	if index < _dorm_sort_order.size():
+	# 背景层（cell_0）
+	var bg := TextureRect.new()
+	bg.texture = load("res://art/sprites/UI/items/smallItem/cell_0.png")
+	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	container.add_child(bg)
+	
+	# 选择框叠加层（cell_1）- 初始隐藏
+	var overlay := TextureRect.new()
+	overlay.name = "Overlay"
+	overlay.texture = load("res://art/sprites/UI/items/smallItem/cell_1.png")
+	overlay.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.visible = false
+	container.add_child(overlay)
+	
+	# 判断是否有角色
+	var is_occupied := index < _dorm_sort_order.size()
+	if is_occupied:
 		var dorm_idx: int = _dorm_sort_order[index]
 		var ch: DataModels.CharacterData = GameManager.board_data.dormitory[dorm_idx]
 		var is_marked: bool = GameManager.board_data.is_marked_for_removal(dorm_idx)
 		
-		# 角色图片容器
-		var vbox := VBoxContainer.new()
-		vbox.add_theme_constant_override("separation", 2)
-		container.add_child(vbox)
+		# 角色居中容器
+		var center := CenterContainer.new()
+		center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		container.add_child(center)
 		
-		# 角色精灵（用颜色块代替）
-		var sprite := ColorRect.new()
-		sprite.custom_minimum_size = Vector2(60, 50)
-		sprite.color = _get_dorm_job_color(ch.job)
-		
-		# 标记高亮
-		if is_marked:
-			var highlight := StyleBoxFlat.new()
-			highlight.bg_color = Color(1, 0.8, 0, 0.3)
-			highlight.border_width_left = 2
-			highlight.border_width_right = 2
-			highlight.border_width_top = 2
-			highlight.border_width_bottom = 2
-			highlight.border_color = Color(1, 0.8, 0, 1)
-			container.add_theme_stylebox_override("panel", highlight)
-		
-		vbox.add_child(sprite)
+		# 角色精灵（使用 TextureRect 便于控制尺寸和居中）
+		var sprite := TextureRect.new()
+		sprite.texture = _load_character_sprite(ch)
+		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		sprite.custom_minimum_size = Vector2(100, 100)  # 比格子小40像素
+		center.add_child(sprite)
 		
 		# 等级标签
 		var lv_label := Label.new()
 		lv_label.text = "Lv.%d" % ch.level
 		lv_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lv_label.add_theme_font_size_override("font_size", 12)
-		vbox.add_child(lv_label)
+		lv_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+		lv_label.add_theme_font_size_override("font_size", 14)
+		lv_label.add_theme_color_override("font_color", Color(1, 0.9, 0.6))
+		center.add_child(lv_label)
+		
+		# 标记高亮 - 叠加层显示
+		if is_marked:
+			overlay.visible = true
 		
 		# 点击事件
 		container.gui_input.connect(_on_dorm_cell_input.bind(dorm_idx))
-		container.mouse_filter = Control.MOUSE_FILTER_STOP
-	else:
-		# 空格子
-		var empty := Label.new()
-		empty.text = "空"
-		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		empty.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		empty.modulate = Color(0.4, 0.4, 0.4)
-		container.add_child(empty)
-
+	
 	return container
+
+
+func _on_dorm_cell_clicked(dorm_index: int) -> void:
+	_show_dorm_character_popup(dorm_index)
+
+
+func _load_character_sprite(ch: DataModels.CharacterData) -> Texture2D:
+	# 根据角色职业和等级加载 sprite
+	var folder := ch.get_sprite_folder()
+	var sprite_name := ch.get_sprite_path(1, 1)  # 待机动画第1帧
+	var path := "res://art/sprites/chars/%s/%s.png" % [folder, sprite_name]
+	var tex: Texture2D = load(path)
+	if tex == null:
+		# 回退到战士默认图
+		tex = load("res://art/sprites/chars/char_01/char_010101.png")
+	return tex
 
 
 func _get_dorm_job_color(job_id: int) -> Color:
@@ -1248,6 +1277,7 @@ func _clear_spawn_cell_hint(_target_index: int) -> void:
 func _on_dorm_pressed() -> void:
 	dorm_visible = !dorm_visible
 	dorm_panel.visible = dorm_visible
+	dorm_backdrop.visible = dorm_visible
 	if dorm_visible:
 		_refresh_dorm_panel()
 
@@ -1265,6 +1295,13 @@ func _on_dorm_take_pressed(dorm_index: int) -> void:
 	_refresh_board_display()
 
 
+func _on_dorm_backdrop_clicked(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mb: InputEventMouseButton = event
+		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
+			_on_dorm_close()
+
+
 func _on_dorm_close() -> void:
 	var bd: BoardData = GameManager.board_data
 	
@@ -1273,14 +1310,86 @@ func _on_dorm_close() -> void:
 		if not bd.can_remove_marked():
 			TipManager.show_tip("棋盘格已满，无法移出")
 			bd.marked_for_removal.clear()
+			_hide_dorm_ui()
 		else:
-			var removed := bd.execute_removal()
-			if removed > 0:
-				TipManager.show_tip("已移出 %d 个角色到棋盘" % removed)
-				_refresh_board_display()
+			# 获取宿舍按钮中心位置作为动画起点（必须在隐藏面板之前获取）
+			var dorm_pos: Vector2 = dorm_button.global_position + Vector2(dorm_button.size.x / 2, dorm_button.size.y / 2)
+			
+			# 执行数据操作，获取每个角色被放置到的棋盘索引
+			var moved_data: Array = bd.execute_removal()
+			
+			if moved_data.size() > 0:
+				TipManager.show_tip("已移出 %d 个角色到棋盘" % moved_data.size())
+				# 先隐藏宿舍UI
+				_hide_dorm_ui()
+				# 播放动画
+				_play_dorm_to_board_animation(moved_data, dorm_pos)
+				return
 	
+	_hide_dorm_ui()
+
+
+func _hide_dorm_ui() -> void:
 	dorm_visible = false
 	dorm_panel.visible = false
+	dorm_backdrop.visible = false
+
+
+func _play_dorm_to_board_animation(moved_data: Array, start_pos: Vector2) -> void:
+	# 先刷新棋盘显示，加载角色的 texture
+	_refresh_board_display()
+	
+	# 隐藏目标格子上的角色显示（等动画结束再显示）
+	var hidden_indices: Array = []
+	for data in moved_data:
+		var board_idx: int = data["board_index"]
+		if board_idx >= 0 and board_idx < cell_sprites.size():
+			hidden_indices.append(board_idx)
+			cell_sprites[board_idx].visible = false
+	
+	# 为每个角色播放从宿舍飞到棋盘的动画
+	for data in moved_data:
+		var ch: DataModels.CharacterData = data["char"]
+		var board_idx: int = data["board_index"]
+		
+		if board_idx < 0 or board_idx >= cell_panels.size():
+			continue
+		
+		var target_cell: Control = cell_panels[board_idx]
+		var end_pos: Vector2 = target_cell.global_position + Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
+		
+		# 创建动画精灵
+		var anim_sprite := TextureRect.new()
+		anim_sprite.custom_minimum_size = Vector2(CHAR_SIZE, CHAR_SIZE)
+		anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		anim_sprite.z_index = 200
+		
+		# 加载精灵图
+		var sprite_folder: String = ch.get_sprite_folder()
+		var sprite_name: String = ch.get_sprite_path(1, 1)
+		var sprite_path: String = "res://art/sprites/chars/" + sprite_folder + "/" + sprite_name + ".png"
+		if ResourceLoader.exists(sprite_path):
+			anim_sprite.texture = load(sprite_path)
+		
+		add_child(anim_sprite)
+		anim_sprite.global_position = start_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
+		anim_sprite.scale = Vector2(0.8, 0.8)
+		
+		# 飞行动画
+		var tween := create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(anim_sprite, "global_position", end_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2), 0.4)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(anim_sprite, "scale", Vector2(1.0, 1.0), 0.4)\
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		
+		# 动画结束后恢复格子显示并播放落地动画
+		tween.finished.connect(func():
+			anim_sprite.queue_free()
+			cell_sprites[board_idx].visible = true
+			_play_land_animation(board_idx)
+		)
 
 
 func _drag_to_dorm() -> void:
@@ -1370,7 +1479,9 @@ func _on_back_pressed() -> void:
 
 func _on_shop_pressed() -> void:
 	print(">>> [GameBoard] 打开商店")
-	get_tree().change_scene_to_file("res://scenes/shop_scene.tscn")
+	# 使用弹窗方式打开商店（不切换场景）
+	var shop_scene := preload("res://scenes/shop_scene.tscn").instantiate()
+	add_child(shop_scene)
 
 
 func _on_encyclopedia_pressed() -> void:
