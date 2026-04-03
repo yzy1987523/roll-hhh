@@ -298,7 +298,7 @@ func _refresh_dorm_panel() -> void:
 	var dorm_data: Array = []
 	for i in range(GameManager.board_data.dormitory.size()):
 		var ch: DataModels.CharacterData = GameManager.board_data.dormitory[i]
-		dorm_data.append({"index": i, "level": ch.level, "job": ch.job_id})
+		dorm_data.append({"index": i, "level": ch.level, "job": ch.job})
 	
 	# 排序：等级高的在前
 	dorm_data.sort_custom(func(a, b): 
@@ -348,7 +348,7 @@ func _create_dorm_cell(index: int) -> Control:
 		# 角色精灵（用颜色块代替）
 		var sprite := ColorRect.new()
 		sprite.custom_minimum_size = Vector2(60, 50)
-		sprite.color = _get_dorm_job_color(ch.job_id)
+		sprite.color = _get_dorm_job_color(ch.job)
 		
 		# 标记高亮
 		if is_marked:
