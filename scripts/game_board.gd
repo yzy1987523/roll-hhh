@@ -1394,16 +1394,18 @@ func _on_spawn_pressed(job: int) -> void:
 	# 动画进行中，禁用连续点击
 	if is_spawning:
 		return
+	
+	# 检查棋盘是否有空位（考虑宿舍标记移出的占用）
+	var empty_count: int = GameManager.board_data.get_empty_board_count()
+	var marked_count: int = GameManager.board_data.marked_for_removal.size()
+	if empty_count <= marked_count:
+		print(">>> [GameBoard] 生成失败: 棋盘已满（预留宿舍移出空间）")
+		TipManager.show_tip("棋盘格已满")
+		return
 
 	if not GameManager.spend_energy(1):
 		print(">>> [GameBoard] 生成失败: 能量不足")
 		TipManager.show_tip("能量不足")
-		return
-
-	if GameManager.board_data.is_board_full():
-		GameManager.restore_energy(1)
-		print(">>> [GameBoard] 生成失败: 棋盘已满")
-		TipManager.show_tip("棋盘格已满")
 		return
 
 	var level: int = randi_range(1, 3)

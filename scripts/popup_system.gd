@@ -37,6 +37,7 @@ func _create_popup_ui() -> void:
 	_backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_backdrop.visible = false
 	_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	_backdrop.z_index = 99  # 设置层级
 	# 添加到根节点 (延迟到场景树准备好)
 	get_tree().root.call_deferred("add_child", _backdrop)
 
@@ -53,6 +54,7 @@ func _create_popup_ui() -> void:
 	_popup_panel.offset_bottom = POPUP_HEIGHT / 2.0
 	_popup_panel.custom_minimum_size = Vector2(POPUP_WIDTH, POPUP_HEIGHT)
 	_popup_panel.visible = false
+	_popup_panel.z_index = 100  # 设置层级，确保在所有面板之上
 
 	# 样式
 	var style := StyleBoxFlat.new()

@@ -59,7 +59,9 @@ func _create_tip_ui() -> void:
 	_tip_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	center.add_child(_tip_label)
 
-	# 添加到根节点
+	# 设置层级，确保在所有面板之上
+	_tip_container.z_index = 100
+	
 	# 添加到根节点 (延迟到场景树准备好)
 	if not _tip_container.get_parent() == get_tree().root:
 		get_tree().root.call_deferred("add_child", _tip_container)
