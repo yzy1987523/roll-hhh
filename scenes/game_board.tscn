@@ -14,6 +14,7 @@
 [ext_resource type="Texture2D" uid="uid://ht2vknq8ek0k" path="res://art/sprites/UI/items/item/item_013.png" id="12_item"]
 [ext_resource type="Texture2D" uid="uid://wxotl5d1lxgm" path="res://art/sprites/UI/items/smallItem/spawner0.png" id="13_cac7a"]
 [ext_resource type="Texture2D" uid="uid://brok1s4jfwo2d" path="res://art/sprites/UI/items/item/item_033.png" id="13_sacrifice"]
+[ext_resource type="Texture2D" path="res://art/sprites/UI/items/smallItem/xianji.png" id="17_xianji"]
 [ext_resource type="Texture2D" uid="uid://b4u4vkmgj8nuw" path="res://art/sprites/UI/items/smallItem/spawner1.png" id="14_8auva"]
 [ext_resource type="Texture2D" uid="uid://c25vh10f0w554" path="res://art/sprites/UI/items/smallItem/spawner2.png" id="15_hrnlr"]
 
@@ -342,7 +343,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-texture = ExtResource("13_sacrifice")
+texture = ExtResource("17_xianji")
 expand_mode = 1
 stretch_mode = 5
 modulate = Color(1, 1, 1, 0.5)

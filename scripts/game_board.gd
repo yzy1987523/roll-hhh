@@ -378,18 +378,15 @@ func _setup_dorm_panel() -> void:
 	dorm_panel.offset_right = dorm_panel.custom_minimum_size.x / 2
 	dorm_panel.offset_bottom = dorm_panel.custom_minimum_size.y / 2
 	
-	# 样式
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.12, 0.14, 0.18, 0.98)
-	style.corner_radius_top_left = 16
-	style.corner_radius_top_right = 16
-	style.corner_radius_bottom_left = 16
-	style.corner_radius_bottom_right = 16
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 16
-	style.content_margin_bottom = 16
-	dorm_panel.add_theme_stylebox_override("panel", style)
+	# 使用panel.png作为背景
+	var panel_texture := preload("res://art/sprites/UI/panels/panel.png")
+	var bg := TextureRect.new()
+	bg.texture = panel_texture
+	bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dorm_panel.add_child(bg)
 	
 	add_child(dorm_panel)
 
@@ -417,7 +414,7 @@ func _refresh_dorm_panel() -> void:
 	# 关闭按钮（右上角）
 	var close_btn := TextureButton.new()
 	close_btn.texture_normal = load("res://art/sprites/UI/items/smallItem/close.png")
-	close_btn.custom_minimum_size = Vector2(32, 32)
+	close_btn.custom_minimum_size = Vector2(80, 80)
 	close_btn.pressed.connect(_on_dorm_close)
 	title_row.add_child(close_btn)
 
@@ -1398,6 +1395,7 @@ func _on_spawn_pressed(job: int) -> void:
 
 	if not GameManager.spend_energy(1):
 		print(">>> [GameBoard] 生成失败: 能量不足")
+		TipManager.show_tip("能量不足")
 		return
 
 	if GameManager.board_data.is_board_full():
