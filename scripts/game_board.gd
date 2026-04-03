@@ -366,11 +366,13 @@ func _setup_dorm_panel() -> void:
 	dorm_backdrop.visible = false
 	dorm_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	dorm_backdrop.gui_input.connect(_on_dorm_backdrop_clicked)
+	dorm_backdrop.z_index = 50  # 设置层级
 	add_child(dorm_backdrop)
 	
 	dorm_panel = PanelContainer.new()
 	dorm_panel.visible = false
 	dorm_panel.set_anchors_preset(Control.PRESET_CENTER)
+	dorm_panel.z_index = 51  # 确保在遮罩之上，在角色之上
 	# 宿舍尺寸：4列 * 140 + 3间隔 * 10 + padding
 	dorm_panel.custom_minimum_size = Vector2(4 * 140 + 3 * 10 + 40, 4 * 140 + 3 * 10 + 100)
 	dorm_panel.offset_left = -(dorm_panel.custom_minimum_size.x / 2)
@@ -1688,6 +1690,12 @@ func _drag_to_dorm() -> void:
 	var pos: Vector2i = BoardData.index_to_pos(drag_index)
 	bd.board_to_dormitory(pos)
 	print(">>> [GameBoard] 拖拽存入宿舍: %s Lv.%d" % [ch.get_job_name(), ch.level])
+	
+	# 重置拖拽状态，确保高亮被隐藏
+	is_dragging = false
+	drag_index = -1
+	merge_targets.clear()
+	
 	selected_index = -1
 	_refresh_board_display()
 	_update_character_detail_panel()
@@ -2172,6 +2180,7 @@ func _create_item_panel() -> void:
 	item_panel.offset_top = -110
 	item_panel.offset_right = 160
 	item_panel.offset_bottom = 110
+	item_panel.z_index = 50  # 设置层级，确保在角色之上
 	
 	# 添加 panel.png 背景
 	var panel_texture := preload("res://art/sprites/UI/panels/panel.png")
@@ -2273,6 +2282,8 @@ func _show_settings_panel() -> void:
 		settings_panel.add_child(bg)
 		settings_panel.move_child(bg, 0)  # 移到最底层
 	
+	# 设置层级，确保在角色之上
+	settings_panel.z_index = 50
 	settings_panel.visible = true
 	_update_settings_ui()
 	_update_settings_texts()

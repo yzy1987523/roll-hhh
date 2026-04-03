@@ -38,6 +38,16 @@ func _ready() -> void:
 	if refresh_btn:
 		refresh_btn.pressed.connect(_on_refresh_pressed)
 
+	# 设置遮罩层mouse_filter，阻止点击穿透到下层
+	var dark_overlay = $DarkOverlay
+	if dark_overlay:
+		dark_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	
+	# 设置商店窗口z_index，确保在角色之上
+	var shop_window = $ShopWindow
+	if shop_window:
+		shop_window.z_index = 50
+
 	# 初始打开商店时刷新
 	_refresh_shop()
 	print(">>> [Shop] 商店已打开")
