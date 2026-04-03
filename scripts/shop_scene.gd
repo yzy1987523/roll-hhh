@@ -9,9 +9,9 @@ const REFRESH_COST := 10  # 手动刷新费用
 var shop_items: Array = []   # 当前商品列表
 
 # 节点引用
-@onready var gold_label: Label = $VBox/GoldBar/GoldLabel
-@onready var item_container: HFlowContainer = $VBox/ItemScroll/ItemContainer
-@onready var relic_container: HFlowContainer = $VBox/RelicScroll/RelicContainer
+@onready var gold_label: Label = $VBox/TitleBar/GoldLabel
+@onready var item_container: HFlowContainer = $VBox/ItemSection/ItemScroll/ItemContainer
+@onready var relic_container: HFlowContainer = $VBox/RelicSection/RelicScroll/RelicContainer
 
 # 道具颜色映射（用于显示占位图）
 const ITEM_COLORS := {
@@ -84,7 +84,7 @@ func _create_item_cell(item: DataModels.ItemData, index: int) -> Control:
 	
 	# 样式
 	var style := StyleBoxFlat.new()
-	if item.item_type == "relic":
+	if item.is_relic():
 		style.bg_color = Color(0.3, 0.25, 0.35, 0.9)  # 遗物紫色调
 	else:
 		style.bg_color = Color(0.2, 0.25, 0.35, 0.9)  # 道具蓝色调
@@ -136,7 +136,7 @@ func _get_item_display_color(item: DataModels.ItemData) -> Color:
 	var color_key := "default"
 	
 	# 根据物品类型和ID设置颜色
-	if item.item_type == "relic":
+	if item.is_relic():
 		match item.id:
 			1: color_key = "potion"  # 生命护符
 			2: color_key = "scroll"  # 经验书
