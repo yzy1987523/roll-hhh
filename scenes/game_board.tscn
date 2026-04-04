@@ -18,6 +18,9 @@
 [ext_resource type="Texture2D" uid="uid://b4u4vkmgj8nuw" path="res://art/sprites/UI/items/smallItem/spawner1.png" id="14_8auva"]
 [ext_resource type="Texture2D" path="res://art/sprites/UI/panels/endBtn.png" id="18_endbtn"]
 [ext_resource type="Texture2D" uid="uid://c25vh10f0w554" path="res://art/sprites/UI/items/smallItem/spawner2.png" id="15_hrnlr"]
+[ext_resource type="Texture2D" path="res://art/sprites/UI/panels/detailPanel.png" id="19_detailpanel"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_detailpanel"]
 
 [node name="GameBoard" type="Control" unique_id=2062969073]
 layout_mode = 3
@@ -295,59 +298,84 @@ size_flags_horizontal = 4
 theme_override_constants/separation = 8
 
 [node name="DetailPanel" type="PanelContainer" parent="MainLayout/DetailActionBar" unique_id=945550921]
-custom_minimum_size = Vector2(700, 200)
+custom_minimum_size = Vector2(700, 220)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxEmpty_detailpanel")
 
-[node name="VBox" type="VBoxContainer" parent="MainLayout/DetailActionBar/DetailPanel" unique_id=945550923]
+[node name="DetailPanelBg" type="TextureRect" parent="MainLayout/DetailActionBar/DetailPanel" unique_id=945550927]
+custom_minimum_size = Vector2(700, 220)
+texture = ExtResource("19_detailpanel")
+expand_mode = 1
+stretch_mode = 4
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="MainHBox" type="HBoxContainer" parent="MainLayout/DetailActionBar/DetailPanel" unique_id=945550923]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="LeftContent" type="VBoxContainer" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox" unique_id=945550926]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 4
 
-[node name="NameLabel" type="Label" parent="MainLayout/DetailActionBar/DetailPanel/VBox" unique_id=945550924]
+[node name="TopMargin" type="Control" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/LeftContent"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/LeftContent" unique_id=945550924]
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "角色名称"
 
-[node name="DetailLabel" type="Label" parent="MainLayout/DetailActionBar/DetailPanel/VBox" unique_id=945550922]
+[node name="DetailLabel" type="Label" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/LeftContent" unique_id=945550922]
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-size_flags_vertical = 3
 text = "点击角色显示详情"
 
-[node name="BottomRow" type="HBoxContainer" parent="MainLayout/DetailActionBar/DetailPanel/VBox" unique_id=945550926]
+[node name="HintLabel" type="Label" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/LeftContent" unique_id=945550925]
+custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 16
-
-[node name="HintLabel" type="Label" parent="MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow" unique_id=945550925]
-layout_mode = 2
-size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
 text = "提示文本"
 vertical_alignment = 1
 
-[node name="SacrificeButton" type="TextureButton" parent="MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow" unique_id=945550919]
-custom_minimum_size = Vector2(144, 144)
+[node name="SacrificeButton" type="TextureButton" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox" unique_id=945550919]
+custom_minimum_size = Vector2(100, 100)
 texture_normal = ExtResource("17_xianji")
 layout_mode = 2
 size_flags_vertical = 4
 stretch_mode = 5
-visible = false
+visible = true
+modulate = Color(1, 1, 1, 0)
 
-[node name="Label" type="Label" parent="MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow/SacrificeButton" unique_id=945550931]
+[node name="Label" type="Label" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton" unique_id=945550931]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -60.0
+offset_top = -30.0
+offset_right = 60.0
+offset_bottom = 30.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 0, 0, 1)
 theme_override_font_sizes/font_size = 24
 text = "献祭\n获得 0 能量"
 horizontal_alignment = 1
 vertical_alignment = 1
+clip_text = false
 
-[node name="SacrificeIcon" type="TextureRect" parent="MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow/SacrificeButton" unique_id=945550928]
+[node name="SacrificeIcon" type="TextureRect" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton" unique_id=945550928]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0

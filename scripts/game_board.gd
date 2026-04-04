@@ -35,11 +35,11 @@ var SELECT_FRAMES: Array[Texture2D] = []
 
 # ---- 详情面板节点 ----
 @onready var detail_panel: PanelContainer = $MainLayout/DetailActionBar/DetailPanel
-@onready var name_label: Label = $MainLayout/DetailActionBar/DetailPanel/VBox/NameLabel
-@onready var detail_label: Label = $MainLayout/DetailActionBar/DetailPanel/VBox/DetailLabel
-@onready var hint_label: Label = $MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow/HintLabel
-@onready var sacrifice_button: TextureButton = $MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow/SacrificeButton
-@onready var sacrifice_label: Label = $MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow/SacrificeButton/Label
+@onready var name_label: Label = $MainLayout/DetailActionBar/DetailPanel/MainHBox/LeftContent/NameLabel
+@onready var detail_label: Label = $MainLayout/DetailActionBar/DetailPanel/MainHBox/LeftContent/DetailLabel
+@onready var hint_label: Label = $MainLayout/DetailActionBar/DetailPanel/MainHBox/LeftContent/HintLabel
+@onready var sacrifice_button: TextureButton = $MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton
+@onready var sacrifice_label: Label = $MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton/Label
 
 # ---- 设置面板节点 ----
 @onready var settings_panel: PanelContainer = $SettingsPanel
@@ -112,8 +112,6 @@ var item_slot_overlays: Array = []
 var item_slot_icons: Array = []  # 道具图片
 
 # ---- 道具详情弹窗 ----
-var item_detail_popup: PanelContainer = null
-var item_detail_backdrop: Control = null
 var item_detail_popup_slot: int = -1
 var item_detail_visible: bool = false
 
@@ -216,19 +214,23 @@ func _setup_button_feedbacks() -> void:
 
 
 func _on_button_mouse_entered(btn: BaseButton) -> void:
-	btn.modulate = Color(0.9, 0.9, 0.9)
+	var alpha := btn.modulate.a
+	btn.modulate = Color(0.9, 0.9, 0.9, alpha)
 
 
 func _on_button_mouse_exited(btn: BaseButton) -> void:
-	btn.modulate = Color.WHITE
+	var alpha := btn.modulate.a
+	btn.modulate = Color(1, 1, 1, alpha)
 
 
 func _on_button_down(btn: BaseButton) -> void:
-	btn.modulate = Color(0.8, 0.8, 0.8)
+	var alpha := btn.modulate.a
+	btn.modulate = Color(0.8, 0.8, 0.8, alpha)
 
 
 func _on_button_up(btn: BaseButton) -> void:
-	btn.modulate = Color(0.9, 0.9, 0.9) if btn.get_global_rect().has_point(btn.get_viewport().get_mouse_position()) else Color.WHITE
+	var alpha := btn.modulate.a
+	btn.modulate = Color(0.9, 0.9, 0.9, alpha) if btn.get_global_rect().has_point(btn.get_viewport().get_mouse_position()) else Color(1, 1, 1, alpha)
 
 
 # ---- 棋盘 UI 构建 ----
@@ -347,13 +349,17 @@ func _update_character_detail_panel() -> void:
 			]
 			var energy := GameManager.calc_sacrifice_energy(ch.level)
 			sacrifice_label.text = "献祭\n获得 %d 能量" % energy
-			sacrifice_button.visible = true
+			# 性能优化：使用透明度而非visible，避免HBoxContainer重布局
+			sacrifice_button.modulate.a = 1.0
+			sacrifice_button.mouse_filter = Control.MOUSE_FILTER_STOP
 			return
 	
 	# 无选中或角色已不存在
 	name_label.text = ""
 	detail_label.text = LocalizationSystem.get_text("game_board.click_to_view_detail", {})
-	sacrifice_button.visible = false
+	# 性能优化：使用透明度而非visible，避免HBoxContainer重布局
+	sacrifice_button.modulate.a = 0.0
+	sacrifice_button.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
 func _on_sacrifice_button_pressed() -> void:
@@ -2029,138 +2035,35 @@ func _show_item_detail(slot_index: int) -> void:
 	if slot_index < 0 or slot_index >= GameManager.items.size():
 		return
 
-	# 隐藏其他弹窗
-	_hide_item_detail()
-
-	# 创建详情弹窗
-	_create_item_detail_popup(slot_index)
+	var item: DataModels.ItemData = GameManager.items[slot_index]
 	item_detail_popup_slot = slot_index
 	item_detail_visible = true
 
+	# 使用PopupSystem显示道具详情
+	PopupSystem.show(
+		item.name,  # 标题
+		item.description,  # 内容
+		"",  # 说明
+		LocalizationSystem.get_text("items.use"),  # 确认按钮文字
+		LocalizationSystem.get_text("items.close"),  # 关闭按钮文字
+		func(): _on_item_use_clicked(slot_index),  # 确认回调
+		func(): _hide_item_detail()  # 关闭回调
+	)
+
 
 func _hide_item_detail() -> void:
-	if item_detail_popup != null:
-		item_detail_popup.queue_free()
-		item_detail_popup = null
-	if item_detail_backdrop != null:
-		item_detail_backdrop.queue_free()
-		item_detail_backdrop = null
 	item_detail_popup_slot = -1
 	item_detail_visible = false
 	_end_target_selection()
-
-
-func _create_item_detail_popup(slot_index: int) -> void:
-	var item: DataModels.ItemData = GameManager.items[slot_index]
-
-	# 背景遮罩
-	item_detail_backdrop = ColorRect.new()
-	item_detail_backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
-	item_detail_backdrop.color = Color(0.0, 0.0, 0.0, 0.4)
-	item_detail_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
-	item_detail_backdrop.gui_input.connect(_on_backdrop_input)
-	add_child(item_detail_backdrop)
-	item_detail_backdrop.name = "ItemDetailBackdrop"
-
-	# 详情面板
-	item_detail_popup = PanelContainer.new()
-	item_detail_popup.set_anchors_preset(Control.PRESET_CENTER)
-	item_detail_popup.custom_minimum_size = Vector2(260, 160)
-	item_detail_popup.offset_left = -130
-	item_detail_popup.offset_top = -80
-	item_detail_popup.offset_right = 130
-	item_detail_popup.offset_bottom = 80
-	item_detail_popup.z_index = 100
-	add_child(item_detail_popup)
-
-	# 面板样式
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.12, 0.14, 0.22, 0.98)
-	style.border_color = Color(0.6, 0.5, 0.3, 0.9)
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 12
-	style.content_margin_bottom = 12
-	item_detail_popup.add_theme_stylebox_override("panel", style)
-
-	var vbox := VBoxContainer.new()
-	item_detail_popup.add_child(vbox)
-	vbox.add_theme_constant_override("separation", 10)
-
-	# 道具名称
-	var name_lbl := Label.new()
-	name_lbl.text = item.name
-	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_lbl.add_theme_font_size_override("font_size", 32)
-	name_lbl.add_theme_color_override("font_color", Color(1.0, 0.9, 0.5))
-	vbox.add_child(name_lbl)
-
-	# 道具描述
-	var desc_lbl := Label.new()
-	desc_lbl.text = item.description
-	desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc_lbl.custom_minimum_size.y = 50
-	vbox.add_child(desc_lbl)
-
-	# 目标提示
-	var target_lbl := Label.new()
-	var needs_target: bool = _item_needs_target(item.id)
-	if needs_target:
-		target_lbl.text = LocalizationSystem.get_text("items.target_required")
-		target_lbl.add_theme_color_override("font_color", Color(1.0, 0.6, 0.2))
-	else:
-		target_lbl.text = LocalizationSystem.get_text("items.no_target")
-		target_lbl.add_theme_color_override("font_color", Color(0.5, 0.8, 0.5))
-	target_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(target_lbl)
-
-	# 按钮行
-	var btn_row := HBoxContainer.new()
-	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	btn_row.custom_minimum_size.y = 36
-	vbox.add_child(btn_row)
-
-	# 使用按钮
-	var use_btn := Button.new()
-	use_btn.text = LocalizationSystem.get_text("items.use")
-	use_btn.custom_minimum_size = Vector2(90, 32)
-	use_btn.pressed.connect(_on_item_use_clicked.bind(slot_index))
-	btn_row.add_child(use_btn)
-
-	# 丢弃按钮
-	var discard_btn := Button.new()
-	discard_btn.text = LocalizationSystem.get_text("items.discard")
-	discard_btn.custom_minimum_size = Vector2(90, 32)
-	discard_btn.pressed.connect(_on_item_discard_clicked.bind(slot_index))
-	btn_row.add_child(discard_btn)
-
-	# 关闭按钮
-	var close_btn := Button.new()
-	close_btn.text = LocalizationSystem.get_text("items.close")
-	close_btn.custom_minimum_size = Vector2(90, 32)
-	close_btn.pressed.connect(_hide_item_detail)
-	btn_row.add_child(close_btn)
-
-
-func _on_backdrop_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton:
-		var mb: InputEventMouseButton = event
-		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
-			_hide_item_detail()
+	if PopupSystem.is_open():
+		PopupSystem.hide()
 
 
 func _on_item_use_clicked(slot_index: int) -> void:
+	# 先关闭弹窗
+	_hide_item_detail()
+
 	if slot_index < 0 or slot_index >= GameManager.items.size():
-		_hide_item_detail()
 		return
 
 	var item: DataModels.ItemData = GameManager.items[slot_index]
@@ -2168,7 +2071,6 @@ func _on_item_use_clicked(slot_index: int) -> void:
 
 	if needs_target:
 		# 需要目标: 进入目标选择模式
-		_hide_item_detail()
 		_start_target_selection(slot_index)
 	else:
 		# 直接使用
@@ -2176,8 +2078,9 @@ func _on_item_use_clicked(slot_index: int) -> void:
 
 
 func _on_item_discard_clicked(slot_index: int) -> void:
-	_discard_item(slot_index)
+	# 先关闭弹窗
 	_hide_item_detail()
+	_discard_item(slot_index)
 
 
 func _discard_item(slot_index: int) -> void:
@@ -2196,24 +2099,23 @@ func _use_item_direct(slot_index: int) -> void:
 	var result: Dictionary = ItemDatabase.use_consumable(item, -1)
 	var success: bool = result.get("success", false)
 	var affected_target: int = result.get("target_index", -1)
-	
+
 	print(">>> [GameBoard] 使用道具 %s (直接使用), result: %s" % [item.name, result])
-	
+
 	if success:
 		GameManager.remove_item(slot_index)
 		_refresh_item_slots()
 		_refresh_board_display()
-		
+
 		# 如果有受影响的目标，播放高亮动效
 		if affected_target >= 0:
 			print(">>> [GameBoard] 播放高亮动效，目标: %d" % affected_target)
 			_play_item_effect_highlight(affected_target)
 	else:
 		print(">>> [GameBoard] 使用道具失败: %s" % item.name)
-		# 显示失败提示
+		# 显示失败提示（延迟显示，避免被弹窗遮挡）
+		await get_tree().create_timer(0.15).timeout
 		TipManager.show_tip("无法使用道具，棋盘格已满")
-	# 无论成功失败，都隐藏详情弹窗
-	_hide_item_detail()
 
 
 func _use_item_on_target(target_index: int) -> void:
@@ -2226,14 +2128,14 @@ func _use_item_on_target(target_index: int) -> void:
 	var result: Dictionary = ItemDatabase.use_consumable(item, target_index)
 	var success: bool = result.get("success", false)
 	var affected_target: int = result.get("target_index", -1)
-	
+
 	print(">>> [GameBoard] 使用道具 %s (目标: %d), result: %s" % [item.name, target_index, result])
-	
+
 	if success:
 		GameManager.remove_item(slot_index)
 		_refresh_item_slots()
 		_refresh_board_display()
-		
+
 		# 播放高亮动效（使用target_index，如果result中没有affected_target）
 		if affected_target < 0:
 			affected_target = target_index
@@ -2241,7 +2143,8 @@ func _use_item_on_target(target_index: int) -> void:
 		_play_item_effect_highlight(affected_target)
 	else:
 		print(">>> [GameBoard] 使用道具失败: %s" % item.name)
-		# 显示失败提示
+		# 显示失败提示（延迟显示，避免被弹窗遮挡）
+		await get_tree().create_timer(0.15).timeout
 		TipManager.show_tip("无法使用道具，棋盘格已满")
 	# 无论成功失败，都结束目标选择
 	_end_target_selection()

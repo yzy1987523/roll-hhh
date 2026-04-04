@@ -10,10 +10,6 @@ class_name BattleScene
 @onready var play_button: Button = $MainLayout/ControlBar/PlayButton
 @onready var skip_button: Button = $MainLayout/ControlBar/SkipButton
 @onready var result_label: Label = $BottomBar/ResultLabel
-@onready var result_panel: PanelContainer = $ResultPanel
-@onready var result_title: Label = $ResultPanel/ResultVBox/ResultTitle
-@onready var reward_label: Label = $ResultPanel/ResultVBox/RewardLabel
-@onready var continue_button: Button = $ResultPanel/ResultVBox/ContinueButton
 @onready var pause_button: Button = $MainLayout/ControlBar/PauseButton
 @onready var speed_1x: Button = $MainLayout/ControlBar/Speed1x
 @onready var speed_2x: Button = $MainLayout/ControlBar/Speed2x
@@ -113,8 +109,6 @@ const GOLD_REWARD_BOSS := 100
 var battle_tutorial_instance: Control = null
 
 # ---- 道具详情弹窗 ----
-var item_detail_popup: Control = null
-var item_detail_backdrop: Control = null
 var item_detail_popup_slot: int = -1
 var item_detail_visible: bool = false
 
@@ -123,46 +117,9 @@ func _ready() -> void:
 	_connect_signals()
 	_setup_board_display()
 	_setup_bullet_container()
-	_setup_continue_button_style()
 	_start_battle()
 	_start_tutorial()
 	print(">>> [BattleScene] 战斗场景已加载")
-
-
-func _setup_continue_button_style() -> void:
-	# 为确认按钮设置方形样式
-	var button_style := StyleBoxFlat.new()
-	button_style.bg_color = Color(0.3, 0.5, 0.8)  # 蓝色背景
-	button_style.border_color = Color(0.4, 0.6, 0.9)  # 更亮的边框
-	button_style.set_border_width_all(2)
-	button_style.corner_radius_top_left = 8
-	button_style.corner_radius_top_right = 8
-	button_style.corner_radius_bottom_left = 8
-	button_style.corner_radius_bottom_right = 8
-	
-	var hover_style := StyleBoxFlat.new()
-	hover_style.bg_color = Color(0.4, 0.6, 0.9)  # 更亮的蓝色
-	hover_style.border_color = Color(0.5, 0.7, 1.0)
-	hover_style.set_border_width_all(2)
-	hover_style.corner_radius_top_left = 8
-	hover_style.corner_radius_top_right = 8
-	hover_style.corner_radius_bottom_left = 8
-	hover_style.corner_radius_bottom_right = 8
-	
-	var pressed_style := StyleBoxFlat.new()
-	pressed_style.bg_color = Color(0.2, 0.4, 0.7)  # 更暗的蓝色
-	pressed_style.border_color = Color(0.3, 0.5, 0.8)
-	pressed_style.set_border_width_all(2)
-	pressed_style.corner_radius_top_left = 8
-	pressed_style.corner_radius_top_right = 8
-	pressed_style.corner_radius_bottom_left = 8
-	pressed_style.corner_radius_bottom_right = 8
-	
-	continue_button.add_theme_stylebox_override("normal", button_style)
-	continue_button.add_theme_stylebox_override("hover", hover_style)
-	continue_button.add_theme_stylebox_override("pressed", pressed_style)
-	continue_button.custom_minimum_size = Vector2(200, 60)
-	continue_button.add_theme_font_size_override("font_size", 24)
 
 
 ## 设置按钮透明背景样式（用于图标按钮）
@@ -207,6 +164,7 @@ func _setup_item_slots() -> void:
 			child.queue_free()
 		# 背景纹理（使用cell_0.png）
 		var bg := TextureRect.new()
+		bg.name = "Background"
 		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 		bg.texture = CELL_BG_TEXTURE
 		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
@@ -214,14 +172,23 @@ func _setup_item_slots() -> void:
 		bg.modulate = Color(0.8, 0.8, 0.8, 0.9)
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slot.add_child(bg)
-		# 图标/标签
-		var lbl := Label.new()
-		lbl.set_anchors_preset(Control.PRESET_CENTER)
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		lbl.add_theme_font_size_override("font_size", 18)
-		slot.add_child(lbl)
+		
+		# 居中容器（用于道具图片）
+		var center := CenterContainer.new()
+		center.name = "CenterContainer"
+		center.set_anchors_preset(Control.PRESET_FULL_RECT)
+		center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slot.add_child(center)
+		
+		# 道具图片
+		var icon := TextureRect.new()
+		icon.name = "ItemIcon"
+		icon.custom_minimum_size = Vector2(100, 100)
+		icon.expand_mode = TextureRect.EXPAND_FIT_HEIGHT
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.visible = false  # 初始隐藏
+		center.add_child(icon)
 
 	_refresh_item_slots()
 
@@ -231,16 +198,37 @@ func _refresh_item_slots() -> void:
 	var slots := [item_slot0, item_slot1, item_slot2]
 	for i in range(GameManager.MAX_ITEM_SLOTS):
 		var slot: PanelContainer = slots[i]
-		var lbl: Label = slot.get_node_or_null(Label_path_from_index(slot, 1))  # 第二个子节点是Label
-		if lbl == null:
-			continue
+		var bg: TextureRect = slot.get_node_or_null("Background")
+		var icon: TextureRect = slot.get_node_or_null("CenterContainer/ItemIcon")
+		
 		if i < items.size():
 			var item: DataModels.ItemData = items[i]
-			lbl.text = item.name
-			lbl.modulate = Color.WHITE
+			# 显示道具图片
+			if icon:
+				var tex := _get_item_texture(item)
+				icon.texture = tex
+				icon.visible = (tex != null)
+			# 背景不透明
+			if bg:
+				bg.modulate = Color(0.8, 0.8, 0.8, 0.9)
 		else:
-			lbl.text = ""
-			lbl.modulate = Color(0.3, 0.3, 0.3)
+			# 空格子：隐藏道具图片
+			if icon:
+				icon.visible = false
+			if bg:
+				bg.modulate = Color(0.8, 0.8, 0.8, 0.9)
+
+
+## 获取道具图片
+func _get_item_texture(item: DataModels.ItemData) -> Texture2D:
+	# 可用的道具图片ID列表
+	var available_item_images := [13, 15, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42]
+	# 道具ID从1开始，数组索引从0开始
+	var img_id: int = available_item_images[item.id - 1]
+	var path := "res://art/sprites/UI/items/item/item_%03d.png" % img_id
+	if ResourceLoader.exists(path):
+		return load(path) as Texture2D
+	return null
 
 
 func _refresh_relic_panel() -> void:
@@ -292,15 +280,6 @@ func _on_relic_next_pressed() -> void:
 	relic_scroll.scroll_horizontal += scroll_width
 
 
-func Label_path_from_index(slot: PanelContainer, index: int) -> NodePath:
-	# 辅助: 获取slot第index个子节点的Label(如果有)
-	if index < slot.get_child_count():
-		var child = slot.get_child(index)
-		if child is Label:
-			return child.get_path()
-	return NodePath()
-
-
 # ---- 道具详情弹窗 ----
 
 func _show_item_detail(slot_index: int) -> void:
@@ -308,91 +287,42 @@ func _show_item_detail(slot_index: int) -> void:
 	if slot_index < 0 or slot_index >= items.size():
 		return
 
-	_hide_item_detail()
-
 	var item: DataModels.ItemData = items[slot_index]
 	item_detail_popup_slot = slot_index
 	item_detail_visible = true
 
-	# 黑色遮罩
-	var backdrop := ColorRect.new()
-	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
-	backdrop.color = Color(0, 0, 0, 0.5)
-	backdrop.gui_input.connect(_on_backdrop_input)
-	add_child(backdrop)
-	item_detail_backdrop = backdrop
-
-	# 详情面板
-	var popup_bg := ColorRect.new()
-	popup_bg.set_anchors_preset(Control.PRESET_CENTER)
-	popup_bg.offset_left = -120
-	popup_bg.offset_top = -100
-	popup_bg.offset_right = 120
-	popup_bg.offset_bottom = 100
-	popup_bg.color = Color("#2A3A5A")
-	add_child(popup_bg)
-	item_detail_popup = popup_bg
-
-	var vbox := VBoxContainer.new()
-	vbox.set_anchors_preset(Control.PRESET_CENTER)
-	popup_bg.add_child(vbox)
-
-	var name_lbl := Label.new()
-	name_lbl.text = item.name
-	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_lbl.add_theme_font_size_override("font_size", 32)
-	vbox.add_child(name_lbl)
-
-	var desc_lbl := Label.new()
-	desc_lbl.text = item.description
-	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
-	desc_lbl.custom_minimum_size = Vector2(200, 60)
-	vbox.add_child(desc_lbl)
-
-	var use_btn := Button.new()
-	use_btn.text = LocalizationSystem.get_text("items.use")
-	use_btn.pressed.connect(_on_item_use_pressed.bind(slot_index))
-	vbox.add_child(use_btn)
-
-	var discard_btn := Button.new()
-	discard_btn.text = LocalizationSystem.get_text("items.discard")
-	discard_btn.pressed.connect(_on_item_discard_pressed.bind(slot_index))
-	vbox.add_child(discard_btn)
-
-	var close_btn := Button.new()
-	close_btn.text = LocalizationSystem.get_text("items.close")
-	close_btn.pressed.connect(_hide_item_detail)
-	vbox.add_child(close_btn)
+	# 使用PopupSystem显示道具详情
+	PopupSystem.show(
+		item.name,  # 标题
+		item.description,  # 内容
+		"",  # 说明
+		LocalizationSystem.get_text("items.use"),  # 确认按钮文字
+		LocalizationSystem.get_text("items.close"),  # 关闭按钮文字
+		func(): _on_item_use_pressed(slot_index),  # 确认回调
+		func(): _hide_item_detail()  # 关闭回调
+	)
 
 
 func _hide_item_detail() -> void:
 	item_detail_visible = false
 	item_detail_popup_slot = -1
-	if item_detail_popup != null:
-		item_detail_popup.queue_free()
-		item_detail_popup = null
-	if item_detail_backdrop != null:
-		item_detail_backdrop.queue_free()
-		item_detail_backdrop = null
-
-
-func _on_backdrop_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		_hide_item_detail()
+	if PopupSystem.is_open():
+		PopupSystem.hide()
 
 
 func _on_item_use_pressed(slot_index: int) -> void:
+	# 先关闭弹窗
+	_hide_item_detail()
+
 	var items: Array = GameManager.items
 	if slot_index < 0 or slot_index >= items.size():
-		_hide_item_detail()
 		return
 
 	var item: DataModels.ItemData = items[slot_index]
 
-	# 需要目标的道具
+	# 需要目标的道具：进入目标选择模式
 	if item.id in [1, 2, 3, 11, 13, 14, 15, 16]:
-		# 战斗场景暂不支持目标选择，提示并关闭
-		_hide_item_detail()
+		_start_target_selection(slot_index)
 		return
 
 	# 即时使用
@@ -400,19 +330,80 @@ func _on_item_use_pressed(slot_index: int) -> void:
 	if result.success:
 		GameManager.remove_item(slot_index)
 		_refresh_item_slots()
-	_hide_item_detail()
+	else:
+		# 延迟显示提示，避免被弹窗遮挡
+		await get_tree().create_timer(0.15).timeout
+		TipManager.show_tip("无法使用道具", 2.0)
+
+
+# ---- 目标选择模式 ----
+
+func _start_target_selection(item_slot: int) -> void:
+	is_selecting_target = true
+	target_select_item_slot = item_slot
+	# 使用 TipManager 显示提示（持续显示直到手动隐藏）
+	TipManager.show_tip(LocalizationSystem.get_text("items.select_target"), 10.0)
+
+
+func _end_target_selection() -> void:
+	is_selecting_target = false
+	target_select_item_slot = -1
+	# 隐藏 TipManager 提示
+	TipManager.hide_tip()
+
+
+func _on_cell_gui_input(event: InputEvent, cell_index: int) -> void:
+	# 目标选择模式：点击角色使用道具
+	if is_selecting_target and event is InputEventMouseButton:
+		var mb: InputEventMouseButton = event
+		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
+			var bd: BoardData = GameManager.board_data
+			var ch: DataModels.CharacterData = bd.get_character_at_index(cell_index)
+			if ch != null:
+				_use_item_on_target(cell_index)
+				return
+			else:
+				# 点击空格子取消选择
+				_end_target_selection()
+				return
+
+
+func _use_item_on_target(target_index: int) -> void:
+	var slot_index: int = target_select_item_slot
+	if slot_index < 0 or slot_index >= GameManager.items.size():
+		_end_target_selection()
+		return
+
+	var item: DataModels.ItemData = GameManager.items[slot_index]
+	var result: Dictionary = ItemDatabase.use_consumable(item, target_index)
+	var success: bool = result.get("success", false)
+
+	print(">>> [BattleScene] 使用道具 %s (目标: %d), result: %s" % [item.name, target_index, result])
+
+	if success:
+		GameManager.remove_item(slot_index)
+		_refresh_item_slots()
+		_refresh_board_display()
+		# 显示成功提示
+		TipManager.show_tip("使用成功: %s" % item.name, 1.5)
+	else:
+		# 显示失败提示
+		await get_tree().create_timer(0.15).timeout
+		TipManager.show_tip("无法使用道具", 2.0)
+	# 无论成功失败，都结束目标选择
+	_end_target_selection()
 
 
 func _on_item_discard_pressed(slot_index: int) -> void:
+	# 先关闭弹窗
+	_hide_item_detail()
 	GameManager.remove_item(slot_index)
 	_refresh_item_slots()
-	_hide_item_detail()
 
 
 func _connect_signals() -> void:
 	play_button.pressed.connect(_on_play_pressed)
 	skip_button.pressed.connect(_on_skip_pressed)
-	continue_button.pressed.connect(_on_continue_pressed)
 	pause_button.pressed.connect(_on_pause_pressed)
 	speed_1x.pressed.connect(_on_speed_1x_pressed)
 	speed_2x.pressed.connect(_on_speed_2x_pressed)
@@ -464,6 +455,11 @@ func _on_speed_1x_pressed() -> void:
 
 # ---- 棋盘显示 (只读, 不可交互) ----
 
+# ---- 目标选择指针 ----
+var is_selecting_target: bool = false
+var target_select_item_slot: int = -1
+
+
 func _setup_board_display() -> void:
 	for child in grid_container.get_children():
 		child.queue_free()
@@ -513,6 +509,9 @@ func _setup_board_display() -> void:
 		sprite.visible = false
 		cell.add_child(sprite)
 
+		# 点击事件
+		cell.gui_input.connect(_on_cell_gui_input.bind(i))
+
 		grid_container.add_child(cell)
 		cell_rects.append(bg)
 		cell_labels.append(lbl)
@@ -531,7 +530,6 @@ func _start_battle() -> void:
 	_update_enemy_display()
 	_refresh_board_display()
 	log_label.text = ""
-	result_panel.visible = false
 	battle_finished = false
 	is_paused = false
 	battle_speed = 1.0
@@ -597,15 +595,7 @@ func _on_localization_changed(lang: String) -> void:
 	_refresh_item_slots()
 	# 更新敌人和玩家信息
 	_update_enemy_display()
-	# 更新结果面板
-	if battle_finished:
-		_update_result_panel_texts()
 	print(">>> [BattleScene] 语言切换为: %s" % lang)
-
-
-func _update_result_panel_texts() -> void:
-	result_title.text = LocalizationSystem.get_text("battle.victory_title")
-	continue_button.text = LocalizationSystem.get_text("battle.continue")
 
 
 # ---- 播放/跳过 ----
@@ -744,19 +734,34 @@ func _handle_victory() -> void:
 
 	GameManager.advance_round()
 
-	# 显示奖励面板
-	result_title.text = LocalizationSystem.get_text("battle.victory_title")
-	reward_label.text = reward_text
-	result_panel.visible = true
+	# 使用PopupSystem显示结算
+	PopupSystem.show(
+		LocalizationSystem.get_text("battle.victory_title"),
+		reward_text,
+		"",
+		LocalizationSystem.get_text("battle.continue"),
+		"",
+		func(): _on_continue_pressed(),
+		Callable()
+	)
 
 	print(">>> [BattleScene] 胜利! 奖励 %d 金币" % gold_reward)
 
 
 func _handle_defeat() -> void:
 	result_label.text = LocalizationSystem.get_text("battle.defeat")
-	result_title.text = LocalizationSystem.get_text("battle.defeat_title")
-	reward_label.text = LocalizationSystem.get_text("battle.survived_rounds", {"value": GameManager.current_round})
-	result_panel.visible = true
+	
+	# 使用PopupSystem显示结算
+	PopupSystem.show(
+		LocalizationSystem.get_text("battle.defeat_title"),
+		LocalizationSystem.get_text("battle.survived_rounds", {"value": GameManager.current_round}),
+		"",
+		LocalizationSystem.get_text("battle.continue"),
+		"",
+		func(): _on_continue_pressed(),
+		Callable()
+	)
+	
 	# 提交排行榜分数
 	SaveSystem.submit_leaderboard_score(GameManager.cycle_count)
 	GameManager.enter_game_over()
@@ -765,9 +770,18 @@ func _handle_defeat() -> void:
 
 func _handle_draw() -> void:
 	result_label.text = LocalizationSystem.get_text("battle.draw")
-	result_title.text = LocalizationSystem.get_text("battle.draw_title")
-	reward_label.text = LocalizationSystem.get_text("battle.no_reward_draw")
-	result_panel.visible = true
+	
+	# 使用PopupSystem显示结算
+	PopupSystem.show(
+		LocalizationSystem.get_text("battle.draw_title"),
+		LocalizationSystem.get_text("battle.no_reward_draw"),
+		"",
+		LocalizationSystem.get_text("battle.continue"),
+		"",
+		func(): _on_continue_pressed(),
+		Callable()
+	)
+	
 	GameManager.advance_round()
 	print(">>> [BattleScene] 平局!")
 
