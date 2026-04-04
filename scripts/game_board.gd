@@ -1960,8 +1960,11 @@ func _refresh_item_slots() -> void:
 
 ## 获取道具图片（类似遗物的映射逻辑）
 func _get_item_texture(item: DataModels.ItemData) -> Texture2D:
-	# 道具图片ID映射（道具ID 1-22 对应图片ID 13-42）
-	var img_id: int = item.id + 12
+	# 可用的道具图片ID列表（按道具ID顺序映射）
+	var available_item_images := [13, 15, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42]
+	
+	# 道具ID从1开始，数组索引从0开始
+	var img_id: int = available_item_images[item.id - 1]
 	var path := "res://art/sprites/UI/items/item/item_%03d.png" % img_id
 	
 	print(">>> [GameBoard] 尝试加载道具图片: ID=%d -> img_id=%d, 路径=%s" % [item.id, img_id, path])
