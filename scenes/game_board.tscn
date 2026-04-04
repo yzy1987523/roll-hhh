@@ -130,6 +130,7 @@ size_flags_horizontal = 0
 
 [node name="RelicBar" type="HBoxContainer" parent="MainLayout" unique_id=308367481]
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 0
 
 [node name="PrevButton" type="Button" parent="MainLayout/RelicBar" unique_id=308367486]
@@ -140,7 +141,7 @@ text = "◀"
 
 [node name="RelicPanel" type="PanelContainer" parent="MainLayout/RelicBar" unique_id=308367482]
 modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 100)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_horizontal = 3
 
@@ -388,67 +389,94 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -180.0
-offset_top = -140.0
-offset_right = 180.0
-offset_bottom = 140.0
+offset_left = -250.0
+offset_top = -350.0
+offset_right = 250.0
+offset_bottom = 350.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="SettingsVBox" type="VBoxContainer" parent="SettingsPanel" unique_id=1435528226]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 24
 
-[node name="SettingsTitle" type="Label" parent="SettingsPanel/SettingsVBox" unique_id=1725768073]
+[node name="TitleBar" type="Control" parent="SettingsPanel/SettingsVBox" unique_id=1725768073]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 60)
+
+[node name="SettingsTitle" type="Label" parent="SettingsPanel/SettingsVBox/TitleBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 48
 text = "Settings"
 horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CloseButton" type="TextureButton" parent="SettingsPanel/SettingsVBox/TitleBar" unique_id=2035558326]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -110.0
+offset_top = 0.0
+offset_right = -10.0
+offset_bottom = 100.0
+grow_horizontal = 0
+custom_minimum_size = Vector2(100, 100)
+texture_normal = ExtResource("10_close")
+stretch_mode = 5
 
 [node name="LanguageRow" type="HBoxContainer" parent="SettingsPanel/SettingsVBox" unique_id=1453064821]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 20
 
 [node name="LanguageLabel" type="Label" parent="SettingsPanel/SettingsVBox/LanguageRow" unique_id=1051287378]
 layout_mode = 2
+theme_override_font_sizes/font_size = 32
 text = "Language"
 
 [node name="LanguageButton" type="Button" parent="SettingsPanel/SettingsVBox/LanguageRow" unique_id=747074118]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 32
 text = "EN"
 
 [node name="VolumeRow" type="HBoxContainer" parent="SettingsPanel/SettingsVBox" unique_id=1298891949]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 20
 
 [node name="VolumeLabel" type="Label" parent="SettingsPanel/SettingsVBox/VolumeRow" unique_id=249283928]
 layout_mode = 2
+theme_override_font_sizes/font_size = 32
 text = "Volume"
 
 [node name="VolumeSlider" type="HSlider" parent="SettingsPanel/SettingsVBox/VolumeRow" unique_id=335025774]
 layout_mode = 2
 size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 40)
 max_value = 1.0
 step = 0.1
 value = 1.0
 
 [node name="ResetTutorialButton" type="Button" parent="SettingsPanel/SettingsVBox" unique_id=86378731]
 layout_mode = 2
+theme_override_font_sizes/font_size = 32
 text = "Reset Tutorial"
 
 [node name="ClearSaveButton" type="Button" parent="SettingsPanel/SettingsVBox" unique_id=86378732]
 layout_mode = 2
+theme_override_font_sizes/font_size = 32
 text = "Clear Save"
-
-[node name="CloseButton" type="Button" parent="SettingsPanel/SettingsVBox" unique_id=2035558326]
-layout_mode = 2
-text = "Close"
-icon = ExtResource("10_close")
 
 [node name="ResetConfirmLabel" type="Label" parent="SettingsPanel" unique_id=827146354]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
+theme_override_font_sizes/font_size = 32
 text = "Tutorial reset!"
 horizontal_alignment = 1
 vertical_alignment = 1

@@ -44,14 +44,14 @@ var SELECT_FRAMES: Array[Texture2D] = []
 # ---- 设置面板节点 ----
 @onready var settings_panel: PanelContainer = $SettingsPanel
 @onready var settings_vbox: VBoxContainer = $SettingsPanel/SettingsVBox
-@onready var settings_title: Label = $SettingsPanel/SettingsVBox/SettingsTitle
+@onready var settings_title: Label = $SettingsPanel/SettingsVBox/TitleBar/SettingsTitle
 @onready var language_button: Button = $SettingsPanel/SettingsVBox/LanguageRow/LanguageButton
 @onready var language_label: Label = $SettingsPanel/SettingsVBox/LanguageRow/LanguageLabel
 @onready var volume_slider: HSlider = $SettingsPanel/SettingsVBox/VolumeRow/VolumeSlider
 @onready var volume_label: Label = $SettingsPanel/SettingsVBox/VolumeRow/VolumeLabel
 @onready var reset_tutorial_button: Button = $SettingsPanel/SettingsVBox/ResetTutorialButton
 @onready var clear_save_button: Button = $SettingsPanel/SettingsVBox/ClearSaveButton
-@onready var close_settings_button: Button = $SettingsPanel/SettingsVBox/CloseButton
+@onready var close_settings_button: TextureButton = $SettingsPanel/SettingsVBox/TitleBar/CloseButton
 @onready var reset_confirm_label: Label = $SettingsPanel/ResetConfirmLabel
 
 # ---- 常量 ----
@@ -120,6 +120,9 @@ var item_detail_visible: bool = false
 # ---- 目标选择指针 ----
 var is_selecting_target: bool = false
 var target_select_item_slot: int = -1
+
+# ---- 遗物提示控制 ----
+var _relic_tip_showing: bool = false
 
 # ---- 教程系统 ----
 var tutorial_instance: Control = null
@@ -1715,9 +1718,8 @@ func _refresh_relic_panel() -> void:
 	# 确保遗物面板可见
 	relic_panel.modulate = Color.WHITE
 	
-	# 添加 bar.png 背景到 RelicBar（如果还没有）
-	var relic_bar: HBoxContainer = $MainLayout/RelicBar
-	if relic_bar and (relic_bar.get_child_count() == 0 or not relic_bar.get_child(0).name == "RelicBarBg"):
+	# 添加 bar.png 背景到 RelicPanel（如果还没有）
+	if not relic_panel.has_node("RelicBarBg"):
 		var bar_texture := preload("res://art/sprites/UI/panels/bar.png")
 		var bg := TextureRect.new()
 		bg.name = "RelicBarBg"
@@ -1727,8 +1729,11 @@ func _refresh_relic_panel() -> void:
 		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		bg.z_index = -1  # 确保在最底层
-		relic_bar.add_child(bg)
-		relic_bar.move_child(bg, 0)  # 移到最底层
+		relic_panel.add_child(bg)
+		relic_panel.move_child(bg, 0)  # 移到最底层
+	
+	# 设置遗物栏高度为80（适应bar.png和遗物图标）
+	relic_panel.custom_minimum_size = Vector2(0, 80)
 	
 	# 设置遗物列表间隔为10
 	relic_list.add_theme_constant_override("separation", 10)
@@ -1741,9 +1746,9 @@ func _refresh_relic_panel() -> void:
 	for i in range(GameManager.relics.size()):
 		var relic: DataModels.ItemData = GameManager.relics[i]
 		var relic_item: Button = Button.new()
-		relic_item.custom_minimum_size = Vector2(80, 80)
-		relic_item.tooltip_text = "%s\n%s" % [relic.name, relic.description]
-		relic_item.pressed.connect(_on_relic_pressed.bind(relic))
+		relic_item.custom_minimum_size = Vector2(60, 60)
+		# 移除tooltip，使用按住显示
+		# relic_item.tooltip_text = "%s\n%s" % [relic.name, relic.description]
 		
 		# 移除按钮的默认背景（去掉黑底）
 		var empty_style := StyleBoxEmpty.new()
@@ -1762,6 +1767,13 @@ func _refresh_relic_panel() -> void:
 		relic_item.add_child(texture_rect)
 
 		relic_list.add_child(relic_item)
+		
+		# 连接事件（在添加到场景树后）
+		relic_item.pressed.connect(_on_relic_pressed.bind(relic))
+		relic_item.button_down.connect(_on_relic_button_down.bind(relic))
+		relic_item.button_up.connect(_on_relic_button_up)
+		relic_item.mouse_entered.connect(_on_relic_mouse_entered.bind(relic))
+		relic_item.mouse_exited.connect(_on_relic_mouse_exited)
 	
 	# 更新翻页按钮状态：遗物未满时半透明禁用
 	await get_tree().process_frame  # 等待布局更新
@@ -1790,8 +1802,41 @@ func _get_relic_texture(relic: DataModels.ItemData) -> Texture2D:
 
 
 func _on_relic_pressed(relic: DataModels.ItemData) -> void:
-	# 按下时显示详细信息（触屏支持）
+	# 点击时显示详细信息（如果提示未显示）
+	if not _relic_tip_showing:
+		TipManager.show_tip("%s\n%s" % [relic.name, relic.description], 2.0)
+		_relic_tip_showing = true
+		# 延迟重置标志
+		await get_tree().create_timer(2.0).timeout
+		_relic_tip_showing = false
 	print(">>> [GameBoard] 遗物详情: %s - %s" % [relic.name, relic.description])
+
+
+func _on_relic_button_down(relic: DataModels.ItemData) -> void:
+	# 按住时显示说明（触屏支持）
+	if not _relic_tip_showing:
+		TipManager.show_tip("%s\n%s" % [relic.name, relic.description], 10.0)
+		_relic_tip_showing = true
+
+
+func _on_relic_button_up() -> void:
+	# 松开时隐藏说明（延迟隐藏，避免闪烁）
+	await get_tree().create_timer(0.1).timeout
+	TipManager.hide_tip()
+	_relic_tip_showing = false
+
+
+func _on_relic_mouse_entered(relic: DataModels.ItemData) -> void:
+	# 悬停时显示说明
+	if not _relic_tip_showing:
+		TipManager.show_tip("%s\n%s" % [relic.name, relic.description], 10.0)
+		_relic_tip_showing = true
+
+
+func _on_relic_mouse_exited() -> void:
+	# 移出时隐藏说明
+	TipManager.hide_tip()
+	_relic_tip_showing = false
 
 
 func _on_relic_prev_pressed() -> void:
@@ -2427,16 +2472,21 @@ func _on_settings_pressed() -> void:
 
 
 func _show_settings_panel() -> void:
-	# 添加 panel.png 背景（如果还没有）
-	if settings_panel.get_child_count() == 0 or not settings_panel.get_child(0).name == "PanelBg":
-		var panel_texture := preload("res://art/sprites/UI/panels/panel.png")
+	# 去掉面板黑底
+	var empty_style := StyleBoxEmpty.new()
+	settings_panel.add_theme_stylebox_override("panel", empty_style)
+	
+	# 添加 pop.png 背景（如果还没有）
+	if not settings_panel.has_node("PanelBg"):
+		var panel_texture := preload("res://art/sprites/UI/panels/pop.png")
 		var bg := TextureRect.new()
 		bg.name = "PanelBg"
 		bg.texture = panel_texture
-		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bg.z_index = -1
 		settings_panel.add_child(bg)
 		settings_panel.move_child(bg, 0)  # 移到最底层
 	
@@ -2445,6 +2495,12 @@ func _show_settings_panel() -> void:
 	settings_panel.visible = true
 	_update_settings_ui()
 	_update_settings_texts()
+	
+	# 设置关闭按钮样式（使用close图片，去掉黑底）
+	_setup_close_button()
+	
+	# 设置功能按钮样式（使用pop.png作为背景）
+	_setup_function_buttons()
 
 
 func _hide_settings_panel() -> void:
@@ -2459,10 +2515,54 @@ func _update_settings_ui() -> void:
 func _update_settings_texts() -> void:
 	settings_title.text = LocalizationSystem.get_text("settings.title")
 	language_label.text = LocalizationSystem.get_text("settings.language")
+
+
+func _setup_close_button() -> void:
+	# TextureButton 已在场景中配置好，无需额外设置
+	pass
+
+
+func _setup_function_buttons() -> void:
+	# 设置切换语言按钮样式
+	_setup_pop_button(language_button)
+	
+	# 设置清存档按钮样式
+	_setup_pop_button(clear_save_button)
+	
+	# 设置重置教程按钮样式
+	_setup_pop_button(reset_tutorial_button)
+
+
+func _setup_pop_button(btn: Button) -> void:
+	# 去掉按钮默认背景
+	var empty_style := StyleBoxEmpty.new()
+	btn.add_theme_stylebox_override("normal", empty_style)
+	btn.add_theme_stylebox_override("hover", empty_style)
+	btn.add_theme_stylebox_override("pressed", empty_style)
+	btn.add_theme_stylebox_override("disabled", empty_style)
+	
+	# 设置按钮尺寸放大2倍
+	btn.custom_minimum_size = Vector2(480, 80)
+	
+	# 添加pop.png作为背景
+	if not btn.has_node("ButtonBg"):
+		var pop_texture := preload("res://art/sprites/UI/panels/pop.png")
+		var bg := TextureRect.new()
+		bg.name = "ButtonBg"
+		bg.texture = pop_texture
+		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bg.z_index = -1
+		btn.add_child(bg)
+		btn.move_child(bg, 0)
+	
+	# 设置字体大小
+	btn.add_theme_font_size_override("font_size", 32)
 	volume_label.text = LocalizationSystem.get_text("settings.volume")
 	reset_tutorial_button.text = LocalizationSystem.get_text("settings.reset_tutorial")
 	clear_save_button.text = LocalizationSystem.get_text("settings.clear_save")
-	close_settings_button.text = LocalizationSystem.get_text("settings.close")
 	_reset_confirm_label_visible(false)
 
 
@@ -2498,14 +2598,34 @@ func _update_language_button_text() -> void:
 
 
 func _refresh_game_board_texts() -> void:
-	# 更新底部按钮文本
-	spawn_warrior.text = LocalizationSystem.get_text("game_board.spawn_warrior")
-	spawn_mage.text = LocalizationSystem.get_text("game_board.spawn_mage")
-	spawn_priest.text = LocalizationSystem.get_text("game_board.spawn_priest")
-	end_turn_button.text = LocalizationSystem.get_text("game_board.end_turn")
-	dorm_button.text = LocalizationSystem.get_text("game_board.dorm")
-	shop_button.text = LocalizationSystem.get_text("game_board.shop")
-	encyclopedia_button.text = LocalizationSystem.get_text("game_board.encyclopedia")
+	# 更新底部按钮文本（通过 Label 子节点）
+	var warrior_label = spawn_warrior.get_node_or_null("Label")
+	if warrior_label:
+		warrior_label.text = LocalizationSystem.get_text("game_board.spawn_warrior")
+	
+	var mage_label = spawn_mage.get_node_or_null("Label")
+	if mage_label:
+		mage_label.text = LocalizationSystem.get_text("game_board.spawn_mage")
+	
+	var priest_label = spawn_priest.get_node_or_null("Label")
+	if priest_label:
+		priest_label.text = LocalizationSystem.get_text("game_board.spawn_priest")
+	
+	var end_turn_label = end_turn_button.get_node_or_null("Label")
+	if end_turn_label:
+		end_turn_label.text = LocalizationSystem.get_text("game_board.end_turn")
+	
+	var dorm_label = dorm_button.get_node_or_null("Label")
+	if dorm_label:
+		dorm_label.text = LocalizationSystem.get_text("game_board.dorm")
+	
+	var shop_label = shop_button.get_node_or_null("Label")
+	if shop_label:
+		shop_label.text = LocalizationSystem.get_text("game_board.shop")
+	
+	var encyclopedia_label = encyclopedia_button.get_node_or_null("Label")
+	if encyclopedia_label:
+		encyclopedia_label.text = LocalizationSystem.get_text("game_board.encyclopedia")
 
 
 func _on_volume_changed(value: float) -> void:
@@ -2532,9 +2652,9 @@ func _on_clear_save_pressed() -> void:
 	print(">>> [GameBoard] 存档已清空")
 
 
-func _reset_confirm_label_visible(visible: bool, text_key: String = "") -> void:
-	reset_confirm_label.visible = visible
-	if visible and text_key != "":
+func _reset_confirm_label_visible(show_label: bool, text_key: String = "") -> void:
+	reset_confirm_label.visible = show_label
+	if show_label and text_key != "":
 		reset_confirm_label.text = LocalizationSystem.get_text(text_key)
 
 
