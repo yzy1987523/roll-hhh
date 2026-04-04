@@ -1709,8 +1709,9 @@ func _refresh_relic_panel() -> void:
 	# 确保遗物面板可见
 	relic_panel.modulate = Color.WHITE
 	
-	# 添加 bar.png 背景（如果还没有）
-	if relic_panel.get_child_count() == 0 or not relic_panel.get_child(0).name == "RelicBarBg":
+	# 添加 bar.png 背景到 RelicBar（如果还没有）
+	var relic_bar: HBoxContainer = $MainLayout/RelicBar
+	if relic_bar and (relic_bar.get_child_count() == 0 or not relic_bar.get_child(0).name == "RelicBarBg"):
 		var bar_texture := preload("res://art/sprites/UI/panels/bar.png")
 		var bg := TextureRect.new()
 		bg.name = "RelicBarBg"
@@ -1720,8 +1721,8 @@ func _refresh_relic_panel() -> void:
 		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		bg.z_index = -1  # 确保在最底层
-		relic_panel.add_child(bg)
-		relic_panel.move_child(bg, 0)  # 移到最底层
+		relic_bar.add_child(bg)
+		relic_bar.move_child(bg, 0)  # 移到最底层
 	
 	# 设置遗物列表间隔为10
 	relic_list.add_theme_constant_override("separation", 10)
