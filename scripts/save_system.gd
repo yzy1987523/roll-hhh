@@ -186,6 +186,9 @@ func _apply_save(data: Dictionary) -> void:
 		var item := DM.ItemData.from_dict(rd)
 		GameManager.relics.append(item)
 
+	# 刷新所有角色的遗物加成
+	CharacterFactory.refresh_all_characters_relics()
+
 	# 发射信号更新UI
 	GameManager.gold_changed.emit(GameManager.gold)
 	GameManager.energy_changed.emit(GameManager.energy)

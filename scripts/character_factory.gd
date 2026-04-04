@@ -83,6 +83,10 @@ static func create_character(job: int, level: int) -> DataModels.CharacterData:
 	ch.skill_level = calc_skill_level(ch.level)
 	ch.buffs = []
 	ch.position = Vector2i(-1, -1)
+	
+	# 应用遗物加成
+	_apply_stat_buff_relics(ch)
+	
 	return ch
 
 
@@ -120,11 +124,82 @@ static func merge_characters(a: DataModels.CharacterData, b: DataModels.Characte
 
 
 ## 重新计算角色属性 (用于遗物加成等场景)
-static func recalc_stats(ch: DataModels.CharacterData) -> void:
+## apply_relics: 是否应用遗物加成 (默认true)
+static func recalc_stats(ch: DataModels.CharacterData, apply_relics: bool = true) -> void:
 	ch.max_hp = calc_hp(ch.job, ch.level)
 	ch.attack = calc_attack(ch.job, ch.level)
 	ch.defense = calc_defense(ch.job, ch.level)
 	ch.skill_level = calc_skill_level(ch.level)
+	
+	# 应用遗物加成
+	if apply_relics:
+		_apply_stat_buff_relics(ch)
+
+
+## 应用 stat_buff 类型遗物的属性加成
+static func _apply_stat_buff_relics(ch: DataModels.CharacterData) -> void:
+	if not is_instance_valid(GameManager.board_data):
+		return
+	
+	var relics: Array = GameManager.relics
+	for relic in relics:
+		var cfg: Dictionary = MechanicsDb.get_relic_effect(relic.id)
+		if cfg.get("effect_type", "") != "stat_buff":
+			continue
+		
+		var target: String = cfg.get("target", "")
+		var stat: String = cfg.get("stat", "")
+		var value: int = cfg.get("value", 0)
+		
+		# 检查目标匹配
+		var matches: bool = false
+		match target:
+			"all":
+				matches = true
+			"warrior":
+				matches = (ch.job == DataModels.Job.WARRIOR)
+			"mage":
+				matches = (ch.job == DataModels.Job.MAGE)
+			"priest":
+				matches = (ch.job == DataModels.Job.PRIEST)
+		
+		if not matches:
+			continue
+		
+		# 应用属性加成
+		match stat:
+			"hp":
+				ch.max_hp += value
+				ch.hp += value
+			"atk":
+				ch.attack += value
+			"def":
+				ch.defense += value
+			"penetrate":
+				# 穿透在战斗时生效，不计入基础属性
+				pass
+
+
+## 刷新所有角色的遗物加成 (获得/失去遗物时调用)
+static func refresh_all_characters_relics() -> void:
+	if not is_instance_valid(GameManager.board_data):
+		return
+	
+	var bd: BoardData = GameManager.board_data
+	
+	# 刷新棋盘上的角色
+	for i in range(BoardData.BOARD_SLOTS):
+		var ch: DataModels.CharacterData = bd.get_character_at_index(i)
+		if ch != null:
+			recalc_stats(ch, true)
+	
+	# 刷新宿舍里的角色
+	for i in range(bd.dorm_characters.size()):
+		var ch: DataModels.CharacterData = bd.dorm_characters[i]
+		if ch != null:
+			recalc_stats(ch, true)
+	
+	print(">>> [CharacterFactory] 已刷新所有角色的遗物加成")
 
 
 # ---- 属性预览 (调试用) ----

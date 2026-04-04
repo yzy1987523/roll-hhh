@@ -92,6 +92,9 @@ static func advance_character(ch: DM.CharacterData, advanced_job: int) -> bool:
 	ch.skill_id = ADVANCED_BASE[advanced_job]["skill_id"]
 	ch.skill_level = CharacterFactory.calc_skill_level(ch.level)
 
+	# 应用遗物加成
+	CharacterFactory._apply_stat_buff_relics(ch)
+
 	print(">>> [JobAdvanced] %s 转职为 %s Lv.%d (HP:%d ATK:%d DEF:%d)" % [
 		old_name, get_advanced_job_name(advanced_job), ch.level,
 		ch.max_hp, ch.attack, ch.defense

@@ -122,6 +122,8 @@ func add_relic(relic: DM.ItemData) -> void:
 	relics.append(relic)
 	relics_changed.emit()
 	print(">>> [GameManager] 获得遗物: %s" % relic.name)
+	# 刷新所有角色的遗物加成
+	CharacterFactory.refresh_all_characters_relics()
 	_auto_save()
 
 # ---- 生命周期 ----
