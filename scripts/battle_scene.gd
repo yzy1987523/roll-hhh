@@ -396,8 +396,8 @@ func _on_item_use_pressed(slot_index: int) -> void:
 		return
 
 	# 即时使用
-	var success := ItemDatabase.use_consumable(item)
-	if success:
+	var result := ItemDatabase.use_consumable(item)
+	if result.success:
 		GameManager.remove_item(slot_index)
 		_refresh_item_slots()
 	_hide_item_detail()

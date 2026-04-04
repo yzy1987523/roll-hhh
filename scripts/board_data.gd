@@ -69,6 +69,16 @@ func get_character_at_index(index: int) -> DataModels.CharacterData:
 	return board[index]
 
 
+## 获取角色在棋盘上的索引
+func get_character_index(ch: DataModels.CharacterData) -> int:
+	if ch == null:
+		return -1
+	for i in range(BOARD_SLOTS):
+		if board[i] == ch:
+			return i
+	return -1
+
+
 ## 放置角色到棋盘指定位置, 成功返回 true
 func place_character(ch: DataModels.CharacterData, pos: Vector2i) -> bool:
 	if not is_valid_pos(pos):

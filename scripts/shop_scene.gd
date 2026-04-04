@@ -243,11 +243,21 @@ func _get_actual_price(item: DataModels.ItemData) -> int:
 
 
 func _input(event: InputEvent) -> void:
+	# 如果弹窗打开，不处理点击
+	if PopupSystem.is_open():
+		return
+
 	# 处理商品点击
 	if event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
 		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
-			_check_item_click()
+			# 检查点击是否在商店窗口内
+			var shop_window = $ShopWindow
+			if shop_window and shop_window.get_global_rect().has_point(get_global_mouse_position()):
+				_check_item_click()
+			else:
+				# 点击在商店窗口外，关闭商店
+				_on_close_pressed()
 
 
 func _check_item_click() -> void:

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bmk4doin0a0aw"
-path="res://.godot/imported/speed3.png-e93a908088b372073819752cc94fb91a.ctex"
+uid="uid://ttf1hm8qb13o"
+path="res://.godot/imported/pop.png-a5a4af313c9a1994f3bac7948c413848.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/sprites/UI/items/smallItem/speed3.png"
-dest_files=["res://.godot/imported/speed3.png-e93a908088b372073819752cc94fb91a.ctex"]
+source_file="res://art/sprites/UI/panels/pop.png"
+dest_files=["res://.godot/imported/pop.png-a5a4af313c9a1994f3bac7948c413848.ctex"]
 
 [params]
 
