@@ -383,31 +383,40 @@ func _setup_dorm_panel() -> void:
 	dorm_panel = PanelContainer.new()
 	dorm_panel.visible = false
 	dorm_panel.set_anchors_preset(Control.PRESET_CENTER)
+	dorm_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	dorm_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 	dorm_panel.z_index = 51  # 确保在遮罩之上，在角色之上
-	# 宿舍尺寸：4列 * 140 + 3间隔 * 10 + padding
-	dorm_panel.custom_minimum_size = Vector2(4 * 140 + 3 * 10 + 40, 4 * 140 + 3 * 10 + 100)
-	dorm_panel.offset_left = -(dorm_panel.custom_minimum_size.x / 2)
-	dorm_panel.offset_top = -(dorm_panel.custom_minimum_size.y / 2)
-	dorm_panel.offset_right = dorm_panel.custom_minimum_size.x / 2
-	dorm_panel.offset_bottom = dorm_panel.custom_minimum_size.y / 2
+	# 宿舍尺寸：800x1000
+	dorm_panel.custom_minimum_size = Vector2(800, 1000)
+	dorm_panel.offset_left = -400.0
+	dorm_panel.offset_top = -500.0
+	dorm_panel.offset_right = 400.0
+	dorm_panel.offset_bottom = 500.0
+	
+	# 移除 PanelContainer 默认黑底
+	var empty_style := StyleBoxEmpty.new()
+	dorm_panel.add_theme_stylebox_override("panel", empty_style)
 	
 	# 使用panel.png作为背景
 	var panel_texture := preload("res://art/sprites/UI/panels/panel.png")
 	var bg := TextureRect.new()
+	bg.name = "PanelBg"
 	bg.texture = panel_texture
 	bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
 	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	dorm_panel.add_child(bg)
+	dorm_panel.move_child(bg, 0)  # 确保背景在最底层
 	
 	add_child(dorm_panel)
 
 
 func _refresh_dorm_panel() -> void:
-	# 清空旧内容
+	# 清空旧内容（保留背景）
 	for child in dorm_panel.get_children():
-		child.queue_free()
+		if child.name != "PanelBg":
+			child.queue_free()
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 12)
@@ -418,7 +427,7 @@ func _refresh_dorm_panel() -> void:
 	vbox.add_child(title_row)
 	
 	var title := Label.new()
-	title.text = LocalizationSystem.get_text("game_board.dorm_title", {"count": GameManager.board_data.dormitory.size(), "max": BoardData.DORM_CAPACITY})
+	title.text = "宿  舍"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 22)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -431,12 +440,18 @@ func _refresh_dorm_panel() -> void:
 	close_btn.pressed.connect(_on_dorm_close)
 	title_row.add_child(close_btn)
 
+	# 格子居中容器
+	var grid_center := CenterContainer.new()
+	grid_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(grid_center)
+
 	# 4x4 网格
 	var grid := GridContainer.new()
 	grid.columns = 4
 	grid.add_theme_constant_override("h_separation", 10)
 	grid.add_theme_constant_override("v_separation", 10)
-	vbox.add_child(grid)
+	grid_center.add_child(grid)
 
 	# 获取排序后的宿舍索引（按等级从高到低）
 	_dorm_sort_order.clear()
@@ -466,6 +481,10 @@ func _create_dorm_cell(index: int) -> Control:
 	var container := PanelContainer.new()
 	container.custom_minimum_size = Vector2(140, 140)
 	container.mouse_filter = Control.MOUSE_FILTER_STOP
+	
+	# 移除 PanelContainer 默认黑底
+	var empty_style := StyleBoxEmpty.new()
+	container.add_theme_stylebox_override("panel", empty_style)
 	
 	# 背景层（cell_0）
 	var bg := TextureRect.new()
