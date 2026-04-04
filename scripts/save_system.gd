@@ -104,6 +104,8 @@ func _build_save_data() -> Dictionary:
 	data["current_round"] = GameManager.current_round
 	data["cycle_count"] = GameManager.cycle_count
 	data["battle_turn"] = GameManager.battle_turn
+	data["shop_last_refresh_round"] = GameManager.shop_last_refresh_round
+	data["shop_items_data"] = GameManager.shop_items_data
 
 	# 棋盘角色
 	var board_chars: Array = []
@@ -147,6 +149,8 @@ func _apply_save(data: Dictionary) -> void:
 	GameManager.current_round = data.get("current_round", 1)
 	GameManager.cycle_count = data.get("cycle_count", 0)
 	GameManager.battle_turn = data.get("battle_turn", 0)
+	GameManager.shop_last_refresh_round = data.get("shop_last_refresh_round", -1)
+	GameManager.shop_items_data = data.get("shop_items_data", [])
 
 	# 清空棋盘再填充
 	GameManager.board_data.clear_board()

@@ -43,6 +43,8 @@ var max_energy: int = DEFAULT_MAX_ENERGY
 var battle_turn: int = 0
 var current_round: int = DEFAULT_ROUND
 var cycle_count: int = 0  # 完整循环次数 (每9轮+1)
+var shop_last_refresh_round: int = -1  # 商店上次刷新的回合数
+var shop_items_data: Array = []  # 商店商品数据 [{"id": int, "is_relic": bool, "sold": bool}, ...]
 
 # ---- 教程状态 ----
 var tutorial_completed: bool = false  # 新手教程是否已完成

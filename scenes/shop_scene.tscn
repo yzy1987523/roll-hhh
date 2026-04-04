@@ -29,15 +29,15 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -400.0
-offset_top = -600.0
+offset_top = -500.0
 offset_right = 400.0
-offset_bottom = 600.0
+offset_bottom = 500.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="VBox" type="VBoxContainer" parent="ShopWindow"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 16
 
 [node name="TitleBar" type="HBoxContainer" parent="ShopWindow/VBox"]
 layout_mode = 2
@@ -51,16 +51,16 @@ text = "商  店"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="GoldLabel" type="Label" parent="ShopWindow/VBox/TitleBar"]
+[node name="RoundLabel" type="Label" parent="ShopWindow/VBox/TitleBar"]
 layout_mode = 2
-custom_minimum_size = Vector2(150, 0)
-text = "💰 0"
+custom_minimum_size = Vector2(120, 0)
+text = "回合 1"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="CloseButton" type="TextureButton" parent="ShopWindow/VBox/TitleBar"]
 layout_mode = 2
-custom_minimum_size = Vector2(40, 40)
+custom_minimum_size = Vector2(80, 80)
 stretch_mode = 5
 
 [node name="ItemSection" type="VBoxContainer" parent="ShopWindow/VBox"]
@@ -73,12 +73,14 @@ layout_mode = 2
 text = "道  具"
 horizontal_alignment = 1
 
-[node name="ItemContainer" type="HFlowContainer" parent="ShopWindow/VBox/ItemSection"]
+[node name="ItemCenter" type="CenterContainer" parent="ShopWindow/VBox/ItemSection"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/h_separation = 30
-theme_override_constants/v_separation = 30
+
+[node name="ItemContainer" type="HBoxContainer" parent="ShopWindow/VBox/ItemSection/ItemCenter"]
+layout_mode = 2
+theme_override_constants/separation = 20
 
 [node name="RelicSection" type="VBoxContainer" parent="ShopWindow/VBox"]
 layout_mode = 2
@@ -90,14 +92,17 @@ layout_mode = 2
 text = "遗  物"
 horizontal_alignment = 1
 
-[node name="RelicContainer" type="HFlowContainer" parent="ShopWindow/VBox/RelicSection"]
+[node name="RelicCenter" type="CenterContainer" parent="ShopWindow/VBox/RelicSection"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/h_separation = 30
-theme_override_constants/v_separation = 30
+
+[node name="RelicContainer" type="HBoxContainer" parent="ShopWindow/VBox/RelicSection/RelicCenter"]
+layout_mode = 2
+theme_override_constants/separation = 20
 
 [node name="BottomBar" type="HBoxContainer" parent="ShopWindow/VBox"]
+visible = false
 layout_mode = 2
 custom_minimum_size = Vector2(0, 70)
 theme_override_constants/separation = 16
