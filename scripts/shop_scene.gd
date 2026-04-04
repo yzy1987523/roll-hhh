@@ -38,6 +38,16 @@ func _ready() -> void:
 	if refresh_btn:
 		refresh_btn.pressed.connect(_on_refresh_pressed)
 
+	# 设置遮罩层mouse_filter，阻止点击穿透到下层
+	var dark_overlay = $DarkOverlay
+	if dark_overlay:
+		dark_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	
+	# 设置商店窗口z_index，确保在角色之上
+	var shop_window = $ShopWindow
+	if shop_window:
+		shop_window.z_index = 50
+
 	# 初始打开商店时刷新
 	_refresh_shop()
 	print(">>> [Shop] 商店已打开")
@@ -233,11 +243,21 @@ func _get_actual_price(item: DataModels.ItemData) -> int:
 
 
 func _input(event: InputEvent) -> void:
+	# 如果弹窗打开，不处理点击
+	if PopupSystem.is_open():
+		return
+
 	# 处理商品点击
 	if event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
 		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
-			_check_item_click()
+			# 检查点击是否在商店窗口内
+			var shop_window = $ShopWindow
+			if shop_window and shop_window.get_global_rect().has_point(get_global_mouse_position()):
+				_check_item_click()
+			else:
+				# 点击在商店窗口外，关闭商店
+				_on_close_pressed()
 
 
 func _check_item_click() -> void:

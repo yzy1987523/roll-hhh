@@ -291,8 +291,13 @@
 				"9_name": "Priest Robe"
 			},
 			"settings": {
+				"clear_save": "Clear Save",
+				"clear_save_confirm": "Save Cleared!",
 				"close": "Close",
+				"language": "Language",
 				"music": "Music",
+				"reset_confirm": "Tutorial Reset!",
+				"reset_tutorial": "Reset Tutorial",
 				"sound": "Sound",
 				"title": "Settings"
 			},
@@ -645,8 +650,13 @@
 				"9_name": "牧师长袍"
 			},
 			"settings": {
+				"clear_save": "清空存档",
+				"clear_save_confirm": "存档已清空！",
 				"close": "关闭",
+				"language": "语言",
 				"music": "音乐",
+				"reset_confirm": "教程已重置！",
+				"reset_tutorial": "重置教程",
 				"sound": "音效",
 				"title": "设置"
 			},

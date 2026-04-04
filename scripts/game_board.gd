@@ -27,7 +27,7 @@ var SELECT_FRAMES: Array[Texture2D] = []
 @onready var spawn_warrior: TextureButton = $MainLayout/BottomBar/SpawnRow/SpawnButtons/SpawnWarrior
 @onready var spawn_mage: TextureButton = $MainLayout/BottomBar/SpawnRow/SpawnButtons/SpawnMage
 @onready var spawn_priest: TextureButton = $MainLayout/BottomBar/SpawnRow/SpawnButtons/SpawnPriest
-@onready var end_turn_button: Button = $MainLayout/DetailActionBar/EndTurnButton
+@onready var end_turn_button: TextureButton = $MainLayout/DetailActionBar/EndTurnButton
 @onready var item_bar: HBoxContainer = $MainLayout/MiddleBar/ItemBar
 @onready var dorm_button: TextureButton = $MainLayout/MiddleBar/DormButton
 @onready var shop_button: TextureButton = $MainLayout/MiddleBar/ShopButton
@@ -38,18 +38,20 @@ var SELECT_FRAMES: Array[Texture2D] = []
 @onready var name_label: Label = $MainLayout/DetailActionBar/DetailPanel/VBox/NameLabel
 @onready var detail_label: Label = $MainLayout/DetailActionBar/DetailPanel/VBox/DetailLabel
 @onready var hint_label: Label = $MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow/HintLabel
-@onready var sacrifice_button: Button = $MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow/SacrificeButton
+@onready var sacrifice_button: TextureButton = $MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow/SacrificeButton
+@onready var sacrifice_label: Label = $MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow/SacrificeButton/Label
 
 # ---- 设置面板节点 ----
 @onready var settings_panel: PanelContainer = $SettingsPanel
 @onready var settings_vbox: VBoxContainer = $SettingsPanel/SettingsVBox
-@onready var settings_title: Label = $SettingsPanel/SettingsVBox/SettingsTitle
+@onready var settings_title: Label = $SettingsPanel/SettingsVBox/TitleBar/SettingsTitle
 @onready var language_button: Button = $SettingsPanel/SettingsVBox/LanguageRow/LanguageButton
 @onready var language_label: Label = $SettingsPanel/SettingsVBox/LanguageRow/LanguageLabel
 @onready var volume_slider: HSlider = $SettingsPanel/SettingsVBox/VolumeRow/VolumeSlider
 @onready var volume_label: Label = $SettingsPanel/SettingsVBox/VolumeRow/VolumeLabel
 @onready var reset_tutorial_button: Button = $SettingsPanel/SettingsVBox/ResetTutorialButton
-@onready var close_settings_button: Button = $SettingsPanel/SettingsVBox/CloseButton
+@onready var clear_save_button: Button = $SettingsPanel/SettingsVBox/ClearSaveButton
+@onready var close_settings_button: TextureButton = $SettingsPanel/SettingsVBox/TitleBar/CloseButton
 @onready var reset_confirm_label: Label = $SettingsPanel/ResetConfirmLabel
 
 # ---- 常量 ----
@@ -107,6 +109,7 @@ const ITEM_SLOT_COUNT := 3
 var item_slot_nodes: Array = []
 var item_slot_labels: Array = []
 var item_slot_overlays: Array = []
+var item_slot_icons: Array = []  # 道具图片
 
 # ---- 道具详情弹窗 ----
 var item_detail_popup: PanelContainer = null
@@ -115,9 +118,11 @@ var item_detail_popup_slot: int = -1
 var item_detail_visible: bool = false
 
 # ---- 目标选择指针 ----
-var target_cursor: Control = null
 var is_selecting_target: bool = false
 var target_select_item_slot: int = -1
+
+# ---- 遗物提示控制 ----
+var _relic_tip_showing: bool = false
 
 # ---- 教程系统 ----
 var tutorial_instance: Control = null
@@ -175,12 +180,14 @@ func _connect_signals() -> void:
 	GameManager.energy_changed.connect(_on_energy_changed)
 	GameManager.round_changed.connect(_on_round_changed)
 	GameManager.relics_changed.connect(_on_relics_changed)
+	GameManager.items_changed.connect(_on_items_changed)
 	relic_prev_button.pressed.connect(_on_relic_prev_pressed)
 	relic_next_button.pressed.connect(_on_relic_next_pressed)
 	# 设置面板信号
 	language_button.pressed.connect(_on_language_toggled)
 	volume_slider.value_changed.connect(_on_volume_changed)
 	reset_tutorial_button.pressed.connect(_on_reset_tutorial_pressed)
+	clear_save_button.pressed.connect(_on_clear_save_pressed)
 	close_settings_button.pressed.connect(_on_close_settings)
 	# 语言切换信号
 	LocalizationSystem.language_changed.connect(_on_localization_changed)
@@ -313,7 +320,6 @@ func _setup_board_ui() -> void:
 		cell.gui_input.connect(_on_cell_gui_input.bind(i))
 
 		grid_container.add_child(cell)
-		cell_rects.append(bg)
 		cell_labels.append(lbl)
 		cell_panels.append(cell)
 		cell_sprites.append(sprite)
@@ -340,7 +346,7 @@ func _update_character_detail_panel() -> void:
 				ch.level, ch.hp, ch.max_hp, ch.attack, ch.defense
 			]
 			var energy := GameManager.calc_sacrifice_energy(ch.level)
-			sacrifice_button.text = "献祭\n获得 %d 能量" % energy
+			sacrifice_label.text = "献祭\n获得 %d 能量" % energy
 			sacrifice_button.visible = true
 			return
 	
@@ -366,11 +372,13 @@ func _setup_dorm_panel() -> void:
 	dorm_backdrop.visible = false
 	dorm_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	dorm_backdrop.gui_input.connect(_on_dorm_backdrop_clicked)
+	dorm_backdrop.z_index = 50  # 设置层级
 	add_child(dorm_backdrop)
 	
 	dorm_panel = PanelContainer.new()
 	dorm_panel.visible = false
 	dorm_panel.set_anchors_preset(Control.PRESET_CENTER)
+	dorm_panel.z_index = 51  # 确保在遮罩之上，在角色之上
 	# 宿舍尺寸：4列 * 140 + 3间隔 * 10 + padding
 	dorm_panel.custom_minimum_size = Vector2(4 * 140 + 3 * 10 + 40, 4 * 140 + 3 * 10 + 100)
 	dorm_panel.offset_left = -(dorm_panel.custom_minimum_size.x / 2)
@@ -1386,22 +1394,27 @@ func _on_round_changed(new_round: int) -> void:
 	round_label.text = LocalizationSystem.get_text("game_board.round", {"value": new_round})
 
 
+func _on_items_changed() -> void:
+	_refresh_item_slots()
+	print(">>> [GameBoard] 道具改变，刷新道具栏，当前道具数量: %d" % GameManager.items.size())
+
+
 # ---- 角色生成 (任务 2.2) ----
 
 func _on_spawn_pressed(job: int) -> void:
 	# 动画进行中，禁用连续点击
 	if is_spawning:
 		return
+	
+	# 检查棋盘是否已满
+	if GameManager.board_data.is_board_full():
+		print(">>> [GameBoard] 生成失败: 棋盘已满")
+		TipManager.show_tip("棋盘格已满")
+		return
 
 	if not GameManager.spend_energy(1):
 		print(">>> [GameBoard] 生成失败: 能量不足")
 		TipManager.show_tip("能量不足")
-		return
-
-	if GameManager.board_data.is_board_full():
-		GameManager.restore_energy(1)
-		print(">>> [GameBoard] 生成失败: 棋盘已满")
-		TipManager.show_tip("棋盘格已满")
 		return
 
 	var level: int = randi_range(1, 3)
@@ -1688,6 +1701,12 @@ func _drag_to_dorm() -> void:
 	var pos: Vector2i = BoardData.index_to_pos(drag_index)
 	bd.board_to_dormitory(pos)
 	print(">>> [GameBoard] 拖拽存入宿舍: %s Lv.%d" % [ch.get_job_name(), ch.level])
+	
+	# 重置拖拽状态，确保高亮被隐藏
+	is_dragging = false
+	drag_index = -1
+	merge_targets.clear()
+	
 	selected_index = -1
 	_refresh_board_display()
 	_update_character_detail_panel()
@@ -1696,35 +1715,65 @@ func _drag_to_dorm() -> void:
 # ---- 遗物栏操作（常驻显示）----
 
 func _refresh_relic_panel() -> void:
+	# 确保遗物面板可见
+	relic_panel.modulate = Color.WHITE
+	
+	# 添加 bar.png 背景到 RelicPanel（如果还没有）
+	if not relic_panel.has_node("RelicBarBg"):
+		var bar_texture := preload("res://art/sprites/UI/panels/bar.png")
+		var bg := TextureRect.new()
+		bg.name = "RelicBarBg"
+		bg.texture = bar_texture
+		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bg.z_index = -1  # 确保在最底层
+		relic_panel.add_child(bg)
+		relic_panel.move_child(bg, 0)  # 移到最底层
+	
+	# 设置遗物栏高度为80（适应bar.png和遗物图标）
+	relic_panel.custom_minimum_size = Vector2(0, 80)
+	
+	# 设置遗物列表间隔为10
+	relic_list.add_theme_constant_override("separation", 10)
+	
 	# 清空旧内容
 	for child in relic_list.get_children():
 		child.queue_free()
 	
-	# 显示所有遗物
+	# 显示所有遗物（只显示图片）
 	for i in range(GameManager.relics.size()):
 		var relic: DataModels.ItemData = GameManager.relics[i]
 		var relic_item: Button = Button.new()
-		relic_item.custom_minimum_size = Vector2(80, 60)
-		relic_item.tooltip_text = "%s\n%s" % [relic.name, relic.description]
-		relic_item.pressed.connect(_on_relic_pressed.bind(relic))
+		relic_item.custom_minimum_size = Vector2(60, 60)
+		# 移除tooltip，使用按住显示
+		# relic_item.tooltip_text = "%s\n%s" % [relic.name, relic.description]
 		
-		var vbox := VBoxContainer.new()
-		relic_item.add_child(vbox)
-
-		var name_lbl := Label.new()
-		name_lbl.text = relic.name
-		name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_lbl.add_theme_font_size_override("font_size", 20)
-		vbox.add_child(name_lbl)
-
-		var count_lbl := Label.new()
-		count_lbl.text = LocalizationSystem.get_text("game_board.relic_count", {"count": relic.stack_count})
-		count_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		count_lbl.add_theme_font_size_override("font_size", 18)
-		vbox.add_child(count_lbl)
+		# 移除按钮的默认背景（去掉黑底）
+		var empty_style := StyleBoxEmpty.new()
+		relic_item.add_theme_stylebox_override("normal", empty_style)
+		relic_item.add_theme_stylebox_override("hover", empty_style)
+		relic_item.add_theme_stylebox_override("pressed", empty_style)
+		relic_item.add_theme_stylebox_override("disabled", empty_style)
+		
+		# 只添加图片
+		var texture_rect := TextureRect.new()
+		texture_rect.texture = _get_relic_texture(relic)
+		texture_rect.expand_mode = TextureRect.EXPAND_FIT_HEIGHT
+		texture_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		texture_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+		texture_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		relic_item.add_child(texture_rect)
 
 		relic_list.add_child(relic_item)
+		
+		# 连接事件（在添加到场景树后）
+		relic_item.pressed.connect(_on_relic_pressed.bind(relic))
+		relic_item.button_down.connect(_on_relic_button_down.bind(relic))
+		relic_item.button_up.connect(_on_relic_button_up)
+		relic_item.mouse_entered.connect(_on_relic_mouse_entered.bind(relic))
+		relic_item.mouse_exited.connect(_on_relic_mouse_exited)
 	
 	# 更新翻页按钮状态：遗物未满时半透明禁用
 	await get_tree().process_frame  # 等待布局更新
@@ -1735,9 +1784,59 @@ func _refresh_relic_panel() -> void:
 	relic_next_button.modulate = Color(1, 1, 1, 0.3) if not need_scroll else Color.WHITE
 
 
+## 获取遗物图片
+func _get_relic_texture(relic: DataModels.ItemData) -> Texture2D:
+	# 遗物图片ID映射
+	var available_relic_ids := [4, 5, 6, 7, 8, 9, 20, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45]
+	var img_id: int = available_relic_ids[relic.id % available_relic_ids.size()]
+	var path := "res://art/sprites/UI/items/relic/relic_%03d.png" % img_id
+	var tex := load(path) as Texture2D
+	if tex:
+		return tex
+	
+	# 如果加载失败，返回一个默认颜色纹理
+	var image := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.4, 0.3, 0.5))
+	var default_tex := ImageTexture.create_from_image(image)
+	return default_tex
+
+
 func _on_relic_pressed(relic: DataModels.ItemData) -> void:
-	# 按下时显示详细信息（触屏支持）
+	# 点击时显示详细信息（如果提示未显示）
+	if not _relic_tip_showing:
+		TipManager.show_tip("%s\n%s" % [relic.name, relic.description], 2.0)
+		_relic_tip_showing = true
+		# 延迟重置标志
+		await get_tree().create_timer(2.0).timeout
+		_relic_tip_showing = false
 	print(">>> [GameBoard] 遗物详情: %s - %s" % [relic.name, relic.description])
+
+
+func _on_relic_button_down(relic: DataModels.ItemData) -> void:
+	# 按住时显示说明（触屏支持）
+	if not _relic_tip_showing:
+		TipManager.show_tip("%s\n%s" % [relic.name, relic.description], 10.0)
+		_relic_tip_showing = true
+
+
+func _on_relic_button_up() -> void:
+	# 松开时隐藏说明（延迟隐藏，避免闪烁）
+	await get_tree().create_timer(0.1).timeout
+	TipManager.hide_tip()
+	_relic_tip_showing = false
+
+
+func _on_relic_mouse_entered(relic: DataModels.ItemData) -> void:
+	# 悬停时显示说明
+	if not _relic_tip_showing:
+		TipManager.show_tip("%s\n%s" % [relic.name, relic.description], 10.0)
+		_relic_tip_showing = true
+
+
+func _on_relic_mouse_exited() -> void:
+	# 移出时隐藏说明
+	TipManager.hide_tip()
+	_relic_tip_showing = false
 
 
 func _on_relic_prev_pressed() -> void:
@@ -1753,6 +1852,7 @@ func _on_relic_next_pressed() -> void:
 
 
 func _on_relics_changed() -> void:
+	print(">>> [GameBoard] 遗物改变，刷新遗物面板，当前遗物数量: %d" % GameManager.relics.size())
 	_refresh_relic_panel()
 
 
@@ -1815,6 +1915,7 @@ func _setup_item_slots() -> void:
 	item_slot_nodes.clear()
 	item_slot_labels.clear()
 	item_slot_overlays.clear()
+	item_slot_icons.clear()
 
 	# 加载格子背景纹理
 	var cell_texture := preload("res://art/sprites/UI/items/smallItem/cell_0.png")
@@ -1823,33 +1924,45 @@ func _setup_item_slots() -> void:
 		var slot: Control = item_bar.get_child(i)
 		item_slot_nodes.append(slot)
 		
-		# 移除PanelContainer的默认样式（如果有）
-		if slot is PanelContainer:
-			var transparent_style := StyleBoxEmpty.new()
-			slot.add_theme_stylebox_override("panel", transparent_style)
-
 		# 清除旧内容
 		for child in slot.get_children():
 			child.queue_free()
 
-		# 背景纹理（使用cell_0.png）
+		# 背景纹理（cell_0.png，不透明）
 		var bg := TextureRect.new()
+		bg.name = "Background"
 		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.custom_minimum_size = Vector2(120, 120)  # 格子尺寸
 		bg.texture = cell_texture
-		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH  # 关键：使用FitWidth而非KeepSize
 		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		bg.modulate = Color(0.8, 0.8, 0.8, 0.9)
-		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE  # 让点击穿透到slot
+		bg.modulate = Color(0.8, 0.8, 0.8, 1.0)  # 不透明
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slot.add_child(bg)
 
-		# 标签显示道具名
+		# 居中容器（用于道具图片）
+		var center := CenterContainer.new()
+		center.name = "CenterContainer"
+		center.set_anchors_preset(Control.PRESET_FULL_RECT)
+		center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slot.add_child(center)
+
+		# 道具图片（100x100，格子120x120，留10px边距）
+		var icon := TextureRect.new()
+		icon.name = "ItemIcon"
+		icon.custom_minimum_size = Vector2(100, 100)
+		icon.expand_mode = TextureRect.EXPAND_FIT_HEIGHT
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.visible = false  # 初始隐藏
+		center.add_child(icon)
+		item_slot_icons.append(icon)
+
+		# 标签（隐藏，不显示文字）
 		var lbl := Label.new()
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		lbl.set_anchors_preset(Control.PRESET_CENTER)
-		lbl.add_theme_font_size_override("font_size", 16)
-		lbl.clip_text = true
-		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE  # 让点击穿透到slot
+		lbl.name = "Label"
+		lbl.visible = false  # 不显示文字
+		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slot.add_child(lbl)
 		item_slot_labels.append(lbl)
 
@@ -1858,14 +1971,56 @@ func _setup_item_slots() -> void:
 
 
 func _refresh_item_slots() -> void:
+	print(">>> [GameBoard] _refresh_item_slots 被调用，道具数量: %d" % GameManager.items.size())
 	for i in range(ITEM_SLOT_COUNT):
+		var bg: TextureRect = item_slot_nodes[i].get_node_or_null("Background")
+		
 		if i < GameManager.items.size():
 			var item: DataModels.ItemData = GameManager.items[i]
-			item_slot_labels[i].text = item.name
-			item_slot_nodes[i].modulate = Color.WHITE
+			print(">>> [GameBoard] 刷新道具格子 %d: %s (ID: %d)" % [i, item.name, item.id])
+			
+			# 显示道具图片
+			var icon: TextureRect = item_slot_icons[i]
+			if icon:
+				# 获取道具图片纹理
+				var tex := _get_item_texture(item)
+				icon.texture = tex
+				icon.visible = (tex != null)
+				print(">>> [GameBoard] 道具格子 %d 图片: %s, visible: %s" % [i, tex, icon.visible])
+			else:
+				print(">>> [GameBoard] 道具格子 %d 的 icon 为空！" % i)
+			
+			# 背景不透明
+			if bg:
+				bg.modulate = Color(0.8, 0.8, 0.8, 1.0)
 		else:
-			item_slot_labels[i].text = ""
-			item_slot_nodes[i].modulate = Color(0.5, 0.5, 0.5, 0.3)
+			# 空格子：隐藏道具图片，背景不透明
+			var icon: TextureRect = item_slot_icons[i]
+			if icon:
+				icon.visible = false
+			if bg:
+				bg.modulate = Color(0.8, 0.8, 0.8, 1.0)
+
+
+## 获取道具图片（类似遗物的映射逻辑）
+func _get_item_texture(item: DataModels.ItemData) -> Texture2D:
+	# 可用的道具图片ID列表（按道具ID顺序映射）
+	var available_item_images := [13, 15, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42]
+	
+	# 道具ID从1开始，数组索引从0开始
+	var img_id: int = available_item_images[item.id - 1]
+	var path := "res://art/sprites/UI/items/item/item_%03d.png" % img_id
+	
+	print(">>> [GameBoard] 尝试加载道具图片: ID=%d -> img_id=%d, 路径=%s" % [item.id, img_id, path])
+	
+	if ResourceLoader.exists(path):
+		var tex := load(path) as Texture2D
+		print(">>> [GameBoard] 加载成功: %s" % tex)
+		return tex
+	
+	# 如果加载失败，返回null
+	print(">>> [GameBoard] 道具图片加载失败: %s (路径: %s)" % [item.name, path])
+	return null
 
 
 # ---- 道具详情弹窗 ----
@@ -2038,14 +2193,25 @@ func _use_item_direct(slot_index: int) -> void:
 		return
 
 	var item: DataModels.ItemData = GameManager.items[slot_index]
-	var success: bool = ItemDatabase.use_consumable(item, -1)
+	var result: Dictionary = ItemDatabase.use_consumable(item, -1)
+	var success: bool = result.get("success", false)
+	var affected_target: int = result.get("target_index", -1)
+	
+	print(">>> [GameBoard] 使用道具 %s (直接使用), result: %s" % [item.name, result])
+	
 	if success:
 		GameManager.remove_item(slot_index)
 		_refresh_item_slots()
 		_refresh_board_display()
-		print(">>> [GameBoard] 使用道具: %s" % item.name)
+		
+		# 如果有受影响的目标，播放高亮动效
+		if affected_target >= 0:
+			print(">>> [GameBoard] 播放高亮动效，目标: %d" % affected_target)
+			_play_item_effect_highlight(affected_target)
 	else:
 		print(">>> [GameBoard] 使用道具失败: %s" % item.name)
+		# 显示失败提示
+		TipManager.show_tip("无法使用道具，棋盘格已满")
 	# 无论成功失败，都隐藏详情弹窗
 	_hide_item_detail()
 
@@ -2057,16 +2223,85 @@ func _use_item_on_target(target_index: int) -> void:
 		return
 
 	var item: DataModels.ItemData = GameManager.items[slot_index]
-	var success: bool = ItemDatabase.use_consumable(item, target_index)
+	var result: Dictionary = ItemDatabase.use_consumable(item, target_index)
+	var success: bool = result.get("success", false)
+	var affected_target: int = result.get("target_index", -1)
+	
+	print(">>> [GameBoard] 使用道具 %s (目标: %d), result: %s" % [item.name, target_index, result])
+	
 	if success:
 		GameManager.remove_item(slot_index)
 		_refresh_item_slots()
 		_refresh_board_display()
-		print(">>> [GameBoard] 对格 %d 使用道具: %s" % [target_index, item.name])
+		
+		# 播放高亮动效（使用target_index，如果result中没有affected_target）
+		if affected_target < 0:
+			affected_target = target_index
+		print(">>> [GameBoard] 播放高亮动效，目标: %d" % affected_target)
+		_play_item_effect_highlight(affected_target)
 	else:
 		print(">>> [GameBoard] 使用道具失败: %s" % item.name)
+		# 显示失败提示
+		TipManager.show_tip("无法使用道具，棋盘格已满")
 	# 无论成功失败，都结束目标选择
 	_end_target_selection()
+
+
+## 播放道具使用效果的高亮动效（0.5s红色高亮）
+func _play_item_effect_highlight(cell_index: int) -> void:
+	print(">>> [GameBoard] _play_item_effect_highlight 被调用，cell_index: %d" % cell_index)
+	print(">>> [GameBoard] is_dragging: %s, merge_targets: %s" % [is_dragging, merge_targets])
+	
+	# 强制结束拖拽状态，避免冲突
+	if is_dragging:
+		print(">>> [GameBoard] 警告：在拖拽状态下播放道具高亮，强制结束拖拽")
+		is_dragging = false
+		merge_targets.clear()
+		_update_merge_highlights()
+	
+	# 清理所有格子的颜色状态（关键：避免之前的红色状态残留）
+	print(">>> [GameBoard] 重置所有格子的颜色状态")
+	for i in range(BoardData.BOARD_SLOTS):
+		# 隐藏高亮效果层
+		cell_highlight_effects[i].visible = false
+		# 重置精灵颜色为白色
+		if cell_sprites[i] and is_instance_valid(cell_sprites[i]):
+			cell_sprites[i].modulate = Color.WHITE
+		# 重置背景颜色为原始颜色（根据格子位置计算）
+		if cell_rects[i] and is_instance_valid(cell_rects[i]):
+			var is_even: bool = (i / GRID_SIZE + i % GRID_SIZE) % 2 == 0
+			cell_rects[i].modulate = Color(0.5, 0.5, 0.5, 0.9) if is_even else Color(0.8, 0.8, 0.8, 0.7)
+	
+	if cell_index < 0 or cell_index >= cell_sprites.size():
+		print(">>> [GameBoard] 无效的 cell_index: %d (范围: 0-%d)" % [cell_index, cell_sprites.size() - 1])
+		return
+	
+	var sprite: Control = cell_sprites[cell_index]
+	if sprite == null or not is_instance_valid(sprite):
+		print(">>> [GameBoard] sprite 无效或为空")
+		return
+	
+	print(">>> [GameBoard] 开始播放高亮动效，格子: %d" % cell_index)
+	
+	# 创建高亮动画：红色闪烁
+	var tween := create_tween()
+	tween.set_parallel(false)
+	
+	# 0.25s 红色
+	tween.tween_property(sprite, "modulate", Color(2.0, 0.3, 0.3, 1.0), 0.25)
+	# 0.25s 恢复白色
+	tween.tween_property(sprite, "modulate", Color.WHITE, 0.25)
+	
+	# 同时播放格子背景的红色高亮
+	var bg: Control = cell_rects[cell_index]
+	if bg and is_instance_valid(bg):
+		var bg_tween := create_tween()
+		# 计算背景的正常颜色
+		var is_even: bool = (cell_index / GRID_SIZE + cell_index % GRID_SIZE) % 2 == 0
+		var normal_bg_color: Color = Color(0.5, 0.5, 0.5, 0.9) if is_even else Color(0.8, 0.8, 0.8, 0.7)
+		bg_tween.set_parallel(false)
+		bg_tween.tween_property(bg, "modulate", Color(1.5, 0.2, 0.2, 1.0), 0.25)
+		bg_tween.tween_property(bg, "modulate", normal_bg_color, 0.25)
 
 
 func _item_needs_target(item_id: int) -> bool:
@@ -2082,43 +2317,15 @@ func _item_needs_target(item_id: int) -> bool:
 func _start_target_selection(item_slot: int) -> void:
 	is_selecting_target = true
 	target_select_item_slot = item_slot
-	_show_target_cursor()
+	# 使用 TipManager 显示提示（持续显示直到手动隐藏）
+	TipManager.show_tip(LocalizationSystem.get_text("items.select_target"), 10.0)
 
 
 func _end_target_selection() -> void:
 	is_selecting_target = false
 	target_select_item_slot = -1
-	_hide_target_cursor()
-
-
-func _show_target_cursor() -> void:
-	if target_cursor == null:
-		target_cursor = Control.new()
-		target_cursor.name = "TargetCursor"
-		target_cursor.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-		var cursor_bg := ColorRect.new()
-		cursor_bg.set_anchors_preset(Control.PRESET_CENTER)
-		cursor_bg.color = Color(1.0, 0.8, 0.0, 0.15)
-		target_cursor.add_child(cursor_bg)
-
-		var cursor_lbl := Label.new()
-		cursor_lbl.text = LocalizationSystem.get_text("items.select_target")
-		cursor_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		cursor_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		cursor_lbl.set_anchors_preset(Control.PRESET_CENTER)
-		cursor_lbl.add_theme_color_override("font_color", Color(1.0, 0.9, 0.2))
-		cursor_lbl.add_theme_font_size_override("font_size", 28)
-		target_cursor.add_child(cursor_lbl)
-
-	add_child(target_cursor)
-	target_cursor.set_anchors_preset(Control.PRESET_CENTER)
-
-
-func _hide_target_cursor() -> void:
-	if target_cursor != null:
-		target_cursor.queue_free()
-		target_cursor = null
+	# 隐藏 TipManager 提示
+	TipManager.hide_tip()
 
 
 func _on_item_slot_input(event: InputEvent, slot_index: int) -> void:
@@ -2137,16 +2344,19 @@ func _use_item_at_slot(slot_index: int) -> void:
 	# 查找选中的角色
 	if selected_index < 0:
 		print(">>> [GameBoard] 使用道具失败: 请先选中一个角色")
+		TipManager.show_tip("请先选中一个角色")
 		return
 
 	var item: DataModels.ItemData = GameManager.items[slot_index]
-	var success: bool = ItemDatabase.use_consumable(item, selected_index)
+	var result: Dictionary = ItemDatabase.use_consumable(item, selected_index)
+	var success: bool = result.get("success", false)
 	if success:
 		GameManager.remove_item(slot_index)
 		_refresh_item_slots()
 		_refresh_board_display()
 	else:
 		print(">>> [GameBoard] 使用道具失败")
+		TipManager.show_tip("无法使用道具")
 
 
 # ---- 道具栏面板 ----
@@ -2172,6 +2382,7 @@ func _create_item_panel() -> void:
 	item_panel.offset_top = -110
 	item_panel.offset_right = 160
 	item_panel.offset_bottom = 110
+	item_panel.z_index = 50  # 设置层级，确保在角色之上
 	
 	# 添加 panel.png 背景
 	var panel_texture := preload("res://art/sprites/UI/panels/panel.png")
@@ -2243,7 +2454,8 @@ func _on_use_item(item_index: int) -> void:
 
 	# 需要指定目标的道具, 使用选中的格子
 	var target_idx: int = selected_index
-	var success: bool = ItemDatabase.use_consumable(item, target_idx)
+	var result: Dictionary = ItemDatabase.use_consumable(item, target_idx)
+	var success: bool = result.get("success", false)
 	if success:
 		GameManager.remove_item(item_index)
 		_refresh_item_panel()
@@ -2260,22 +2472,35 @@ func _on_settings_pressed() -> void:
 
 
 func _show_settings_panel() -> void:
-	# 添加 panel.png 背景（如果还没有）
-	if settings_panel.get_child_count() == 0 or not settings_panel.get_child(0).name == "PanelBg":
-		var panel_texture := preload("res://art/sprites/UI/panels/panel.png")
+	# 去掉面板黑底
+	var empty_style := StyleBoxEmpty.new()
+	settings_panel.add_theme_stylebox_override("panel", empty_style)
+	
+	# 添加 pop.png 背景（如果还没有）
+	if not settings_panel.has_node("PanelBg"):
+		var panel_texture := preload("res://art/sprites/UI/panels/pop.png")
 		var bg := TextureRect.new()
 		bg.name = "PanelBg"
 		bg.texture = panel_texture
-		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bg.z_index = -1
 		settings_panel.add_child(bg)
 		settings_panel.move_child(bg, 0)  # 移到最底层
 	
+	# 设置层级，确保在角色之上
+	settings_panel.z_index = 50
 	settings_panel.visible = true
 	_update_settings_ui()
 	_update_settings_texts()
+	
+	# 设置关闭按钮样式（使用close图片，去掉黑底）
+	_setup_close_button()
+	
+	# 设置功能按钮样式（使用pop.png作为背景）
+	_setup_function_buttons()
 
 
 func _hide_settings_panel() -> void:
@@ -2290,9 +2515,54 @@ func _update_settings_ui() -> void:
 func _update_settings_texts() -> void:
 	settings_title.text = LocalizationSystem.get_text("settings.title")
 	language_label.text = LocalizationSystem.get_text("settings.language")
+
+
+func _setup_close_button() -> void:
+	# TextureButton 已在场景中配置好，无需额外设置
+	pass
+
+
+func _setup_function_buttons() -> void:
+	# 设置切换语言按钮样式
+	_setup_pop_button(language_button)
+	
+	# 设置清存档按钮样式
+	_setup_pop_button(clear_save_button)
+	
+	# 设置重置教程按钮样式
+	_setup_pop_button(reset_tutorial_button)
+
+
+func _setup_pop_button(btn: Button) -> void:
+	# 去掉按钮默认背景
+	var empty_style := StyleBoxEmpty.new()
+	btn.add_theme_stylebox_override("normal", empty_style)
+	btn.add_theme_stylebox_override("hover", empty_style)
+	btn.add_theme_stylebox_override("pressed", empty_style)
+	btn.add_theme_stylebox_override("disabled", empty_style)
+	
+	# 设置按钮尺寸放大2倍
+	btn.custom_minimum_size = Vector2(480, 80)
+	
+	# 添加pop.png作为背景
+	if not btn.has_node("ButtonBg"):
+		var pop_texture := preload("res://art/sprites/UI/panels/pop.png")
+		var bg := TextureRect.new()
+		bg.name = "ButtonBg"
+		bg.texture = pop_texture
+		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bg.z_index = -1
+		btn.add_child(bg)
+		btn.move_child(bg, 0)
+	
+	# 设置字体大小
+	btn.add_theme_font_size_override("font_size", 32)
 	volume_label.text = LocalizationSystem.get_text("settings.volume")
 	reset_tutorial_button.text = LocalizationSystem.get_text("settings.reset_tutorial")
-	close_settings_button.text = LocalizationSystem.get_text("settings.close")
+	clear_save_button.text = LocalizationSystem.get_text("settings.clear_save")
 	_reset_confirm_label_visible(false)
 
 
@@ -2328,14 +2598,34 @@ func _update_language_button_text() -> void:
 
 
 func _refresh_game_board_texts() -> void:
-	# 更新底部按钮文本
-	spawn_warrior.text = LocalizationSystem.get_text("game_board.spawn_warrior")
-	spawn_mage.text = LocalizationSystem.get_text("game_board.spawn_mage")
-	spawn_priest.text = LocalizationSystem.get_text("game_board.spawn_priest")
-	end_turn_button.text = LocalizationSystem.get_text("game_board.end_turn")
-	dorm_button.text = LocalizationSystem.get_text("game_board.dorm")
-	shop_button.text = LocalizationSystem.get_text("game_board.shop")
-	encyclopedia_button.text = LocalizationSystem.get_text("game_board.encyclopedia")
+	# 更新底部按钮文本（通过 Label 子节点）
+	var warrior_label = spawn_warrior.get_node_or_null("Label")
+	if warrior_label:
+		warrior_label.text = LocalizationSystem.get_text("game_board.spawn_warrior")
+	
+	var mage_label = spawn_mage.get_node_or_null("Label")
+	if mage_label:
+		mage_label.text = LocalizationSystem.get_text("game_board.spawn_mage")
+	
+	var priest_label = spawn_priest.get_node_or_null("Label")
+	if priest_label:
+		priest_label.text = LocalizationSystem.get_text("game_board.spawn_priest")
+	
+	var end_turn_label = end_turn_button.get_node_or_null("Label")
+	if end_turn_label:
+		end_turn_label.text = LocalizationSystem.get_text("game_board.end_turn")
+	
+	var dorm_label = dorm_button.get_node_or_null("Label")
+	if dorm_label:
+		dorm_label.text = LocalizationSystem.get_text("game_board.dorm")
+	
+	var shop_label = shop_button.get_node_or_null("Label")
+	if shop_label:
+		shop_label.text = LocalizationSystem.get_text("game_board.shop")
+	
+	var encyclopedia_label = encyclopedia_button.get_node_or_null("Label")
+	if encyclopedia_label:
+		encyclopedia_label.text = LocalizationSystem.get_text("game_board.encyclopedia")
 
 
 func _on_volume_changed(value: float) -> void:
@@ -2344,13 +2634,28 @@ func _on_volume_changed(value: float) -> void:
 
 func _on_reset_tutorial_pressed() -> void:
 	GameManager.reset_tutorial()
-	_reset_confirm_label_visible(true)
+	_reset_confirm_label_visible(true, "settings.reset_confirm")
 
 
-func _reset_confirm_label_visible(visible: bool) -> void:
-	reset_confirm_label.visible = visible
-	if visible:
-		reset_confirm_label.text = LocalizationSystem.get_text("settings.reset_confirm")
+func _on_clear_save_pressed() -> void:
+	# 清空存档（保留图鉴）
+	SaveSystem.clear_game_save()
+	# 重置游戏状态
+	GameManager.reset_game()
+	# 刷新UI
+	_refresh_board_display()
+	_on_gold_changed(GameManager.gold)
+	_on_energy_changed(GameManager.energy)
+	_on_round_changed(GameManager.current_round)
+	# 显示提示
+	_reset_confirm_label_visible(true, "settings.clear_save_confirm")
+	print(">>> [GameBoard] 存档已清空")
+
+
+func _reset_confirm_label_visible(show_label: bool, text_key: String = "") -> void:
+	reset_confirm_label.visible = show_label
+	if show_label and text_key != "":
+		reset_confirm_label.text = LocalizationSystem.get_text(text_key)
 
 
 func _on_close_settings() -> void:

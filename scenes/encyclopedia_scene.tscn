@@ -53,7 +53,7 @@ vertical_alignment = 1
 
 [node name="CloseButton" type="TextureButton" parent="EncyclopediaWindow/VBox/TitleBar"]
 layout_mode = 2
-custom_minimum_size = Vector2(40, 40)
+custom_minimum_size = Vector2(80, 80)
 stretch_mode = 5
 
 [node name="MainHBox" type="HBoxContainer" parent="EncyclopediaWindow/VBox"]

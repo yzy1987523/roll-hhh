@@ -6,11 +6,14 @@ class_name ItemDatabase
 
 # ======== 道具使用逻辑 (从mechanics.json读取配置) ========
 
-## 使用道具, 返回是否成功
+## 使用道具, 返回结果字典 {success: bool, target_index: int}
 ## target_index: 指定角色的棋盘索引, -1 = 无需指定
-static func use_consumable(item: DataModels.ItemData, target_index: int = -1) -> bool:
+## 返回的 target_index: 受影响的目标索引（用于高亮），-1 = 无目标
+static func use_consumable(item: DataModels.ItemData, target_index: int = -1) -> Dictionary:
 	var bd: BoardData = GameManager.board_data
 	var target: DataModels.CharacterData = null
+	var affected_target_index: int = -1  # 受影响的目标索引
+
 	if target_index >= 0:
 		target = bd.get_character_at_index(target_index)
 
@@ -22,14 +25,16 @@ static func use_consumable(item: DataModels.ItemData, target_index: int = -1) ->
 
 	match effect_type:
 		"heal":
-			if target == null: return false
+			if target == null: return {"success": false, "target_index": -1}
 			target.heal(value)
+			affected_target_index = target_index
 			print(">>> [Item] %s 回复%d血, HP: %d/%d" % [target.get_job_name(), value, target.hp, target.max_hp])
 
 		"restore_energy":
 			GameManager.restore_energy(value)
 
 		"spawn_characters":
+			if bd.is_board_full(): return {"success": false, "target_index": -1}
 			var count: int = eff.get("count", 1)
 			var min_lv: int = eff.get("min_level", 1)
 			var max_lv: int = eff.get("max_level", 1)
@@ -41,7 +46,7 @@ static func use_consumable(item: DataModels.ItemData, target_index: int = -1) ->
 				bd.place_character_first_empty(ch)
 
 		"summon":
-			if bd.is_board_full(): return false
+			if bd.is_board_full(): return {"success": false, "target_index": -1}
 			var job: int = eff.get("job", 0)
 			var lv: int = eff.get("level", 1)
 			var ch := CharacterFactory.create_character(job, lv)
@@ -49,31 +54,36 @@ static func use_consumable(item: DataModels.ItemData, target_index: int = -1) ->
 
 		"level_up_random":
 			var chars: Array = bd.get_all_board_characters()
-			if chars.size() == 0: return false
+			if chars.size() == 0: return {"success": false, "target_index": -1}
 			var c: DataModels.CharacterData = chars[randi_range(0, chars.size() - 1)]
-			if c.level >= CharacterFactory.MAX_LEVEL: return false
+			if c.level >= CharacterFactory.MAX_LEVEL: return {"success": false, "target_index": -1}
 			c.level = mini(c.level + levels, CharacterFactory.MAX_LEVEL)
 			CharacterFactory.recalc_stats(c)
 			c.full_heal()
+			# 获取随机角色的索引
+			affected_target_index = bd.get_character_index(c)
 
 		"level_up_target":
-			if target == null or target.level >= CharacterFactory.MAX_LEVEL: return false
+			if target == null or target.level >= CharacterFactory.MAX_LEVEL: return {"success": false, "target_index": -1}
 			target.level = mini(target.level + levels, CharacterFactory.MAX_LEVEL)
 			CharacterFactory.recalc_stats(target)
 			target.full_heal()
+			affected_target_index = target_index
 
 		"temp_shield":
-			if target == null: return false
+			if target == null: return {"success": false, "target_index": -1}
 			target.max_hp += value
 			target.hp += value
+			affected_target_index = target_index
 
 		"stat_buff_target":
-			if target == null: return false
+			if target == null: return {"success": false, "target_index": -1}
 			var stat: String = eff.get("stat", "atk")
 			match stat:
 				"atk": target.attack += value
 				"def": target.defense += value
 				"hp": target.max_hp += value; target.hp += value
+			affected_target_index = target_index
 
 		"meta":
 			var key: String = eff.get("key", "")
@@ -82,8 +92,10 @@ static func use_consumable(item: DataModels.ItemData, target_index: int = -1) ->
 
 		"dice_of_fate":
 			var chars: Array = bd.get_all_board_characters()
-			if chars.size() == 0: return false
+			if chars.size() == 0: return {"success": false, "target_index": -1}
 			var c: DataModels.CharacterData = chars[randi_range(0, chars.size() - 1)]
+			# 获取随机角色的索引
+			affected_target_index = bd.get_character_index(c)
 			if randi_range(0, 1) == 0:
 				c.attack += 2
 				c.max_hp += 3
@@ -100,10 +112,10 @@ static func use_consumable(item: DataModels.ItemData, target_index: int = -1) ->
 
 		_:
 			print(">>> [Item] 未知道具效果类型: %s (ID: %d)" % [effect_type, item.id])
-			return false
+			return {"success": false, "target_index": -1}
 
 	print(">>> [Item] 使用道具: %s" % item.name)
-	return true
+	return {"success": true, "target_index": affected_target_index}
 
 
 # ======== 道具/遗物定义 (从mechanics.json读取) ========

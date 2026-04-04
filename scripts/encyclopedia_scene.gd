@@ -60,6 +60,9 @@ func _ready() -> void:
 		encyclopedia_window.add_child(bg)
 		encyclopedia_window.move_child(bg, 0)  # 移到最底层
 	
+	# 设置层级，确保在角色之上
+	encyclopedia_window.z_index = 50
+	
 	close_button.texture_normal = CLOSE_TEXTURE
 	close_button.pressed.connect(_on_close)
 	LocalizationSystem.language_changed.connect(_on_localization_changed)

@@ -2,26 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-<<<<<<<< HEAD:art/effects/fx01/char_041301.png.import
-uid="uid://c15184ff5c755dc0fa972"
-path="res://.godot/imported/char_041301.png-ee0d7078095c06073a23577f50f38f72.ctex"
-========
-uid="uid://c6gtktgdodww0"
+uid="uid://bthxxvq8vj2e"
 path="res://.godot/imported/FX1_00.png-7a3fbe68e2fa0c2331a5f711dbcd4d38.ctex"
->>>>>>>> dev-ai-buddy:art/effects/fx01/FX1_00.png.import
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-<<<<<<<< HEAD:art/effects/fx01/char_041301.png.import
-source_file="res://art/sprites/chars/char_04/char_041301.png"
-dest_files=["res://.godot/imported/char_041301.png-ee0d7078095c06073a23577f50f38f72.ctex"]
-========
 source_file="res://art/effects/fx01/FX1_00.png"
 dest_files=["res://.godot/imported/FX1_00.png-7a3fbe68e2fa0c2331a5f711dbcd4d38.ctex"]
->>>>>>>> dev-ai-buddy:art/effects/fx01/FX1_00.png.import
 
 [params]
 
