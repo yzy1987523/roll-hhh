@@ -16,6 +16,7 @@
 [ext_resource type="Texture2D" uid="uid://brok1s4jfwo2d" path="res://art/sprites/UI/items/item/item_033.png" id="13_sacrifice"]
 [ext_resource type="Texture2D" path="res://art/sprites/UI/items/smallItem/xianji.png" id="17_xianji"]
 [ext_resource type="Texture2D" uid="uid://b4u4vkmgj8nuw" path="res://art/sprites/UI/items/smallItem/spawner1.png" id="14_8auva"]
+[ext_resource type="Texture2D" path="res://art/sprites/UI/panels/endBtn.png" id="18_endbtn"]
 [ext_resource type="Texture2D" uid="uid://c25vh10f0w554" path="res://art/sprites/UI/items/smallItem/spawner2.png" id="15_hrnlr"]
 
 [node name="GameBoard" type="Control" unique_id=2062969073]
@@ -328,13 +329,26 @@ theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
 text = "提示文本"
 vertical_alignment = 1
 
-[node name="SacrificeButton" type="Button" parent="MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow" unique_id=945550919]
+[node name="SacrificeButton" type="TextureButton" parent="MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow" unique_id=945550919]
 custom_minimum_size = Vector2(144, 144)
+texture_normal = ExtResource("17_xianji")
 layout_mode = 2
-size_flags_vertical = 3
-text = "献祭\n获得 0 能量"
-alignment = 1
+size_flags_vertical = 4
+stretch_mode = 5
 visible = false
+
+[node name="Label" type="Label" parent="MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow/SacrificeButton" unique_id=945550931]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "献祭\n获得 0 能量"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="SacrificeIcon" type="TextureRect" parent="MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow/SacrificeButton" unique_id=945550928]
 layout_mode = 1
@@ -348,10 +362,27 @@ expand_mode = 1
 stretch_mode = 5
 modulate = Color(1, 1, 1, 0.5)
 
-[node name="EndTurnButton" type="Button" parent="MainLayout/DetailActionBar" unique_id=945550920]
-custom_minimum_size = Vector2(300, 0)
+[node name="EndTurnButton" type="TextureButton" parent="MainLayout/DetailActionBar" unique_id=945550920]
+custom_minimum_size = Vector2(216, 216)
+texture_normal = ExtResource("18_endbtn")
 layout_mode = 2
 text = "🗵 结束回合"
+
+size_flags_vertical = 4
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="MainLayout/DetailActionBar/EndTurnButton" unique_id=945550930]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 28
+text = "结束回合"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="SettingsPanel" type="PanelContainer" parent="." unique_id=1089472691]
 visible = false

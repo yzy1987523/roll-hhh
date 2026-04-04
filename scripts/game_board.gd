@@ -27,7 +27,7 @@ var SELECT_FRAMES: Array[Texture2D] = []
 @onready var spawn_warrior: TextureButton = $MainLayout/BottomBar/SpawnRow/SpawnButtons/SpawnWarrior
 @onready var spawn_mage: TextureButton = $MainLayout/BottomBar/SpawnRow/SpawnButtons/SpawnMage
 @onready var spawn_priest: TextureButton = $MainLayout/BottomBar/SpawnRow/SpawnButtons/SpawnPriest
-@onready var end_turn_button: Button = $MainLayout/DetailActionBar/EndTurnButton
+@onready var end_turn_button: TextureButton = $MainLayout/DetailActionBar/EndTurnButton
 @onready var item_bar: HBoxContainer = $MainLayout/MiddleBar/ItemBar
 @onready var dorm_button: TextureButton = $MainLayout/MiddleBar/DormButton
 @onready var shop_button: TextureButton = $MainLayout/MiddleBar/ShopButton
@@ -38,7 +38,8 @@ var SELECT_FRAMES: Array[Texture2D] = []
 @onready var name_label: Label = $MainLayout/DetailActionBar/DetailPanel/VBox/NameLabel
 @onready var detail_label: Label = $MainLayout/DetailActionBar/DetailPanel/VBox/DetailLabel
 @onready var hint_label: Label = $MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow/HintLabel
-@onready var sacrifice_button: Button = $MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow/SacrificeButton
+@onready var sacrifice_button: TextureButton = $MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow/SacrificeButton
+@onready var sacrifice_label: Label = $MainLayout/DetailActionBar/DetailPanel/VBox/BottomRow/SacrificeButton/Label
 
 # ---- 设置面板节点 ----
 @onready var settings_panel: PanelContainer = $SettingsPanel
@@ -342,7 +343,7 @@ func _update_character_detail_panel() -> void:
 				ch.level, ch.hp, ch.max_hp, ch.attack, ch.defense
 			]
 			var energy := GameManager.calc_sacrifice_energy(ch.level)
-			sacrifice_button.text = "献祭\n获得 %d 能量" % energy
+			sacrifice_label.text = "献祭\n获得 %d 能量" % energy
 			sacrifice_button.visible = true
 			return
 	
@@ -2087,7 +2088,8 @@ func _use_item_direct(slot_index: int) -> void:
 		return
 
 	var item: DataModels.ItemData = GameManager.items[slot_index]
-	var success: bool = ItemDatabase.use_consumable(item, -1)
+	var result: Dictionary = ItemDatabase.use_consumable(item, -1)
+	var success: bool = result.get("success", false)
 	if success:
 		GameManager.remove_item(slot_index)
 		_refresh_item_slots()
@@ -2106,7 +2108,8 @@ func _use_item_on_target(target_index: int) -> void:
 		return
 
 	var item: DataModels.ItemData = GameManager.items[slot_index]
-	var success: bool = ItemDatabase.use_consumable(item, target_index)
+	var result: Dictionary = ItemDatabase.use_consumable(item, target_index)
+	var success: bool = result.get("success", false)
 	if success:
 		GameManager.remove_item(slot_index)
 		_refresh_item_slots()
@@ -2189,7 +2192,8 @@ func _use_item_at_slot(slot_index: int) -> void:
 		return
 
 	var item: DataModels.ItemData = GameManager.items[slot_index]
-	var success: bool = ItemDatabase.use_consumable(item, selected_index)
+	var result: Dictionary = ItemDatabase.use_consumable(item, selected_index)
+	var success: bool = result.get("success", false)
 	if success:
 		GameManager.remove_item(slot_index)
 		_refresh_item_slots()
@@ -2293,7 +2297,8 @@ func _on_use_item(item_index: int) -> void:
 
 	# 需要指定目标的道具, 使用选中的格子
 	var target_idx: int = selected_index
-	var success: bool = ItemDatabase.use_consumable(item, target_idx)
+	var result: Dictionary = ItemDatabase.use_consumable(item, target_idx)
+	var success: bool = result.get("success", false)
 	if success:
 		GameManager.remove_item(item_index)
 		_refresh_item_panel()
