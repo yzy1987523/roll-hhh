@@ -1927,11 +1927,14 @@ func _setup_item_slots() -> void:
 
 
 func _refresh_item_slots() -> void:
+	print(">>> [GameBoard] _refresh_item_slots 被调用，道具数量: %d" % GameManager.items.size())
 	for i in range(ITEM_SLOT_COUNT):
 		var bg: TextureRect = item_slot_nodes[i].get_node_or_null("Background")
 		
 		if i < GameManager.items.size():
 			var item: DataModels.ItemData = GameManager.items[i]
+			print(">>> [GameBoard] 刷新道具格子 %d: %s (ID: %d)" % [i, item.name, item.id])
+			
 			# 显示道具图片
 			var icon: TextureRect = item_slot_icons[i]
 			if icon:
@@ -1939,6 +1942,9 @@ func _refresh_item_slots() -> void:
 				var tex := _get_item_texture(item)
 				icon.texture = tex
 				icon.visible = (tex != null)
+				print(">>> [GameBoard] 道具格子 %d 图片: %s, visible: %s" % [i, tex, icon.visible])
+			else:
+				print(">>> [GameBoard] 道具格子 %d 的 icon 为空！" % i)
 			
 			# 背景不透明
 			if bg:
@@ -1957,8 +1963,13 @@ func _get_item_texture(item: DataModels.ItemData) -> Texture2D:
 	# 道具图片ID映射（道具ID 1-22 对应图片ID 13-42）
 	var img_id: int = item.id + 12
 	var path := "res://art/sprites/UI/items/item/item_%03d.png" % img_id
+	
+	print(">>> [GameBoard] 尝试加载道具图片: ID=%d -> img_id=%d, 路径=%s" % [item.id, img_id, path])
+	
 	if ResourceLoader.exists(path):
-		return load(path) as Texture2D
+		var tex := load(path) as Texture2D
+		print(">>> [GameBoard] 加载成功: %s" % tex)
+		return tex
 	
 	# 如果加载失败，返回null
 	print(">>> [GameBoard] 道具图片加载失败: %s (路径: %s)" % [item.name, path])
