@@ -2203,6 +2203,18 @@ func _use_item_on_target(target_index: int) -> void:
 ## 播放道具使用效果的高亮动效（0.5s红色高亮）
 func _play_item_effect_highlight(cell_index: int) -> void:
 	print(">>> [GameBoard] _play_item_effect_highlight 被调用，cell_index: %d" % cell_index)
+	print(">>> [GameBoard] is_dragging: %s, merge_targets: %s" % [is_dragging, merge_targets])
+	
+	# 强制结束拖拽状态，避免冲突
+	if is_dragging:
+		print(">>> [GameBoard] 警告：在拖拽状态下播放道具高亮，强制结束拖拽")
+		is_dragging = false
+		merge_targets.clear()
+		_update_merge_highlights()
+	
+	# 隐藏所有高亮效果，避免冲突
+	for i in range(BoardData.BOARD_SLOTS):
+		cell_highlight_effects[i].visible = false
 	
 	if cell_index < 0 or cell_index >= cell_sprites.size():
 		print(">>> [GameBoard] 无效的 cell_index: %d (范围: 0-%d)" % [cell_index, cell_sprites.size() - 1])
@@ -2216,7 +2228,7 @@ func _play_item_effect_highlight(cell_index: int) -> void:
 	# 保存原始颜色
 	var original_modulate: Color = sprite.modulate
 	
-	print(">>> [GameBoard] 开始播放高亮动效，格子: %d" % cell_index)
+	print(">>> [GameBoard] 开始播放高亮动效，格子: %d, 原始颜色: %s" % [cell_index, original_modulate])
 	
 	# 创建高亮动画：红色闪烁
 	var tween := create_tween()
