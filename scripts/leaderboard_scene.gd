@@ -182,6 +182,7 @@ func _get_my_best_score() -> int:
 
 
 func _on_set_nickname() -> void:
+	SoundSystem.play_button_click()
 	var new_name: String = nickname_input.text.strip_edges()
 	if new_name == "":
 		return
@@ -199,6 +200,7 @@ func _on_set_nickname() -> void:
 
 
 func _on_back() -> void:
+	SoundSystem.play_button_click()
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 
 

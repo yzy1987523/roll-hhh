@@ -184,6 +184,7 @@ func _on_job_cell_input(event: InputEvent, job_id: int) -> void:
 	if event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
 		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
+			SoundSystem.play_button_click()
 			_select_job(job_id)
 
 
@@ -290,6 +291,7 @@ func _on_evolution_input(event: InputEvent, job_id: int, level: int) -> void:
 	if event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
 		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
+			SoundSystem.play_button_click()
 			_show_level_popup(job_id, level)
 
 
@@ -376,6 +378,7 @@ func _calc_defense(job_id: int, level: int) -> int:
 
 func _on_close() -> void:
 	print(">>> [Encyclopedia] 关闭图鉴")
+	SoundSystem.play_button_click()
 	queue_free()
 
 

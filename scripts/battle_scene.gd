@@ -271,11 +271,13 @@ func _refresh_relic_panel() -> void:
 
 
 func _on_relic_prev_pressed() -> void:
+	SoundSystem.play_button_click()
 	var scroll_width: int = int(relic_scroll.size.x)
 	relic_scroll.scroll_horizontal -= scroll_width
 
 
 func _on_relic_next_pressed() -> void:
+	SoundSystem.play_button_click()
 	var scroll_width: int = int(relic_scroll.size.x)
 	relic_scroll.scroll_horizontal += scroll_width
 
@@ -423,6 +425,7 @@ func _on_item_slot_input(event: InputEvent, slot_index: int) -> void:
 	if event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
 		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
+			SoundSystem.play_button_click()
 			_show_item_detail(slot_index)
 		elif mb.button_index == MOUSE_BUTTON_RIGHT and mb.pressed:
 			# 右键快速丢弃
@@ -607,6 +610,7 @@ func _on_play_pressed() -> void:
 		return
 	if is_playing:
 		return
+	SoundSystem.play_button_click()
 	is_playing = true
 	play_button.disabled = true
 	_play_turns()
@@ -626,6 +630,7 @@ func _play_turns() -> void:
 func _on_skip_pressed() -> void:
 	if battle_finished:
 		return
+	SoundSystem.play_button_click()
 	is_playing = false
 	play_button.disabled = true
 	skip_button.disabled = true
@@ -646,6 +651,7 @@ func _on_pause_pressed() -> void:
 	
 	# 如果战斗未开始，开始战斗
 	if not is_playing:
+		SoundSystem.play_button_click()
 		is_playing = true
 		# 开始播放后显示暂停图标
 		pause_button.icon = preload("res://art/sprites/UI/items/smallItem/pause.png")
@@ -653,6 +659,7 @@ func _on_pause_pressed() -> void:
 		_play_turns()
 		return
 	
+	SoundSystem.play_button_click()
 	# 切换暂停状态
 	is_paused = !is_paused
 	_static_is_paused = is_paused  # 同步静态变量
@@ -695,6 +702,9 @@ func _on_battle_end(result: int) -> void:
 
 func _handle_victory() -> void:
 	result_label.text = LocalizationSystem.get_text("battle.victory")
+
+	# 播放胜利音效
+	SoundSystem.play_victory()
 
 	# 全员满血恢复
 	GameManager.board_data.heal_all()
@@ -787,6 +797,7 @@ func _handle_draw() -> void:
 
 
 func _on_continue_pressed() -> void:
+	SoundSystem.play_button_click()
 	if GameManager.phase == GameManager.PHASE_GAME_OVER:
 		# 战败: 重置并回主菜单
 		GameManager.reset_after_defeat()
@@ -1566,6 +1577,8 @@ func _on_bullet_hit(target_idx: int, damage: int, bullet_type: int) -> void:
 
 	match bullet_type:
 		BULLET_TYPE_ATTACK:
+			# 播放命中音效
+			SoundSystem.play_bullet_hit()
 			# 对敌方造成伤害
 			if engine.enemy != null and engine.enemy.is_alive():
 				engine.enemy.take_damage(damage)
@@ -1734,6 +1747,8 @@ func _execute_player_attack_phase() -> void:
 
 		# 发射攻击子弹到敌人
 		_fire_bullet(BULLET_TYPE_ATTACK, damage, source_pos, enemy_pos, -1, bullet_job, bullet_tier)
+		# 播放攻击音效
+		SoundSystem.play_attack_fire()
 
 	# 2. 等待所有子弹命中（暂停感知）
 	await _wait_with_pause(0.5)

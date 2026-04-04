@@ -362,6 +362,7 @@ func _update_character_detail_panel() -> void:
 
 func _on_sacrifice_button_pressed() -> void:
 	if selected_index >= 0:
+		SoundSystem.play_button_click()
 		_sacrifice_character(selected_index)
 
 
@@ -884,6 +885,9 @@ func _merge_at(src_index: int, tgt_index: int) -> void:
 	if merged == null:
 		print(">>> [GameBoard] 合成失败")
 		return
+
+	# 播放合成音效
+	SoundSystem.play_merge()
 
 	# 移除两个原角色
 	bd.remove_character(BoardData.index_to_pos(src_index))
@@ -1410,6 +1414,9 @@ func _on_spawn_pressed(job: int) -> void:
 	if is_spawning:
 		return
 	
+	# 播放按钮点击音效
+	SoundSystem.play_button_click()
+	
 	# 检查棋盘是否已满
 	if GameManager.board_data.is_board_full():
 		print(">>> [GameBoard] 生成失败: 棋盘已满")
@@ -1577,6 +1584,7 @@ func _clear_spawn_cell_hint(_target_index: int) -> void:
 # ---- 宿舍操作 ----
 
 func _on_dorm_pressed() -> void:
+	SoundSystem.play_button_click()
 	dorm_visible = !dorm_visible
 	dorm_panel.visible = dorm_visible
 	dorm_backdrop.visible = dorm_visible
@@ -1585,6 +1593,7 @@ func _on_dorm_pressed() -> void:
 
 
 func _on_dorm_take_pressed(dorm_index: int) -> void:
+	SoundSystem.play_button_click()
 	if GameManager.board_data.is_board_full():
 		print(">>> [GameBoard] 取出失败: 棋盘已满")
 		TipManager.show_tip("棋盘格已满")
@@ -1606,6 +1615,7 @@ func _on_dorm_backdrop_clicked(event: InputEvent) -> void:
 
 
 func _on_dorm_close() -> void:
+	SoundSystem.play_button_click()
 	var bd: BoardData = GameManager.board_data
 	
 	# 执行所有标记移出的角色
@@ -1806,6 +1816,7 @@ func _get_relic_texture(relic: DataModels.ItemData) -> Texture2D:
 
 
 func _on_relic_pressed(relic: DataModels.ItemData) -> void:
+	SoundSystem.play_button_click()
 	# 点击时显示详细信息（如果提示未显示）
 	if not _relic_tip_showing:
 		TipManager.show_tip("%s\n%s" % [relic.name, relic.description], 2.0)
@@ -1844,12 +1855,14 @@ func _on_relic_mouse_exited() -> void:
 
 
 func _on_relic_prev_pressed() -> void:
+	SoundSystem.play_button_click()
 	# 滚动到上一页
 	var scroll_width: int = int(relic_scroll.size.x)
 	relic_scroll.scroll_horizontal -= scroll_width
 
 
 func _on_relic_next_pressed() -> void:
+	SoundSystem.play_button_click()
 	# 滚动到下一页
 	var scroll_width: int = int(relic_scroll.size.x)
 	relic_scroll.scroll_horizontal += scroll_width
@@ -1885,17 +1898,20 @@ func _on_end_turn_pressed() -> void:
 	# Tutorial: advance on end turn (step 4)
 	_try_advance_tutorial(4)
 	print(">>> [GameBoard] 结束回合, 进入战斗阶段")
+	SoundSystem.play_button_click()
 	GameManager.enter_battle_phase()
 	get_tree().change_scene_to_file("res://scenes/battle_scene.tscn")
 
 
 func _on_back_pressed() -> void:
 	print(">>> [GameBoard] 返回主菜单")
+	SoundSystem.play_button_click()
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 
 
 func _on_shop_pressed() -> void:
 	print(">>> [GameBoard] 打开商店")
+	SoundSystem.play_button_click()
 	# 使用弹窗方式打开商店（不切换场景）
 	var shop_scene := preload("res://scenes/shop_scene.tscn").instantiate()
 	add_child(shop_scene)
@@ -1903,12 +1919,14 @@ func _on_shop_pressed() -> void:
 
 func _on_encyclopedia_pressed() -> void:
 	print(">>> [GameBoard] 打开图鉴")
+	SoundSystem.play_button_click()
 	_try_advance_tutorial(3)
 	var encyclopedia := preload("res://scenes/encyclopedia_scene.tscn").instantiate()
 	add_child(encyclopedia)
 
 
 func _on_item_pressed() -> void:
+	SoundSystem.play_button_click()
 	# 道具栏弹窗 (备用)
 	_show_item_panel()
 
@@ -2351,6 +2369,7 @@ func _refresh_item_panel() -> void:
 func _on_use_item(item_index: int) -> void:
 	if item_index < 0 or item_index >= GameManager.items.size():
 		return
+	SoundSystem.play_button_click()
 	var item: DataModels.ItemData = GameManager.items[item_index]
 
 	# 需要指定目标的道具, 使用选中的格子
@@ -2369,6 +2388,7 @@ func _on_use_item(item_index: int) -> void:
 # ---- 设置面板 ----
 
 func _on_settings_pressed() -> void:
+	SoundSystem.play_button_click()
 	_show_settings_panel()
 
 
@@ -2399,6 +2419,7 @@ func _update_settings_texts() -> void:
 
 
 func _on_language_toggled() -> void:
+	SoundSystem.play_button_click()
 	var current_lang: String = LocalizationSystem.current_lang
 	if current_lang == "en":
 		LocalizationSystem.set_language("zh")
@@ -2465,11 +2486,13 @@ func _on_volume_changed(value: float) -> void:
 
 
 func _on_reset_tutorial_pressed() -> void:
+	SoundSystem.play_button_click()
 	GameManager.reset_tutorial()
 	TipManager.show_tip(LocalizationSystem.get_text("settings.reset_confirm"), 2.0)
 
 
 func _on_clear_save_pressed() -> void:
+	SoundSystem.play_button_click()
 	# 清空存档（保留图鉴）
 	SaveSystem.clear_game_save()
 	# 重置游戏状态
@@ -2487,6 +2510,7 @@ func _on_clear_save_pressed() -> void:
 
 
 func _on_close_settings() -> void:
+	SoundSystem.play_button_click()
 	_hide_settings_panel()
 
 

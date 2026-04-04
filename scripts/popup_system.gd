@@ -227,6 +227,7 @@ func is_open() -> bool:
 
 
 func _on_confirm_pressed() -> void:
+	SoundSystem.play_button_click()
 	var cb := _on_confirm_cb
 	hide()
 	if cb.is_valid():
@@ -234,6 +235,7 @@ func _on_confirm_pressed() -> void:
 
 
 func _on_close_pressed() -> void:
+	SoundSystem.play_button_click()
 	var cb := _on_close_cb
 	hide()
 	if cb.is_valid():

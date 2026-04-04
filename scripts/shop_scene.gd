@@ -384,11 +384,13 @@ func _update_gold() -> void:
 
 func _on_close_pressed() -> void:
 	print(">>> [Shop] 关闭商店")
+	SoundSystem.play_button_click()
 	# 作为弹窗关闭时，移除自己
 	queue_free()
 
 
 func _on_refresh_pressed() -> void:
+	SoundSystem.play_button_click()
 	# 检查金币是否足够刷新
 	if GameManager.gold >= REFRESH_COST:
 		GameManager.spend_gold(REFRESH_COST)
