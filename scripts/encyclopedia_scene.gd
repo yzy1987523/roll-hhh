@@ -10,16 +10,17 @@ const CELL_TEXTURE := preload("res://art/sprites/UI/items/smallItem/cell_0.png")
 const CELL_SELECTED_TEXTURE := preload("res://art/sprites/UI/items/smallItem/cell_1.png")
 const CLOSE_TEXTURE := preload("res://art/sprites/UI/items/smallItem/close.png")
 
+# 图鉴显示顺序：按职业类型分列（战士、法师、牧师各一列）
 const ALL_JOBS := [
-	{"id": 0, "name": "战士", "char_type": 1},
-	{"id": 1, "name": "法师", "char_type": 2},
-	{"id": 2, "name": "牧师", "char_type": 3},
-	{"id": 10, "name": "狂战士", "char_type": 4},
-	{"id": 11, "name": "骑士", "char_type": 4},
-	{"id": 20, "name": "冰法", "char_type": 4},
-	{"id": 21, "name": "火法", "char_type": 4},
-	{"id": 30, "name": "暗牧", "char_type": 4},
-	{"id": 31, "name": "圣骑士", "char_type": 4},
+	{"id": 0, "name": "战士", "char_type": 1},      # 战士列
+	{"id": 1, "name": "法师", "char_type": 2},      # 法师列
+	{"id": 2, "name": "牧师", "char_type": 3},      # 牧师列
+	{"id": 10, "name": "狂战士", "char_type": 5},   # 战士转职
+	{"id": 20, "name": "冰法", "char_type": 6},     # 法师转职
+	{"id": 30, "name": "暗牧", "char_type": 8},     # 牧师转职
+	{"id": 11, "name": "骑士", "char_type": 4},     # 战士转职
+	{"id": 21, "name": "火法", "char_type": 7},     # 法师转职
+	{"id": 31, "name": "圣骑士", "char_type": 9},   # 牧师转职
 ]
 
 const EVOLUTION_LEVELS := [1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -37,17 +38,28 @@ const JOB_COLORS := {
 }
 
 @onready var close_button: TextureButton = $EncyclopediaWindow/VBox/TitleBar/CloseButton
-@onready var job_grid: GridContainer = $EncyclopediaWindow/VBox/MainHBox/LeftPanel/JobGrid
-@onready var evolution_container: HFlowContainer = $EncyclopediaWindow/VBox/MainHBox/RightPanel/ScrollContainer/EvolutionContainer
-@onready var evolution_title: Label = $EncyclopediaWindow/VBox/MainHBox/RightPanel/EvolutionTitle
+@onready var job_grid: GridContainer = $EncyclopediaWindow/VBox/TopPanel/JobGridCenter/JobGrid
+@onready var evolution_scroll: ScrollContainer = $EncyclopediaWindow/VBox/BottomPanel/ScrollWrapper/ScrollContainer
+@onready var evolution_container: HBoxContainer = $EncyclopediaWindow/VBox/BottomPanel/ScrollWrapper/ScrollContainer/EvolutionContainer
+@onready var evolution_title: Label = $EncyclopediaWindow/VBox/BottomPanel/EvolutionTitle
 
 var selected_job: int = -1
 var job_cells: Array = []
 
+# 拖拽滚动相关
+var is_dragging: bool = false
+var drag_start_pos: Vector2 = Vector2.ZERO
+var scroll_start_x: float = 0.0
+const DRAG_THRESHOLD: float = 10.0  # 超过此距离视为拖拽
+
 
 func _ready() -> void:
-	# 添加 panel.png 背景
+	# 移除 PanelContainer 默认黑底
 	var encyclopedia_window = $EncyclopediaWindow
+	var empty_style := StyleBoxEmpty.new()
+	encyclopedia_window.add_theme_stylebox_override("panel", empty_style)
+	
+	# 添加 panel.png 背景
 	if encyclopedia_window and (encyclopedia_window.get_child_count() == 0 or not encyclopedia_window.get_child(0).name == "PanelBg"):
 		var panel_texture := preload("res://art/sprites/UI/panels/panel.png")
 		var bg := TextureRect.new()
@@ -62,6 +74,17 @@ func _ready() -> void:
 	
 	# 设置层级，确保在角色之上
 	encyclopedia_window.z_index = 50
+	
+	# 为 ScrollContainer 添加拖拽滚动支持
+	evolution_scroll.gui_input.connect(_on_evolution_scroll_input)
+	
+	# 隐藏滚动条
+	var h_scroll: HScrollBar = evolution_scroll.get_h_scroll_bar()
+	var v_scroll: VScrollBar = evolution_scroll.get_v_scroll_bar()
+	if h_scroll:
+		h_scroll.modulate.a = 0
+	if v_scroll:
+		v_scroll.modulate.a = 0
 	
 	close_button.texture_normal = CLOSE_TEXTURE
 	close_button.pressed.connect(_on_close)
@@ -153,16 +176,17 @@ func _create_job_cell(job_id: int, job_name: String, char_type: int) -> Control:
 
 
 func _create_job_sprite(job_id: int, level: int, char_type: int) -> TextureRect:
-	var tex: Texture2D = null
+	# 加载图片
+	var path := "res://art/sprites/chars/char_%02d/char_%02d%02d01.png" % [char_type, char_type, level]
+	var tex: Texture2D = load(path) as Texture2D
 	
-	if job_id < 3:
-		var path := "res://art/sprites/chars/char_%02d/char_%02d%02d01.png" % [char_type, char_type, level]
-		tex = load(path) as Texture2D
-		if tex:
-			var rect := TextureRect.new()
-			rect.texture = tex
-			return rect
+	if tex:
+		var rect := TextureRect.new()
+		rect.texture = tex
+		return rect
 	
+	# 加载失败时返回纯色方块
+	print(">>> [Encyclopedia] 无法加载图片: %s" % path)
 	var rect := TextureRect.new()
 	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
 	img.fill(JOB_COLORS.get(job_id, Color(0.5, 0.5, 0.5)))
@@ -185,6 +209,10 @@ func _on_job_cell_input(event: InputEvent, job_id: int) -> void:
 		var mb: InputEventMouseButton = event
 		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
 			SoundSystem.play_button_click()
+			# 检查是否有任何等级解锁
+			if not _is_any_level_unlocked(job_id):
+				TipManager.show_tip("角色未解锁，通过合成收集")
+				return
 			_select_job(job_id)
 
 
@@ -291,8 +319,50 @@ func _on_evolution_input(event: InputEvent, job_id: int, level: int) -> void:
 	if event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
 		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
-			SoundSystem.play_button_click()
-			_show_level_popup(job_id, level)
+			# 记录按下位置（用于判断是否拖拽）
+			is_dragging = false
+			drag_start_pos = mb.global_position
+			scroll_start_x = evolution_scroll.scroll_horizontal
+		elif mb.button_index == MOUSE_BUTTON_LEFT and not mb.pressed:
+			# 抬起时判断：如果没有拖拽，则视为点击
+			if not is_dragging:
+				SoundSystem.play_button_click()
+				# 检查是否解锁
+				if not _is_level_unlocked(job_id, level):
+					TipManager.show_tip("角色未解锁，通过合成收集")
+					return
+				_show_level_popup(job_id, level)
+			is_dragging = false
+	
+	elif event is InputEventMouseMotion:
+		# 拖拽滚动（仅在左键按住时）
+		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+			var drag_delta: float = drag_start_pos.x - event.global_position.x
+			if abs(drag_delta) > DRAG_THRESHOLD:
+				is_dragging = true
+			if is_dragging:
+				evolution_scroll.scroll_horizontal = int(scroll_start_x + drag_delta)
+
+
+## ScrollContainer 拖拽滚动处理（空白区域）
+func _on_evolution_scroll_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mb: InputEventMouseButton = event
+		if mb.button_index == MOUSE_BUTTON_LEFT:
+			if mb.pressed:
+				is_dragging = false
+				drag_start_pos = mb.global_position
+				scroll_start_x = evolution_scroll.scroll_horizontal
+			else:
+				is_dragging = false
+	
+	elif event is InputEventMouseMotion:
+		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+			var drag_delta: float = drag_start_pos.x - event.global_position.x
+			if abs(drag_delta) > DRAG_THRESHOLD:
+				is_dragging = true
+			if is_dragging:
+				evolution_scroll.scroll_horizontal = int(scroll_start_x + drag_delta)
 
 
 func _show_level_popup(job_id: int, level: int) -> void:

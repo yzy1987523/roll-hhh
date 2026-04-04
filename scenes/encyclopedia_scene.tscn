@@ -28,10 +28,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -500.0
-offset_top = -400.0
-offset_right = 500.0
-offset_bottom = 400.0
+offset_left = -450.0
+offset_top = -550.0
+offset_right = 450.0
+offset_bottom = 550.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -56,47 +56,50 @@ layout_mode = 2
 custom_minimum_size = Vector2(80, 80)
 stretch_mode = 5
 
-[node name="MainHBox" type="HBoxContainer" parent="EncyclopediaWindow/VBox"]
+[node name="TopPanel" type="VBoxContainer" parent="EncyclopediaWindow/VBox"]
 layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 16
-
-[node name="LeftPanel" type="VBoxContainer" parent="EncyclopediaWindow/VBox/MainHBox"]
-layout_mode = 2
-custom_minimum_size = Vector2(340, 0)
 theme_override_constants/separation = 8
 
-[node name="SectionTitle" type="Label" parent="EncyclopediaWindow/VBox/MainHBox/LeftPanel"]
+[node name="SectionTitle" type="Label" parent="EncyclopediaWindow/VBox/TopPanel"]
 layout_mode = 2
 text = "角色图鉴"
 horizontal_alignment = 1
 
-[node name="JobGrid" type="GridContainer" parent="EncyclopediaWindow/VBox/MainHBox/LeftPanel"]
+[node name="JobGridCenter" type="CenterContainer" parent="EncyclopediaWindow/VBox/TopPanel"]
 layout_mode = 2
-size_flags_vertical = 3
+
+[node name="JobGrid" type="GridContainer" parent="EncyclopediaWindow/VBox/TopPanel/JobGridCenter"]
+layout_mode = 2
 columns = 3
 theme_override_constants/h_separation = 10
 theme_override_constants/v_separation = 10
 
-[node name="RightPanel" type="VBoxContainer" parent="EncyclopediaWindow/VBox/MainHBox"]
+[node name="BottomPanel" type="VBoxContainer" parent="EncyclopediaWindow/VBox"]
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_vertical = 3
 theme_override_constants/separation = 8
 
-[node name="EvolutionTitle" type="Label" parent="EncyclopediaWindow/VBox/MainHBox/RightPanel"]
+[node name="EvolutionTitle" type="Label" parent="EncyclopediaWindow/VBox/BottomPanel"]
 layout_mode = 2
 text = "选择上方角色查看进化路线"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="ScrollContainer" type="ScrollContainer" parent="EncyclopediaWindow/VBox/MainHBox/RightPanel"]
+[node name="ScrollWrapper" type="Control" parent="EncyclopediaWindow/VBox/BottomPanel"]
 layout_mode = 2
 size_flags_vertical = 3
-horizontal_scroll_mode = 2
 
-[node name="EvolutionContainer" type="HFlowContainer" parent="EncyclopediaWindow/VBox/MainHBox/RightPanel/ScrollContainer"]
+[node name="ScrollContainer" type="ScrollContainer" parent="EncyclopediaWindow/VBox/BottomPanel/ScrollWrapper"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 50.0
+offset_right = -50.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="EvolutionContainer" type="HBoxContainer" parent="EncyclopediaWindow/VBox/BottomPanel/ScrollWrapper/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/h_separation = 10
-theme_override_constants/v_separation = 10
+theme_override_constants/separation = 10
