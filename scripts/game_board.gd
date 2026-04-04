@@ -118,7 +118,6 @@ var item_detail_popup_slot: int = -1
 var item_detail_visible: bool = false
 
 # ---- 目标选择指针 ----
-var target_cursor: Control = null
 var is_selecting_target: bool = false
 var target_select_item_slot: int = -1
 
@@ -318,7 +317,6 @@ func _setup_board_ui() -> void:
 		cell.gui_input.connect(_on_cell_gui_input.bind(i))
 
 		grid_container.add_child(cell)
-		cell_rects.append(bg)
 		cell_labels.append(lbl)
 		cell_panels.append(cell)
 		cell_sprites.append(sprite)
@@ -2167,6 +2165,8 @@ func _use_item_direct(slot_index: int) -> void:
 			_play_item_effect_highlight(affected_target)
 	else:
 		print(">>> [GameBoard] 使用道具失败: %s" % item.name)
+		# 显示失败提示
+		TipManager.show_tip("无法使用道具，棋盘格已满")
 	# 无论成功失败，都隐藏详情弹窗
 	_hide_item_detail()
 
@@ -2196,6 +2196,8 @@ func _use_item_on_target(target_index: int) -> void:
 		_play_item_effect_highlight(affected_target)
 	else:
 		print(">>> [GameBoard] 使用道具失败: %s" % item.name)
+		# 显示失败提示
+		TipManager.show_tip("无法使用道具，棋盘格已满")
 	# 无论成功失败，都结束目标选择
 	_end_target_selection()
 
@@ -2212,9 +2214,18 @@ func _play_item_effect_highlight(cell_index: int) -> void:
 		merge_targets.clear()
 		_update_merge_highlights()
 	
-	# 隐藏所有高亮效果，避免冲突
+	# 清理所有格子的颜色状态（关键：避免之前的红色状态残留）
+	print(">>> [GameBoard] 重置所有格子的颜色状态")
 	for i in range(BoardData.BOARD_SLOTS):
+		# 隐藏高亮效果层
 		cell_highlight_effects[i].visible = false
+		# 重置精灵颜色为白色
+		if cell_sprites[i] and is_instance_valid(cell_sprites[i]):
+			cell_sprites[i].modulate = Color.WHITE
+		# 重置背景颜色为原始颜色（根据格子位置计算）
+		if cell_rects[i] and is_instance_valid(cell_rects[i]):
+			var is_even: bool = (i / GRID_SIZE + i % GRID_SIZE) % 2 == 0
+			cell_rects[i].modulate = Color(0.5, 0.5, 0.5, 0.9) if is_even else Color(0.8, 0.8, 0.8, 0.7)
 	
 	if cell_index < 0 or cell_index >= cell_sprites.size():
 		print(">>> [GameBoard] 无效的 cell_index: %d (范围: 0-%d)" % [cell_index, cell_sprites.size() - 1])
@@ -2225,10 +2236,7 @@ func _play_item_effect_highlight(cell_index: int) -> void:
 		print(">>> [GameBoard] sprite 无效或为空")
 		return
 	
-	# 保存原始颜色
-	var original_modulate: Color = sprite.modulate
-	
-	print(">>> [GameBoard] 开始播放高亮动效，格子: %d, 原始颜色: %s" % [cell_index, original_modulate])
+	print(">>> [GameBoard] 开始播放高亮动效，格子: %d" % cell_index)
 	
 	# 创建高亮动画：红色闪烁
 	var tween := create_tween()
@@ -2236,17 +2244,19 @@ func _play_item_effect_highlight(cell_index: int) -> void:
 	
 	# 0.25s 红色
 	tween.tween_property(sprite, "modulate", Color(2.0, 0.3, 0.3, 1.0), 0.25)
-	# 0.25s 恢复原色
-	tween.tween_property(sprite, "modulate", original_modulate, 0.25)
+	# 0.25s 恢复白色
+	tween.tween_property(sprite, "modulate", Color.WHITE, 0.25)
 	
 	# 同时播放格子背景的红色高亮
 	var bg: Control = cell_rects[cell_index]
 	if bg and is_instance_valid(bg):
 		var bg_tween := create_tween()
-		var original_bg_modulate: Color = bg.modulate
+		# 计算背景的正常颜色
+		var is_even: bool = (cell_index / GRID_SIZE + cell_index % GRID_SIZE) % 2 == 0
+		var normal_bg_color: Color = Color(0.5, 0.5, 0.5, 0.9) if is_even else Color(0.8, 0.8, 0.8, 0.7)
 		bg_tween.set_parallel(false)
 		bg_tween.tween_property(bg, "modulate", Color(1.5, 0.2, 0.2, 1.0), 0.25)
-		bg_tween.tween_property(bg, "modulate", original_bg_modulate, 0.25)
+		bg_tween.tween_property(bg, "modulate", normal_bg_color, 0.25)
 
 
 func _item_needs_target(item_id: int) -> bool:
@@ -2262,43 +2272,15 @@ func _item_needs_target(item_id: int) -> bool:
 func _start_target_selection(item_slot: int) -> void:
 	is_selecting_target = true
 	target_select_item_slot = item_slot
-	_show_target_cursor()
+	# 使用 TipManager 显示提示（持续显示直到手动隐藏）
+	TipManager.show_tip(LocalizationSystem.get_text("items.select_target"), 10.0)
 
 
 func _end_target_selection() -> void:
 	is_selecting_target = false
 	target_select_item_slot = -1
-	_hide_target_cursor()
-
-
-func _show_target_cursor() -> void:
-	if target_cursor == null:
-		target_cursor = Control.new()
-		target_cursor.name = "TargetCursor"
-		target_cursor.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-		var cursor_bg := ColorRect.new()
-		cursor_bg.set_anchors_preset(Control.PRESET_CENTER)
-		cursor_bg.color = Color(1.0, 0.8, 0.0, 0.15)
-		target_cursor.add_child(cursor_bg)
-
-		var cursor_lbl := Label.new()
-		cursor_lbl.text = LocalizationSystem.get_text("items.select_target")
-		cursor_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		cursor_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		cursor_lbl.set_anchors_preset(Control.PRESET_CENTER)
-		cursor_lbl.add_theme_color_override("font_color", Color(1.0, 0.9, 0.2))
-		cursor_lbl.add_theme_font_size_override("font_size", 28)
-		target_cursor.add_child(cursor_lbl)
-
-	add_child(target_cursor)
-	target_cursor.set_anchors_preset(Control.PRESET_CENTER)
-
-
-func _hide_target_cursor() -> void:
-	if target_cursor != null:
-		target_cursor.queue_free()
-		target_cursor = null
+	# 隐藏 TipManager 提示
+	TipManager.hide_tip()
 
 
 func _on_item_slot_input(event: InputEvent, slot_index: int) -> void:
@@ -2317,6 +2299,7 @@ func _use_item_at_slot(slot_index: int) -> void:
 	# 查找选中的角色
 	if selected_index < 0:
 		print(">>> [GameBoard] 使用道具失败: 请先选中一个角色")
+		TipManager.show_tip("请先选中一个角色")
 		return
 
 	var item: DataModels.ItemData = GameManager.items[slot_index]
@@ -2328,6 +2311,7 @@ func _use_item_at_slot(slot_index: int) -> void:
 		_refresh_board_display()
 	else:
 		print(">>> [GameBoard] 使用道具失败")
+		TipManager.show_tip("无法使用道具")
 
 
 # ---- 道具栏面板 ----
