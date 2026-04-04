@@ -420,6 +420,33 @@ func _connect_signals() -> void:
 	# 语言切换信号
 	LocalizationSystem.language_changed.connect(_on_localization_changed)
 
+	# 为播放、跳过、暂停按钮添加悬停和按下效果
+	_setup_control_button_feedback(play_button)
+	_setup_control_button_feedback(skip_button)
+	_setup_control_button_feedback(pause_button)
+
+
+## 为控制按钮添加悬停和按下视觉反馈
+func _setup_control_button_feedback(btn: Button) -> void:
+	btn.mouse_entered.connect(_on_control_button_hover.bind(btn, true))
+	btn.mouse_exited.connect(_on_control_button_hover.bind(btn, false))
+	btn.button_down.connect(_on_control_button_press.bind(btn, true))
+	btn.button_up.connect(_on_control_button_press.bind(btn, false))
+
+
+func _on_control_button_hover(btn: Button, is_hovering: bool) -> void:
+	if is_hovering:
+		btn.modulate = Color(0.9, 0.9, 0.9, 1.0)
+	else:
+		btn.modulate = Color(1.0, 1.0, 1.0, 1.0)
+
+
+func _on_control_button_press(btn: Button, is_pressed: bool) -> void:
+	if is_pressed:
+		btn.modulate = Color(0.75, 0.75, 0.75, 1.0)
+	else:
+		btn.modulate = Color(0.9, 0.9, 0.9, 1.0)
+
 
 func _on_item_slot_input(event: InputEvent, slot_index: int) -> void:
 	if event is InputEventMouseButton:

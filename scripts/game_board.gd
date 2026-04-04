@@ -91,6 +91,9 @@ var _is_awaiting_drag: bool = false  # 是否等待拖拽判断
 const DRAG_THRESHOLD: float = 5.0  # 开始拖拽的移动阈值（像素）
 var merge_targets: Array = []   # 可合成的目标格子列表
 
+# ---- 移动动画状态 ----
+var moving_cells: Array = []   # 正在移动动画中的格子索引列表
+
 # ---- 教学系统 ----
 var tutorial_overlay = null
 
@@ -193,14 +196,15 @@ func _connect_signals() -> void:
 func _setup_button_feedbacks() -> void:
 	var texture_buttons: Array[TextureButton] = [
 		spawn_warrior, spawn_mage, spawn_priest,
-		dorm_button, shop_button, encyclopedia_button
+		dorm_button, shop_button, encyclopedia_button,
+		end_turn_button, close_settings_button
 	]
 	for btn in texture_buttons:
 		btn.mouse_entered.connect(_on_button_mouse_entered.bind(btn))
 		btn.mouse_exited.connect(_on_button_mouse_exited.bind(btn))
 		btn.button_down.connect(_on_button_down.bind(btn))
 		btn.button_up.connect(_on_button_up.bind(btn))
-	
+
 	# 为献祭按钮添加反馈
 	sacrifice_button.mouse_entered.connect(_on_button_mouse_entered.bind(sacrifice_button))
 	sacrifice_button.mouse_exited.connect(_on_button_mouse_exited.bind(sacrifice_button))
@@ -734,81 +738,75 @@ func _handle_cell_action(target_index: int) -> void:
 		# 不同角色: 尝试找最近空格移动被换角色，没有空格才交换
 		var nearest_empty: int = _find_nearest_empty_cell(target_index)
 		if nearest_empty >= 0:
-			# 有空格: 被换角色移动到空格，源角色移动到目标位置
+			# 有空格: 被换角色移动到空格（带动画），源角色直接到目标位置
 			_play_displace_to_empty_animation(selected_index, target_index, nearest_empty)
 		else:
-			# 没空格: 交换位置
+			# 没空格: 交换位置（无动画）
 			_play_swap_animation(selected_index, target_index)
-		# 操作后目标位置保持选中
-		selected_index = target_index
-		_refresh_board_display()
-		_update_character_detail_panel()
 
 
-## 交换角色：被换的角色播放移动动画到源位置
+## 交换角色：被交换的角色有飞行动画，拖拽的角色直接落下
 func _play_swap_animation(src_index: int, tgt_index: int) -> void:
 	# 隐藏拖拽预览
 	if drag_preview != null:
 		drag_preview.queue_free()
 		drag_preview = null
 
-	# 获取被换角色（tgt_index）的sprite和位置
-	var tgt_sprite: Control = cell_sprites[tgt_index]
-	if tgt_sprite == null:
-		_do_swap_or_move(src_index, tgt_index)
-		_refresh_board_display()
-		selected_index = -1
-		_update_character_detail_panel()
-		_try_advance_tutorial(2)
-		return
+	# 获取被交换角色的数据（动画前先获取）
+	var bd: BoardData = GameManager.board_data
+	var tgt_ch: DataModels.CharacterData = bd.get_character_at_index(tgt_index)
 
-	# 记录角色B当前位置（格子tgt_index，即B原来的位置）
-	var b_start_pos: Vector2 = tgt_sprite.global_position
-
-	# 记录角色A目标位置（格子src_index，即A原来的位置，B要去的地方）
-	var b_end_pos: Vector2 = tgt_sprite.global_position  # 临时，后面会重新获取
-
-	# 执行数据交换
+	# 数据层交换
 	_do_swap_or_move(src_index, tgt_index)
 
-	# 刷新显示（此时src_index显示被换的角色B，tgt_index显示源角色A）
+	# 标记 src_index 为移动中（被交换角色要飞到那里）
+	moving_cells.append(src_index)
 	_refresh_board_display()
 
-	# 获取角色A的目标位置（B要去的位置 = A原来的位置 = src_index的位置）
-	var a_pos: Control = cell_sprites[src_index]
-	if a_pos == null or not is_instance_valid(a_pos):
-		selected_index = -1
-		_update_character_detail_panel()
-		_try_advance_tutorial(2)
-		return
-	b_end_pos = a_pos.global_position
+	# 被交换角色的飞行动画（从 tgt_index 飞到 src_index）
+	if tgt_ch != null:
+		var start_cell: Control = cell_panels[tgt_index]
+		var end_cell: Control = cell_panels[src_index]
+		var start_world: Vector2 = start_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+		var end_world: Vector2 = end_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
 
-	# 角色B现在在src_index，先设置到B原来的位置（起点）
-	var b_sprite: Control = cell_sprites[src_index]
-	if b_sprite == null or not is_instance_valid(b_sprite):
-		selected_index = -1
-		_update_character_detail_panel()
-		_try_advance_tutorial(2)
-		return
-	b_sprite.global_position = b_start_pos
+		var anim_sprite := _create_flying_sprite(tgt_ch)
+		anim_sprite.global_position = start_world - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+		add_child(anim_sprite)
 
-	# 把sprite移到父节点最前面，避免被格子背景挡住
-	var parent: Control = b_sprite.get_parent()
-	if parent != null:
-		parent.move_child(b_sprite, parent.get_child_count() - 1)
+		var tween := create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(anim_sprite, "global_position", end_world - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0), 0.25)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
-	# 让B播放移动动画到A原来的位置
-	var tween := create_tween()
-	tween.set_parallel(false)
-	tween.tween_property(b_sprite, "global_position", b_end_pos, 0.2)
+		tween.finished.connect(func():
+			anim_sprite.queue_free()
+			moving_cells.erase(src_index)
+			_refresh_board_display()
+			_play_land_animation(src_index)
+		, CONNECT_ONE_SHOT)
 
-	await tween.finished
-
-	# 角色到达目标后播放"落地"动效：缩小到0.95再还原（丝滑）
-	_play_land_animation(src_index)
-
-	selected_index = -1
+	# 更新选中状态
+	selected_index = tgt_index
+	_update_character_detail_panel()
 	_try_advance_tutorial(2)
+
+
+## 创建飞行动画精灵的辅助函数
+func _create_flying_sprite(ch: DataModels.CharacterData) -> TextureRect:
+	var anim_sprite := TextureRect.new()
+	anim_sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
+	anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	anim_sprite.z_index = 100
+
+	var sprite_folder: String = ch.get_sprite_folder()
+	var sprite_name: String = ch.get_sprite_path(1, 1)
+	var sprite_path: String = "res://art/sprites/chars/" + sprite_folder + "/" + sprite_name + ".png"
+	if ResourceLoader.exists(sprite_path):
+		anim_sprite.texture = load(sprite_path)
+
+	return anim_sprite
 
 
 ## 查找最近空格（排除指定单元格）
@@ -831,18 +829,53 @@ func _find_nearest_empty_cell(exclude_index: int) -> int:
 	return nearest
 
 
-## 被换角色移动到空格动画
+## 被换角色移动到空格：被挤开角色有飞行动画
 func _play_displace_to_empty_animation(src_index: int, tgt_index: int, empty_index: int) -> void:
 	# 隐藏拖拽预览
 	if drag_preview != null:
 		drag_preview.queue_free()
 		drag_preview = null
 
+	# 获取被挤开角色的数据（动画前先获取）
+	var bd: BoardData = GameManager.board_data
+	var displaced_ch: DataModels.CharacterData = bd.get_character_at_index(tgt_index)
+
 	# 数据层: src -> tgt, tgt -> empty
 	_do_swap_and_displace(src_index, tgt_index, empty_index)
 
-	# 刷新显示
+	# 标记 empty 格子为移动中（被挤开角色的目标位置）
+	moving_cells.append(empty_index)
 	_refresh_board_display()
+
+	# 被挤开的角色需要有飞行动画
+	if displaced_ch != null:
+		var start_cell: Control = cell_panels[tgt_index]
+		var end_cell: Control = cell_panels[empty_index]
+		var start_world: Vector2 = start_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+		var end_world: Vector2 = end_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+
+		var anim_sprite := _create_flying_sprite(displaced_ch)
+		anim_sprite.global_position = start_world - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+		add_child(anim_sprite)
+
+		# 飞行动画（0.25秒，平滑过渡）
+		var tween := create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(anim_sprite, "global_position", end_world - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0), 0.25)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+		# 动画结束后清理
+		tween.finished.connect(func():
+			anim_sprite.queue_free()
+			moving_cells.erase(empty_index)
+			_refresh_board_display()
+			_play_land_animation(empty_index)
+		, CONNECT_ONE_SHOT)
+
+	# 更新选中状态（src 角色已在 tgt_index）
+	selected_index = tgt_index
+	_update_character_detail_panel()
+	_try_advance_tutorial(2)
 
 
 ## 执行交换并移动到空格（数据层）
@@ -1226,6 +1259,12 @@ func _refresh_board_display() -> void:
 		var is_selected: bool = (i == selected_index)
 		cell_select_frames[i].visible = is_selected
 
+		# 如果格子正在移动动画中，跳过渲染
+		if i in moving_cells:
+			cell_sprites[i].visible = false
+			cell_labels[i].text = ""
+			continue
+
 		var ch: DataModels.CharacterData = bd.get_character_at_index(i)
 		if ch != null:
 			# 角色格子：背景保持空格子颜色
@@ -1302,7 +1341,7 @@ func _find_merge_targets(drag_source_index: int) -> void:
 		if target_ch != null and target_ch.job == source_ch.job and target_ch.level == source_ch.level:
 			merge_targets.append(i)
 
-	print(">>> [Debug] 可合成目标格子: %s" % merge_targets)
+	print(">>> [Debug] 可合成目标格子: ", merge_targets)
 
 
 ## 查找可合成的格子
@@ -1493,11 +1532,11 @@ func _on_spawn_pressed(job: int) -> void:
 
 ## 生成动画：从按钮位置飞到目标格子
 func _play_spawn_animation(ch: DataModels.CharacterData, start_pos: Vector2, end_pos: Vector2, target_index: int) -> void:
-	# 立即刷新显示（角色已在数据中，直接显示）
-	_refresh_board_display()
+	# 标记目标格子为移动中（动画完成前不显示）
+	moving_cells.append(target_index)
 
-	# 播放"落地"动效：缩小到0.95再还原（丝滑）
-	_play_land_animation(target_index)
+	# 刷新显示（目标格子不显示角色）
+	_refresh_board_display()
 
 	# 创建飞入动画精灵（视觉反馈）
 	var anim_sprite := TextureRect.new()
@@ -1527,10 +1566,12 @@ func _play_spawn_animation(ch: DataModels.CharacterData, start_pos: Vector2, end
 	tween.tween_property(anim_sprite, "scale", Vector2(1.0, 1.0), 0.3)\
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
-	# 不等待动画完成，直接返回（允许连续点击）
-	# 动画结束后自动清理
+	# 动画结束后清理并刷新显示
 	tween.finished.connect(func():
 		anim_sprite.queue_free()
+		moving_cells.erase(target_index)
+		_refresh_board_display()
+		_play_land_animation(target_index)
 	)
 
 	_try_advance_tutorial(1)
