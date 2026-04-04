@@ -1889,8 +1889,9 @@ func _setup_item_slots() -> void:
 		var bg := TextureRect.new()
 		bg.name = "Background"
 		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.custom_minimum_size = Vector2(120, 120)  # 格子尺寸
 		bg.texture = cell_texture
-		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH  # 关键：使用FitWidth而非KeepSize
 		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		bg.modulate = Color(0.8, 0.8, 0.8, 1.0)  # 不透明
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
