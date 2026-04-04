@@ -109,6 +109,7 @@ const ITEM_SLOT_COUNT := 3
 var item_slot_nodes: Array = []
 var item_slot_labels: Array = []
 var item_slot_overlays: Array = []
+var item_slot_icons: Array = []  # 道具图片
 
 # ---- 道具详情弹窗 ----
 var item_detail_popup: PanelContainer = null
@@ -177,6 +178,7 @@ func _connect_signals() -> void:
 	GameManager.energy_changed.connect(_on_energy_changed)
 	GameManager.round_changed.connect(_on_round_changed)
 	GameManager.relics_changed.connect(_on_relics_changed)
+	GameManager.items_changed.connect(_on_items_changed)
 	relic_prev_button.pressed.connect(_on_relic_prev_pressed)
 	relic_next_button.pressed.connect(_on_relic_next_pressed)
 	# 设置面板信号
@@ -1391,6 +1393,11 @@ func _on_round_changed(new_round: int) -> void:
 	round_label.text = LocalizationSystem.get_text("game_board.round", {"value": new_round})
 
 
+func _on_items_changed() -> void:
+	_refresh_item_slots()
+	print(">>> [GameBoard] 道具改变，刷新道具栏，当前道具数量: %d" % GameManager.items.size())
+
+
 # ---- 角色生成 (任务 2.2) ----
 
 func _on_spawn_pressed(job: int) -> void:
@@ -1865,6 +1872,7 @@ func _setup_item_slots() -> void:
 	item_slot_nodes.clear()
 	item_slot_labels.clear()
 	item_slot_overlays.clear()
+	item_slot_icons.clear()
 
 	# 加载格子背景纹理
 	var cell_texture := preload("res://art/sprites/UI/items/smallItem/cell_0.png")
@@ -1873,33 +1881,44 @@ func _setup_item_slots() -> void:
 		var slot: Control = item_bar.get_child(i)
 		item_slot_nodes.append(slot)
 		
-		# 移除PanelContainer的默认样式（如果有）
-		if slot is PanelContainer:
-			var transparent_style := StyleBoxEmpty.new()
-			slot.add_theme_stylebox_override("panel", transparent_style)
-
 		# 清除旧内容
 		for child in slot.get_children():
 			child.queue_free()
 
-		# 背景纹理（使用cell_0.png）
+		# 背景纹理（cell_0.png，不透明）
 		var bg := TextureRect.new()
+		bg.name = "Background"
 		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 		bg.texture = cell_texture
 		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
 		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		bg.modulate = Color(0.8, 0.8, 0.8, 0.9)
-		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE  # 让点击穿透到slot
+		bg.modulate = Color(0.8, 0.8, 0.8, 1.0)  # 不透明
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slot.add_child(bg)
 
-		# 标签显示道具名
+		# 居中容器（用于道具图片）
+		var center := CenterContainer.new()
+		center.name = "CenterContainer"
+		center.set_anchors_preset(Control.PRESET_FULL_RECT)
+		center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slot.add_child(center)
+
+		# 道具图片（120x120）
+		var icon := TextureRect.new()
+		icon.name = "ItemIcon"
+		icon.custom_minimum_size = Vector2(120, 120)
+		icon.expand_mode = TextureRect.EXPAND_FIT_HEIGHT
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.visible = false  # 初始隐藏
+		center.add_child(icon)
+		item_slot_icons.append(icon)
+
+		# 标签（隐藏，不显示文字）
 		var lbl := Label.new()
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		lbl.set_anchors_preset(Control.PRESET_CENTER)
-		lbl.add_theme_font_size_override("font_size", 16)
-		lbl.clip_text = true
-		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE  # 让点击穿透到slot
+		lbl.name = "Label"
+		lbl.visible = false  # 不显示文字
+		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slot.add_child(lbl)
 		item_slot_labels.append(lbl)
 
@@ -1909,13 +1928,34 @@ func _setup_item_slots() -> void:
 
 func _refresh_item_slots() -> void:
 	for i in range(ITEM_SLOT_COUNT):
+		var bg: TextureRect = item_slot_nodes[i].get_node_or_null("Background")
+		
 		if i < GameManager.items.size():
 			var item: DataModels.ItemData = GameManager.items[i]
-			item_slot_labels[i].text = item.name
-			item_slot_nodes[i].modulate = Color.WHITE
+			# 显示道具图片
+			var icon: TextureRect = item_slot_icons[i]
+			if icon and item.has_method("get_icon_texture"):
+				# 如果道具对象有获取图标纹理的方法
+				icon.texture = item.get_icon_texture()
+			else:
+				# 根据道具ID加载图片
+				var icon_path := "res://art/sprites/UI/items/item/item_%03d.png" % item.id
+				if ResourceLoader.exists(icon_path):
+					icon.texture = load(icon_path)
+				else:
+					icon.texture = null
+			icon.visible = (icon.texture != null)
+			
+			# 背景不透明
+			if bg:
+				bg.modulate = Color(0.8, 0.8, 0.8, 1.0)
 		else:
-			item_slot_labels[i].text = ""
-			item_slot_nodes[i].modulate = Color(0.5, 0.5, 0.5, 0.3)
+			# 空格子：隐藏道具图片，背景不透明
+			var icon: TextureRect = item_slot_icons[i]
+			if icon:
+				icon.visible = false
+			if bg:
+				bg.modulate = Color(0.8, 0.8, 0.8, 1.0)
 
 
 # ---- 道具详情弹窗 ----
@@ -2090,11 +2130,17 @@ func _use_item_direct(slot_index: int) -> void:
 	var item: DataModels.ItemData = GameManager.items[slot_index]
 	var result: Dictionary = ItemDatabase.use_consumable(item, -1)
 	var success: bool = result.get("success", false)
+	var affected_target: int = result.get("target_index", -1)
+	
 	if success:
 		GameManager.remove_item(slot_index)
 		_refresh_item_slots()
 		_refresh_board_display()
 		print(">>> [GameBoard] 使用道具: %s" % item.name)
+		
+		# 如果有受影响的目标，播放高亮动效
+		if affected_target >= 0:
+			_play_item_effect_highlight(affected_target)
 	else:
 		print(">>> [GameBoard] 使用道具失败: %s" % item.name)
 	# 无论成功失败，都隐藏详情弹窗
@@ -2110,15 +2156,53 @@ func _use_item_on_target(target_index: int) -> void:
 	var item: DataModels.ItemData = GameManager.items[slot_index]
 	var result: Dictionary = ItemDatabase.use_consumable(item, target_index)
 	var success: bool = result.get("success", false)
+	var affected_target: int = result.get("target_index", -1)
+	
 	if success:
 		GameManager.remove_item(slot_index)
 		_refresh_item_slots()
 		_refresh_board_display()
 		print(">>> [GameBoard] 对格 %d 使用道具: %s" % [target_index, item.name])
+		
+		# 播放高亮动效（使用target_index，如果result中没有affected_target）
+		if affected_target < 0:
+			affected_target = target_index
+		_play_item_effect_highlight(affected_target)
 	else:
 		print(">>> [GameBoard] 使用道具失败: %s" % item.name)
 	# 无论成功失败，都结束目标选择
 	_end_target_selection()
+
+
+## 播放道具使用效果的高亮动效（0.5s红色高亮）
+func _play_item_effect_highlight(cell_index: int) -> void:
+	if cell_index < 0 or cell_index >= cell_sprites.size():
+		return
+	
+	var sprite: Control = cell_sprites[cell_index]
+	if sprite == null or not is_instance_valid(sprite):
+		return
+	
+	# 保存原始颜色
+	var original_modulate: Color = sprite.modulate
+	
+	# 创建高亮动画：红色闪烁
+	var tween := create_tween()
+	tween.set_parallel(false)
+	
+	# 0.25s 红色
+	tween.tween_property(sprite, "modulate", Color(2.0, 0.3, 0.3, 1.0), 0.25)
+	# 0.25s 恢复原色
+	tween.tween_property(sprite, "modulate", original_modulate, 0.25)
+	
+	# 同时播放格子背景的红色高亮
+	var bg: Control = cell_rects[cell_index]
+	if bg and is_instance_valid(bg):
+		var bg_tween := create_tween()
+		var original_bg_modulate: Color = bg.modulate
+		bg_tween.set_parallel(false)
+		bg_tween.tween_property(bg, "modulate", Color(1.5, 0.2, 0.2, 1.0), 0.25)
+		bg_tween.tween_property(bg, "modulate", original_bg_modulate, 0.25)
 
 
 func _item_needs_target(item_id: int) -> bool:

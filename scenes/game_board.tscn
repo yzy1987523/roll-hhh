@@ -163,35 +163,26 @@ size_flags_vertical = 3
 text = "▶"
 
 [node name="MiddleBar" type="HBoxContainer" parent="MainLayout" unique_id=584068900]
-custom_minimum_size = Vector2(0, 72)
+custom_minimum_size = Vector2(0, 140)
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="ItemBar" type="HBoxContainer" parent="MainLayout/MiddleBar" unique_id=657005285]
-custom_minimum_size = Vector2(240, 72)
+custom_minimum_size = Vector2(420, 140)
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="ItemSlot0" type="TextureRect" parent="MainLayout/MiddleBar/ItemBar" unique_id=657005286]
-custom_minimum_size = Vector2(72, 72)
+[node name="ItemSlot0" type="Control" parent="MainLayout/MiddleBar/ItemBar" unique_id=657005286]
+custom_minimum_size = Vector2(140, 140)
 layout_mode = 2
-texture = ExtResource("12_item")
-expand_mode = 1
-stretch_mode = 5
 
-[node name="ItemSlot1" type="TextureRect" parent="MainLayout/MiddleBar/ItemBar" unique_id=657005287]
-custom_minimum_size = Vector2(72, 72)
+[node name="ItemSlot1" type="Control" parent="MainLayout/MiddleBar/ItemBar" unique_id=657005287]
+custom_minimum_size = Vector2(140, 140)
 layout_mode = 2
-texture = ExtResource("12_item")
-expand_mode = 1
-stretch_mode = 5
 
-[node name="ItemSlot2" type="TextureRect" parent="MainLayout/MiddleBar/ItemBar" unique_id=657005288]
-custom_minimum_size = Vector2(72, 72)
+[node name="ItemSlot2" type="Control" parent="MainLayout/MiddleBar/ItemBar" unique_id=657005288]
+custom_minimum_size = Vector2(140, 140)
 layout_mode = 2
-texture = ExtResource("12_item")
-expand_mode = 1
-stretch_mode = 5
 
 [node name="DormButton" type="TextureButton" parent="MainLayout/MiddleBar" unique_id=656967448]
 custom_minimum_size = Vector2(72, 72)
