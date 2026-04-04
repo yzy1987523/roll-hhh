@@ -108,6 +108,15 @@ func _allies_attack() -> void:
 
 		var damage: int = _calc_damage(ch.attack, enemy.defense)
 
+		# 狂战士特技 (1101): 低血量时攻击力提升
+		if ch.job == JobAdvanced.JOB_BERSERKER and ch.skill_level > 0:
+			var hp_ratio: float = float(ch.hp) / float(ch.max_hp)
+			if hp_ratio < 0.5:  # 血量低于50%
+				var bonus_multiplier: float = 1.0 + (0.5 - hp_ratio) * ch.skill_level * 0.5
+				damage = int(damage * bonus_multiplier)
+				var bonus_pct: int = int(round((bonus_multiplier - 1.0) * 100))
+				_log(LocalizationSystem.get_text("battle_log.berserk_rage") % [ch.get_job_name(), bonus_pct])
+
 		# 法师穿透伤害 (特技1002) / 转职法师系穿透
 		var penetrate: int = 0
 		var base_job: int = ch.get_base_job()
@@ -181,6 +190,23 @@ func _enemy_attack() -> void:
 				_log(LocalizationSystem.get_text("battle_log.block") % [target.get_job_name(), target.level])
 				damage = 0
 
+		# 骑士守护特技 (1102): 为相邻队友分担伤害
+		var knight_protection: Dictionary = _check_knight_protection(target)
+		if knight_protection.has("knight") and knight_protection.has("redirect"):
+			var knight: DataModels.CharacterData = knight_protection["knight"]
+			var redirect_ratio: float = knight_protection["redirect"]
+			var redirected_dmg: int = int(damage * redirect_ratio)
+			var remaining_dmg: int = damage - redirected_dmg
+			
+			# 目标承受部分伤害
+			target.take_damage(remaining_dmg)
+			# 骑士承受部分伤害
+			knight.take_damage(redirected_dmg)
+			_log(LocalizationSystem.get_text("battle_log.knight_protection") % [
+				knight.get_job_name(), target.get_job_name(), redirected_dmg, remaining_dmg
+			])
+			damage = 0  # 已处理伤害，跳过后续
+
 		# 遗物: 免控护符(ID24) 免疫敌方特技效果
 		var immune_skills: bool = ItemDatabase.has_relic(24, GameManager.relics)
 
@@ -222,6 +248,13 @@ func _trigger_round_start_buffs() -> void:
 func _priest_heal_nearby(priest: DataModels.CharacterData) -> int:
 	var healed: int = 0
 	var heal_amount: int = priest.skill_level  # 回复量 = 特技等级
+	
+	# 遗物: 牧师系额外治疗 (ID 7) - 增加治疗量
+	if ItemDatabase.has_relic(7, GameManager.relics):
+		var cfg: Dictionary = MechanicsDb.get_relic_effect(7)
+		var bonus: int = cfg.get("heal_amount", 1)
+		heal_amount += bonus
+	
 	var px: int = priest.position.x
 	var py: int = priest.position.y
 
@@ -230,6 +263,13 @@ func _priest_heal_nearby(priest: DataModels.CharacterData) -> int:
 		Vector2i(px - 1, py), Vector2i(px + 1, py),
 		Vector2i(px, py - 1), Vector2i(px, py + 1)
 	]
+	
+	# 遗物: 牧师系范围加成 (ID 8) - 扩大治疗范围（包含对角线）
+	if ItemDatabase.has_relic(8, GameManager.relics):
+		neighbors.append_array([
+			Vector2i(px - 1, py - 1), Vector2i(px + 1, py - 1),
+			Vector2i(px - 1, py + 1), Vector2i(px + 1, py + 1)
+		])
 
 	for npos in neighbors:
 		if not BoardData.is_valid_pos(npos):
@@ -417,6 +457,31 @@ func _apply_blessing_stacks() -> void:
 
 func _calc_damage(atk: int, def: int) -> int:
 	return maxi(atk - def, 0)
+
+
+## 检查骑士守护 (特技1102): 查找目标相邻的骑士
+## 返回: {"knight": CharacterData, "redirect": float} 或空字典
+func _check_knight_protection(target: DataModels.CharacterData) -> Dictionary:
+	if target.job == JobAdvanced.JOB_KNIGHT:
+		return {}  # 骑士不保护自己
+	
+	var tx: int = target.position.x
+	var ty: int = target.position.y
+	var neighbors := [
+		Vector2i(tx - 1, ty), Vector2i(tx + 1, ty),
+		Vector2i(tx, ty - 1), Vector2i(tx, ty + 1)
+	]
+	
+	for npos in neighbors:
+		if not BoardData.is_valid_pos(npos):
+			continue
+		var knight: DataModels.CharacterData = GameManager.board_data.get_character_at(npos)
+		if knight != null and knight.is_alive() and knight.job == JobAdvanced.JOB_KNIGHT:
+			if knight.skill_level > 0:
+				var redirect_ratio: float = mini(0.2 + knight.skill_level * 0.05, 0.5)  # 20% + 5%每级, 最高50%
+				return {"knight": knight, "redirect": redirect_ratio}
+	
+	return {}
 
 
 func _refresh_alive_list() -> void:

@@ -72,8 +72,15 @@ func _ready() -> void:
 		encyclopedia_window.add_child(bg)
 		encyclopedia_window.move_child(bg, 0)  # 移到最底层
 	
-	# 设置层级，确保在角色之上
-	encyclopedia_window.z_index = 50
+	# 设置层级，确保在角色之上（使用全局层级）
+	encyclopedia_window.z_index = 101
+	encyclopedia_window.z_as_relative = false
+	
+	# 设置遮罩层级（在窗口之下）
+	var dark_overlay = $DarkOverlay
+	if dark_overlay:
+		dark_overlay.z_index = 100
+		dark_overlay.z_as_relative = false
 	
 	# 为 ScrollContainer 添加拖拽滚动支持
 	evolution_scroll.gui_input.connect(_on_evolution_scroll_input)
@@ -400,32 +407,37 @@ func _get_job_name(job_id: int) -> String:
 		_: return "未知"
 
 
-func _get_skill_description(job_id: int) -> String:
+func _get_skill_id(job_id: int) -> int:
+	# 返回角色的特技ID
 	if JobAdvanced.is_advanced_job(job_id):
-		match job_id:
-			10: return "特技: 狂暴打击"
-			11: return "特技: 坚守"
-			20: return "特技: 冰霜护盾"
-			21: return "特技: 火焰冲击"
-			30: return "特技: 暗影庇护"
-			31: return "特技: 圣光庇护"
-			_: return "特技: 无"
+		return JobAdvanced.ADVANCED_BASE.get(job_id, {}).get("skill_id", 0)
 	match job_id:
-		0: return "特技: 格挡"
-		1: return "特技: 穿透"
-		2: return "特技: 治疗"
-		_: return "特技: 无"
+		0: return 1001  # 战士格挡
+		1: return 1002  # 法师穿透
+		2: return 1003  # 牧师治疗
+		_: return 0
+
+
+func _get_skill_description(job_id: int) -> String:
+	var skill_id: int = _get_skill_id(job_id)
+	if skill_id == 0:
+		return "特技: 无"
+	
+	var skill_name: String = LocalizationSystem.get_text("skill.%d_name" % skill_id, {})
+	return "特技: %s" % skill_name
 
 
 func _get_skill_full_description(job_id: int, skill_lv: int) -> String:
-	var desc := ""
-	match skill_lv:
-		1: desc = "初级效果"
-		2: desc = "中级效果"
-		3: desc = "高级效果"
-		4: desc = "终极效果"
-		_: desc = "基础效果"
-	return "特技等级: Lv.%d (%s)" % [skill_lv, desc]
+	var skill_id: int = _get_skill_id(job_id)
+	if skill_id == 0:
+		return ""
+	
+	var skill_desc: String = LocalizationSystem.get_text("skill.%d_desc" % skill_id, {})
+	var level_text: String = ""
+	if skill_lv > 0:
+		level_text = " (Lv.%d)" % skill_lv
+	
+	return "效果: %s%s" % [skill_desc, level_text]
 
 
 func _calc_hp(job_id: int, level: int) -> int:

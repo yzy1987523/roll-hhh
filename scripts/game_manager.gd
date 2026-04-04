@@ -142,6 +142,14 @@ func enter_prepare_phase() -> void:
 	phase = PHASE_PREPARE
 	battle_turn = 0
 	reset_energy()
+	
+	# 遗物: 初始能量加成 (ID 19) - 每轮开始时增加能量
+	if ItemDatabase.has_relic(19, GameManager.relics):
+		var cfg: Dictionary = MechanicsDb.get_relic_effect(19)
+		var bonus: int = cfg.get("bonus", 3)
+		restore_energy(bonus)
+		print(">>> [GameManager] 初始能量加成 +%d (遗物ID 19)" % bonus)
+	
 	phase_changed.emit(phase)
 	print(">>> [GameManager] 进入备战阶段, 回合: %d" % current_round)
 	_auto_save()

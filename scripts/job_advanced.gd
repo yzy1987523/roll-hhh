@@ -119,11 +119,13 @@ static func random_advance(ch: DM.CharacterData) -> bool:
 
 ## 生成角色时的转职概率检查
 ## base_chance: 基础概率 (默认5%)
-## has_relic_17: 是否有转职令牌遗物 (+5%)
+## has_relic_17: 是否有转职令牌遗物
 static func check_advance_on_spawn(ch: DM.CharacterData, has_relic_17: bool = false) -> bool:
 	var chance: float = 0.05
 	if has_relic_17:
-		chance += 0.05
+		var cfg: Dictionary = MechanicsDb.get_relic_effect(17)
+		var bonus: float = cfg.get("chance_bonus", 0.05)
+		chance += bonus
 	if randf() < chance:
 		return random_advance(ch)
 	return false

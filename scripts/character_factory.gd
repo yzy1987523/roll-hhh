@@ -38,6 +38,9 @@ static var _next_id: int = 1
 
 ## 计算指定职业和等级的血量
 static func calc_hp(job: int, level: int) -> int:
+	# 检查是否是转职职业
+	if JobAdvanced.is_advanced_job(job):
+		return JobAdvanced.calc_advanced_hp(job, level)
 	var base: int = BASE_STATS[job]["hp"]
 	var rate: float = GROWTH_RATE[job]["hp"]
 	return base + int(floor(base * (level - 1) * rate))
@@ -45,6 +48,9 @@ static func calc_hp(job: int, level: int) -> int:
 
 ## 计算指定职业和等级的防御
 static func calc_defense(job: int, level: int) -> int:
+	# 检查是否是转职职业
+	if JobAdvanced.is_advanced_job(job):
+		return JobAdvanced.calc_advanced_defense(job, level)
 	var base: int = BASE_STATS[job]["def"]
 	var rate: float = GROWTH_RATE[job]["def"]
 	return base + int(floor(base * (level - 1) * rate))
@@ -52,6 +58,9 @@ static func calc_defense(job: int, level: int) -> int:
 
 ## 计算指定职业和等级的攻击
 static func calc_attack(job: int, level: int) -> int:
+	# 检查是否是转职职业
+	if JobAdvanced.is_advanced_job(job):
+		return JobAdvanced.calc_advanced_attack(job, level)
 	var base: int = BASE_STATS[job]["atk"]
 	var rate: float = GROWTH_RATE[job]["atk"]
 	return base + int(floor(base * (level - 1) * rate))
@@ -79,7 +88,13 @@ static func create_character(job: int, level: int) -> DataModels.CharacterData:
 	ch.hp = ch.max_hp
 	ch.attack = calc_attack(job, ch.level)
 	ch.defense = calc_defense(job, ch.level)
-	ch.skill_id = BASE_STATS[job]["skill_id"]
+	
+	# 获取特技ID
+	if JobAdvanced.is_advanced_job(job):
+		ch.skill_id = JobAdvanced.ADVANCED_BASE[job]["skill_id"]
+	else:
+		ch.skill_id = BASE_STATS[job]["skill_id"]
+	
 	ch.skill_level = calc_skill_level(ch.level)
 	ch.buffs = []
 	ch.position = Vector2i(-1, -1)
@@ -194,8 +209,7 @@ static func refresh_all_characters_relics() -> void:
 			recalc_stats(ch, true)
 	
 	# 刷新宿舍里的角色
-	for i in range(bd.dorm_characters.size()):
-		var ch: DataModels.CharacterData = bd.dorm_characters[i]
+	for ch in bd.dormitory:
 		if ch != null:
 			recalc_stats(ch, true)
 	

@@ -42,17 +42,20 @@ func _ready() -> void:
 	shop_window.add_child(bg)
 	shop_window.move_child(bg, 0)
 	
-	# 设置商店窗口z_index，确保在角色之上
-	shop_window.z_index = 50
+	# 设置商店窗口z_index，确保在角色之上（使用全局层级）
+	shop_window.z_index = 100
+	shop_window.z_as_relative = false
 
 	# 设置关闭按钮纹理
 	if close_button:
 		close_button.texture_normal = CLOSE_TEXTURE
 		close_button.pressed.connect(_on_close_pressed)
 
-	# 设置遮罩层mouse_filter，阻止点击穿透到下层
+	# 设置遮罩层层级和mouse_filter，阻止点击穿透到下层
 	var dark_overlay = $DarkOverlay
 	if dark_overlay:
+		dark_overlay.z_index = 100
+		dark_overlay.z_as_relative = false
 		dark_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 
 	# 更新回合数显示

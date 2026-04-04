@@ -133,6 +133,7 @@ func _ready() -> void:
 	_setup_dorm_panel()
 	_setup_item_slots()
 	_setup_character_detail_panel()
+	_setup_settings_panel()
 	_update_resource_labels()
 	_refresh_relic_panel()
 	_refresh_item_slots()
@@ -336,6 +337,14 @@ func _setup_character_detail_panel() -> void:
 	_update_character_detail_panel()
 
 
+func _setup_settings_panel() -> void:
+	# 设置遮罩和面板的层级（使用全局层级）
+	settings_backdrop.z_index = 100
+	settings_backdrop.z_as_relative = false
+	settings_panel.z_index = 101
+	settings_panel.z_as_relative = false
+
+
 func _update_character_detail_panel() -> void:
 	if selected_index >= 0:
 		var bd: BoardData = GameManager.board_data
@@ -346,6 +355,16 @@ func _update_character_detail_panel() -> void:
 			detail_label.text = "Lv.%d  HP: %d/%d  ATK: %d  DEF: %d" % [
 				ch.level, ch.hp, ch.max_hp, ch.attack, ch.defense
 			]
+			# 显示特技信息
+			if ch.skill_id > 0:
+				var skill_name: String = LocalizationSystem.get_text("skill.%d_name" % ch.skill_id, {})
+				var skill_desc: String = LocalizationSystem.get_text("skill.%d_desc" % ch.skill_id, {})
+				var skill_lv_text: String = ""
+				if ch.skill_level > 0:
+					skill_lv_text = " (Lv.%d)" % ch.skill_level
+				hint_label.text = "【%s】%s%s" % [skill_name, skill_desc, skill_lv_text]
+			else:
+				hint_label.text = ""
 			var energy := GameManager.calc_sacrifice_energy(ch.level)
 			sacrifice_label.text = "献祭\n获得 %d 能量" % energy
 			# 性能优化：使用透明度而非visible，避免HBoxContainer重布局
@@ -356,6 +375,7 @@ func _update_character_detail_panel() -> void:
 	# 无选中或角色已不存在
 	name_label.text = ""
 	detail_label.text = LocalizationSystem.get_text("game_board.click_to_view_detail", {})
+	hint_label.text = ""
 	# 性能优化：使用透明度而非visible，避免HBoxContainer重布局
 	sacrifice_button.modulate.a = 0.0
 	sacrifice_button.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -378,7 +398,8 @@ func _setup_dorm_panel() -> void:
 	dorm_backdrop.visible = false
 	dorm_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	dorm_backdrop.gui_input.connect(_on_dorm_backdrop_clicked)
-	dorm_backdrop.z_index = 50  # 设置层级
+	dorm_backdrop.z_index = 100  # 设置层级（全局）
+	dorm_backdrop.z_as_relative = false  # 使用全局层级
 	add_child(dorm_backdrop)
 	
 	dorm_panel = PanelContainer.new()
@@ -386,7 +407,8 @@ func _setup_dorm_panel() -> void:
 	dorm_panel.set_anchors_preset(Control.PRESET_CENTER)
 	dorm_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	dorm_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
-	dorm_panel.z_index = 51  # 确保在遮罩之上，在角色之上
+	dorm_panel.z_index = 101  # 确保在遮罩之上，在角色之上（全局）
+	dorm_panel.z_as_relative = false  # 使用全局层级
 	# 宿舍尺寸：800x1000
 	dorm_panel.custom_minimum_size = Vector2(800, 1000)
 	dorm_panel.offset_left = -400.0
@@ -798,7 +820,7 @@ func _create_flying_sprite(ch: DataModels.CharacterData) -> TextureRect:
 	anim_sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
 	anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	anim_sprite.z_index = 100
+	anim_sprite.z_index = 10  # 动画层级（低于弹窗）
 
 	var sprite_folder: String = ch.get_sprite_folder()
 	var sprite_name: String = ch.get_sprite_path(1, 1)
@@ -1024,8 +1046,21 @@ func _sacrifice_character(cell_index: int) -> void:
 		return
 
 	var refund: int = GameManager.calc_sacrifice_energy(ch.level)
+	
+	# 遗物: 献祭效率 (ID 21) - 增加20%能量返还
+	if ItemDatabase.has_relic(21, GameManager.relics):
+		var cfg: Dictionary = MechanicsDb.get_relic_effect(21)
+		var bonus_ratio: float = cfg.get("bonus_ratio", 0.2)
+		refund = int(refund * (1.0 + bonus_ratio))
+	
 	bd.remove_character(pos)
 	GameManager.restore_energy(refund)
+	
+	# 遗物: 献祭金币 (ID 22) - 献祭时获得金币
+	if ItemDatabase.has_relic(22, GameManager.relics):
+		var cfg22: Dictionary = MechanicsDb.get_relic_effect(22)
+		var gold_bonus: int = cfg22.get("gold_per_sacrifice", 1)
+		GameManager.add_gold(gold_bonus)
 
 	print(">>> [GameBoard] 献祭 %s Lv.%d, 返还能量 %d" % [ch.get_job_name(), ch.level, refund])
 	selected_index = -1
@@ -1070,7 +1105,7 @@ func _create_drag_preview(cell_index: int, with_outline: bool = false) -> Contro
 	var preview := Control.new()
 	preview.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
 	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE  # 让事件穿透到下层
-	preview.z_index = 100  # 最上层
+	preview.z_index = 50  # 拖拽层级（低于弹窗遮罩）
 	preview.z_as_relative = false  # 使用全局z_index
 
 	# 精灵图
@@ -1543,7 +1578,7 @@ func _play_spawn_animation(ch: DataModels.CharacterData, start_pos: Vector2, end
 	anim_sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
 	anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	anim_sprite.z_index = 100
+	anim_sprite.z_index = 10  # 动画层级（低于弹窗）
 
 	# 加载精灵图
 	var sprite_folder: String = ch.get_sprite_folder()
@@ -1672,7 +1707,7 @@ func _play_dorm_to_board_animation(moved_data: Array, start_pos: Vector2) -> voi
 		anim_sprite.custom_minimum_size = Vector2(CHAR_SIZE, CHAR_SIZE)
 		anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		anim_sprite.z_index = 200
+		anim_sprite.z_index = 15  # 宿舍动画层级（低于弹窗）
 		
 		# 加载精灵图
 		var sprite_folder: String = ch.get_sprite_folder()

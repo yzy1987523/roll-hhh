@@ -50,6 +50,16 @@ static func use_consumable(item: DataModels.ItemData, target_index: int = -1) ->
 			var job: int = eff.get("job", 0)
 			var lv: int = eff.get("level", 1)
 			var ch := CharacterFactory.create_character(job, lv)
+			
+			# 遗物: 召唤等级加成 (ID 20) - 5%概率额外+3级
+			if ItemDatabase.has_relic(20, GameManager.relics):
+				var cfg: Dictionary = MechanicsDb.get_relic_effect(20)
+				var chance: float = cfg.get("chance", 0.05)
+				var bonus: int = cfg.get("level", 3)
+				if randf() < chance:
+					ch.level = mini(ch.level + bonus, CharacterFactory.MAX_LEVEL)
+					CharacterFactory.recalc_stats(ch)
+			
 			bd.place_character_first_empty(ch)
 
 		"level_up_random":
@@ -58,6 +68,15 @@ static func use_consumable(item: DataModels.ItemData, target_index: int = -1) ->
 			var c: DataModels.CharacterData = chars[randi_range(0, chars.size() - 1)]
 			if c.level >= CharacterFactory.MAX_LEVEL: return {"success": false, "target_index": -1}
 			c.level = mini(c.level + levels, CharacterFactory.MAX_LEVEL)
+			
+			# 遗物: 升级加成 (ID 18) - 10%概率额外+2级
+			if ItemDatabase.has_relic(18, GameManager.relics):
+				var cfg: Dictionary = MechanicsDb.get_relic_effect(18)
+				var chance: float = cfg.get("chance", 0.1)
+				var bonus: int = cfg.get("level_bonus", 2)
+				if randf() < chance and c.level < CharacterFactory.MAX_LEVEL:
+					c.level = mini(c.level + bonus, CharacterFactory.MAX_LEVEL)
+			
 			CharacterFactory.recalc_stats(c)
 			c.full_heal()
 			# 获取随机角色的索引
@@ -66,6 +85,15 @@ static func use_consumable(item: DataModels.ItemData, target_index: int = -1) ->
 		"level_up_target":
 			if target == null or target.level >= CharacterFactory.MAX_LEVEL: return {"success": false, "target_index": -1}
 			target.level = mini(target.level + levels, CharacterFactory.MAX_LEVEL)
+			
+			# 遗物: 升级加成 (ID 18) - 10%概率额外+2级
+			if ItemDatabase.has_relic(18, GameManager.relics):
+				var cfg: Dictionary = MechanicsDb.get_relic_effect(18)
+				var chance: float = cfg.get("chance", 0.1)
+				var bonus: int = cfg.get("level_bonus", 2)
+				if randf() < chance and target.level < CharacterFactory.MAX_LEVEL:
+					target.level = mini(target.level + bonus, CharacterFactory.MAX_LEVEL)
+			
 			CharacterFactory.recalc_stats(target)
 			target.full_heal()
 			affected_target_index = target_index
