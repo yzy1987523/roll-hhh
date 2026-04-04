@@ -1903,10 +1903,10 @@ func _setup_item_slots() -> void:
 		center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slot.add_child(center)
 
-		# 道具图片（120x120）
+		# 道具图片（100x100，格子120x120，留10px边距）
 		var icon := TextureRect.new()
 		icon.name = "ItemIcon"
-		icon.custom_minimum_size = Vector2(120, 120)
+		icon.custom_minimum_size = Vector2(100, 100)
 		icon.expand_mode = TextureRect.EXPAND_FIT_HEIGHT
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1934,17 +1934,11 @@ func _refresh_item_slots() -> void:
 			var item: DataModels.ItemData = GameManager.items[i]
 			# 显示道具图片
 			var icon: TextureRect = item_slot_icons[i]
-			if icon and item.has_method("get_icon_texture"):
-				# 如果道具对象有获取图标纹理的方法
-				icon.texture = item.get_icon_texture()
-			else:
-				# 根据道具ID加载图片
-				var icon_path := "res://art/sprites/UI/items/item/item_%03d.png" % item.id
-				if ResourceLoader.exists(icon_path):
-					icon.texture = load(icon_path)
-				else:
-					icon.texture = null
-			icon.visible = (icon.texture != null)
+			if icon:
+				# 获取道具图片纹理
+				var tex := _get_item_texture(item)
+				icon.texture = tex
+				icon.visible = (tex != null)
 			
 			# 背景不透明
 			if bg:
@@ -1956,6 +1950,19 @@ func _refresh_item_slots() -> void:
 				icon.visible = false
 			if bg:
 				bg.modulate = Color(0.8, 0.8, 0.8, 1.0)
+
+
+## 获取道具图片（类似遗物的映射逻辑）
+func _get_item_texture(item: DataModels.ItemData) -> Texture2D:
+	# 道具图片ID映射（道具ID 1-22 对应图片ID 13-42）
+	var img_id: int = item.id + 12
+	var path := "res://art/sprites/UI/items/item/item_%03d.png" % img_id
+	if ResourceLoader.exists(path):
+		return load(path) as Texture2D
+	
+	# 如果加载失败，返回null
+	print(">>> [GameBoard] 道具图片加载失败: %s (路径: %s)" % [item.name, path])
+	return null
 
 
 # ---- 道具详情弹窗 ----
