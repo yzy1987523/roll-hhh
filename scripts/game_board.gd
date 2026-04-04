@@ -1713,29 +1713,22 @@ func _refresh_relic_panel() -> void:
 	for child in relic_list.get_children():
 		child.queue_free()
 	
-	# 显示所有遗物
+	# 显示所有遗物（只显示图片）
 	for i in range(GameManager.relics.size()):
 		var relic: DataModels.ItemData = GameManager.relics[i]
 		var relic_item: Button = Button.new()
-		relic_item.custom_minimum_size = Vector2(80, 60)
+		relic_item.custom_minimum_size = Vector2(80, 80)
 		relic_item.tooltip_text = "%s\n%s" % [relic.name, relic.description]
 		relic_item.pressed.connect(_on_relic_pressed.bind(relic))
 		
-		var vbox := VBoxContainer.new()
-		relic_item.add_child(vbox)
-
-		var name_lbl := Label.new()
-		name_lbl.text = relic.name
-		name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_lbl.add_theme_font_size_override("font_size", 20)
-		vbox.add_child(name_lbl)
-
-		var count_lbl := Label.new()
-		count_lbl.text = LocalizationSystem.get_text("game_board.relic_count", {"count": relic.stack_count})
-		count_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		count_lbl.add_theme_font_size_override("font_size", 18)
-		vbox.add_child(count_lbl)
+		# 只添加图片
+		var texture_rect := TextureRect.new()
+		texture_rect.texture = _get_relic_texture(relic)
+		texture_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		texture_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		texture_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+		texture_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		relic_item.add_child(texture_rect)
 
 		relic_list.add_child(relic_item)
 	
@@ -1746,6 +1739,23 @@ func _refresh_relic_panel() -> void:
 	relic_next_button.disabled = not need_scroll
 	relic_prev_button.modulate = Color(1, 1, 1, 0.3) if not need_scroll else Color.WHITE
 	relic_next_button.modulate = Color(1, 1, 1, 0.3) if not need_scroll else Color.WHITE
+
+
+## 获取遗物图片
+func _get_relic_texture(relic: DataModels.ItemData) -> Texture2D:
+	# 遗物图片ID映射
+	var available_relic_ids := [4, 5, 6, 7, 8, 9, 20, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45]
+	var img_id: int = available_relic_ids[relic.id % available_relic_ids.size()]
+	var path := "res://art/sprites/UI/items/relic/relic_%03d.png" % img_id
+	var tex := load(path) as Texture2D
+	if tex:
+		return tex
+	
+	# 如果加载失败，返回一个默认颜色纹理
+	var image := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.4, 0.3, 0.5))
+	var default_tex := ImageTexture.create_from_image(image)
+	return default_tex
 
 
 func _on_relic_pressed(relic: DataModels.ItemData) -> void:
