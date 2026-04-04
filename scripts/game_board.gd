@@ -1763,6 +1763,7 @@ func _on_relic_next_pressed() -> void:
 
 
 func _on_relics_changed() -> void:
+	print(">>> [GameBoard] 遗物改变，刷新遗物面板，当前遗物数量: %d" % GameManager.relics.size())
 	_refresh_relic_panel()
 
 
