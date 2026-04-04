@@ -113,8 +113,6 @@ const GOLD_REWARD_BOSS := 100
 var battle_tutorial_instance: Control = null
 
 # ---- 道具详情弹窗 ----
-var item_detail_popup: Control = null
-var item_detail_backdrop: Control = null
 var item_detail_popup_slot: int = -1
 var item_detail_visible: bool = false
 
@@ -308,91 +306,44 @@ func _show_item_detail(slot_index: int) -> void:
 	if slot_index < 0 or slot_index >= items.size():
 		return
 
-	_hide_item_detail()
-
 	var item: DataModels.ItemData = items[slot_index]
 	item_detail_popup_slot = slot_index
 	item_detail_visible = true
 
-	# 黑色遮罩
-	var backdrop := ColorRect.new()
-	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
-	backdrop.color = Color(0, 0, 0, 0.5)
-	backdrop.gui_input.connect(_on_backdrop_input)
-	add_child(backdrop)
-	item_detail_backdrop = backdrop
-
-	# 详情面板
-	var popup_bg := ColorRect.new()
-	popup_bg.set_anchors_preset(Control.PRESET_CENTER)
-	popup_bg.offset_left = -120
-	popup_bg.offset_top = -100
-	popup_bg.offset_right = 120
-	popup_bg.offset_bottom = 100
-	popup_bg.color = Color("#2A3A5A")
-	add_child(popup_bg)
-	item_detail_popup = popup_bg
-
-	var vbox := VBoxContainer.new()
-	vbox.set_anchors_preset(Control.PRESET_CENTER)
-	popup_bg.add_child(vbox)
-
-	var name_lbl := Label.new()
-	name_lbl.text = item.name
-	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_lbl.add_theme_font_size_override("font_size", 32)
-	vbox.add_child(name_lbl)
-
-	var desc_lbl := Label.new()
-	desc_lbl.text = item.description
-	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
-	desc_lbl.custom_minimum_size = Vector2(200, 60)
-	vbox.add_child(desc_lbl)
-
-	var use_btn := Button.new()
-	use_btn.text = LocalizationSystem.get_text("items.use")
-	use_btn.pressed.connect(_on_item_use_pressed.bind(slot_index))
-	vbox.add_child(use_btn)
-
-	var discard_btn := Button.new()
-	discard_btn.text = LocalizationSystem.get_text("items.discard")
-	discard_btn.pressed.connect(_on_item_discard_pressed.bind(slot_index))
-	vbox.add_child(discard_btn)
-
-	var close_btn := Button.new()
-	close_btn.text = LocalizationSystem.get_text("items.close")
-	close_btn.pressed.connect(_hide_item_detail)
-	vbox.add_child(close_btn)
+	# 使用PopupSystem显示道具详情
+	PopupSystem.show(
+		item.name,  # 标题
+		item.description,  # 内容
+		"",  # 说明
+		LocalizationSystem.get_text("items.use"),  # 确认按钮文字
+		LocalizationSystem.get_text("items.close"),  # 关闭按钮文字
+		func(): _on_item_use_pressed(slot_index),  # 确认回调
+		func(): _hide_item_detail()  # 关闭回调
+	)
 
 
 func _hide_item_detail() -> void:
 	item_detail_visible = false
 	item_detail_popup_slot = -1
-	if item_detail_popup != null:
-		item_detail_popup.queue_free()
-		item_detail_popup = null
-	if item_detail_backdrop != null:
-		item_detail_backdrop.queue_free()
-		item_detail_backdrop = null
-
-
-func _on_backdrop_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		_hide_item_detail()
+	if PopupSystem.is_open():
+		PopupSystem.hide()
 
 
 func _on_item_use_pressed(slot_index: int) -> void:
+	# 先关闭弹窗
+	_hide_item_detail()
+
 	var items: Array = GameManager.items
 	if slot_index < 0 or slot_index >= items.size():
-		_hide_item_detail()
 		return
 
 	var item: DataModels.ItemData = items[slot_index]
 
 	# 需要目标的道具
 	if item.id in [1, 2, 3, 11, 13, 14, 15, 16]:
-		# 战斗场景暂不支持目标选择，提示并关闭
-		_hide_item_detail()
+		# 战斗场景暂不支持目标选择，延迟显示提示避免被弹窗遮挡
+		await get_tree().create_timer(0.15).timeout
+		TipManager.show_tip("战斗中无法选择目标")
 		return
 
 	# 即时使用
@@ -400,13 +351,17 @@ func _on_item_use_pressed(slot_index: int) -> void:
 	if result.success:
 		GameManager.remove_item(slot_index)
 		_refresh_item_slots()
-	_hide_item_detail()
+	else:
+		# 延迟显示提示，避免被弹窗遮挡
+		await get_tree().create_timer(0.15).timeout
+		TipManager.show_tip("无法使用道具")
 
 
 func _on_item_discard_pressed(slot_index: int) -> void:
+	# 先关闭弹窗
+	_hide_item_detail()
 	GameManager.remove_item(slot_index)
 	_refresh_item_slots()
-	_hide_item_detail()
 
 
 func _connect_signals() -> void:
