@@ -38,21 +38,21 @@ func _ready() -> void:
 func _create_audio_players() -> void:
 	# 创建两个BGM播放器用于交叉淡入淡出
 	_bgm_player_a = AudioStreamPlayer.new()
-	_bgm_player_a.bus = "Music"
+	_bgm_player_a.bus = "Master"  # 使用Master确保存在
 	_bgm_player_a.volume_db = -80.0  # 初始静音
-	
+
 	_bgm_player_b = AudioStreamPlayer.new()
-	_bgm_player_b.bus = "Music"
+	_bgm_player_b.bus = "Master"
 	_bgm_player_b.volume_db = -80.0
-	
+
 	_sfx_player = AudioStreamPlayer.new()
 	_sfx_player.bus = "Master"
 	_sfx_player.volume_db = SFX_VOLUME_DB
-	
+
 	add_child(_bgm_player_a)
 	add_child(_bgm_player_b)
 	add_child(_sfx_player)
-	
+
 	_active_player = _bgm_player_a
 
 
