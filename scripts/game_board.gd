@@ -1706,6 +1706,9 @@ func _drag_to_dorm() -> void:
 # ---- 遗物栏操作（常驻显示）----
 
 func _refresh_relic_panel() -> void:
+	# 确保遗物面板可见
+	relic_panel.modulate = Color.WHITE
+	
 	# 清空旧内容
 	for child in relic_list.get_children():
 		child.queue_free()
