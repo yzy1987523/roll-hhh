@@ -42,17 +42,15 @@ var SELECT_FRAMES: Array[Texture2D] = []
 @onready var sacrifice_label: Label = $MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton/Label
 
 # ---- 设置面板节点 ----
+@onready var settings_backdrop: ColorRect = $SettingsBackdrop
 @onready var settings_panel: PanelContainer = $SettingsPanel
 @onready var settings_vbox: VBoxContainer = $SettingsPanel/SettingsVBox
 @onready var settings_title: Label = $SettingsPanel/SettingsVBox/TitleBar/SettingsTitle
-@onready var language_button: Button = $SettingsPanel/SettingsVBox/LanguageRow/LanguageButton
-@onready var language_label: Label = $SettingsPanel/SettingsVBox/LanguageRow/LanguageLabel
+@onready var language_button: Button = $SettingsPanel/SettingsVBox/LanguageButton2
 @onready var volume_slider: HSlider = $SettingsPanel/SettingsVBox/VolumeRow/VolumeSlider
-@onready var volume_label: Label = $SettingsPanel/SettingsVBox/VolumeRow/VolumeLabel
 @onready var reset_tutorial_button: Button = $SettingsPanel/SettingsVBox/ResetTutorialButton
 @onready var clear_save_button: Button = $SettingsPanel/SettingsVBox/ClearSaveButton
 @onready var close_settings_button: TextureButton = $SettingsPanel/SettingsVBox/TitleBar/CloseButton
-@onready var reset_confirm_label: Label = $SettingsPanel/ResetConfirmLabel
 
 # ---- 常量 ----
 const GRID_SIZE := 6
@@ -2375,98 +2373,29 @@ func _on_settings_pressed() -> void:
 
 
 func _show_settings_panel() -> void:
-	# 去掉面板黑底
-	var empty_style := StyleBoxEmpty.new()
-	settings_panel.add_theme_stylebox_override("panel", empty_style)
-	
-	# 添加 pop.png 背景（如果还没有）
-	if not settings_panel.has_node("PanelBg"):
-		var panel_texture := preload("res://art/sprites/UI/panels/pop.png")
-		var bg := TextureRect.new()
-		bg.name = "PanelBg"
-		bg.texture = panel_texture
-		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		bg.z_index = -1
-		settings_panel.add_child(bg)
-		settings_panel.move_child(bg, 0)  # 移到最底层
-	
-	# 设置层级，确保在角色之上
-	settings_panel.z_index = 50
+	settings_backdrop.visible = true
 	settings_panel.visible = true
-	_update_settings_ui()
+	# 连接遮罩点击事件（只连接一次）
+	if not settings_backdrop.gui_input.is_connected(_on_settings_backdrop_pressed):
+		settings_backdrop.gui_input.connect(_on_settings_backdrop_pressed)
+	_update_language_button_text()
 	_update_settings_texts()
-	
-	# 设置关闭按钮样式（使用close图片，去掉黑底）
-	_setup_close_button()
-	
-	# 设置功能按钮样式（使用pop.png作为背景）
-	_setup_function_buttons()
+
+
+func _on_settings_backdrop_pressed(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		_hide_settings_panel()
 
 
 func _hide_settings_panel() -> void:
+	settings_backdrop.visible = false
 	settings_panel.visible = false
-
-
-func _update_settings_ui() -> void:
-	_update_language_button_text()
-	volume_slider.value = _load_volume()
 
 
 func _update_settings_texts() -> void:
 	settings_title.text = LocalizationSystem.get_text("settings.title")
-	language_label.text = LocalizationSystem.get_text("settings.language")
-
-
-func _setup_close_button() -> void:
-	# TextureButton 已在场景中配置好，无需额外设置
-	pass
-
-
-func _setup_function_buttons() -> void:
-	# 设置切换语言按钮样式
-	_setup_pop_button(language_button)
-	
-	# 设置清存档按钮样式
-	_setup_pop_button(clear_save_button)
-	
-	# 设置重置教程按钮样式
-	_setup_pop_button(reset_tutorial_button)
-
-
-func _setup_pop_button(btn: Button) -> void:
-	# 去掉按钮默认背景
-	var empty_style := StyleBoxEmpty.new()
-	btn.add_theme_stylebox_override("normal", empty_style)
-	btn.add_theme_stylebox_override("hover", empty_style)
-	btn.add_theme_stylebox_override("pressed", empty_style)
-	btn.add_theme_stylebox_override("disabled", empty_style)
-	
-	# 设置按钮尺寸放大2倍
-	btn.custom_minimum_size = Vector2(480, 80)
-	
-	# 添加pop.png作为背景
-	if not btn.has_node("ButtonBg"):
-		var pop_texture := preload("res://art/sprites/UI/panels/pop.png")
-		var bg := TextureRect.new()
-		bg.name = "ButtonBg"
-		bg.texture = pop_texture
-		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		bg.z_index = -1
-		btn.add_child(bg)
-		btn.move_child(bg, 0)
-	
-	# 设置字体大小
-	btn.add_theme_font_size_override("font_size", 32)
-	volume_label.text = LocalizationSystem.get_text("settings.volume")
 	reset_tutorial_button.text = LocalizationSystem.get_text("settings.reset_tutorial")
 	clear_save_button.text = LocalizationSystem.get_text("settings.clear_save")
-	_reset_confirm_label_visible(false)
 
 
 func _on_language_toggled() -> void:
@@ -2537,7 +2466,7 @@ func _on_volume_changed(value: float) -> void:
 
 func _on_reset_tutorial_pressed() -> void:
 	GameManager.reset_tutorial()
-	_reset_confirm_label_visible(true, "settings.reset_confirm")
+	TipManager.show_tip(LocalizationSystem.get_text("settings.reset_confirm"), 2.0)
 
 
 func _on_clear_save_pressed() -> void:
@@ -2551,14 +2480,10 @@ func _on_clear_save_pressed() -> void:
 	_on_energy_changed(GameManager.energy)
 	_on_round_changed(GameManager.current_round)
 	# 显示提示
-	_reset_confirm_label_visible(true, "settings.clear_save_confirm")
+	TipManager.show_tip(LocalizationSystem.get_text("settings.clear_save_confirm"), 2.0)
 	print(">>> [GameBoard] 存档已清空")
 
 
-func _reset_confirm_label_visible(show_label: bool, text_key: String = "") -> void:
-	reset_confirm_label.visible = show_label
-	if show_label and text_key != "":
-		reset_confirm_label.text = LocalizationSystem.get_text(text_key)
 
 
 func _on_close_settings() -> void:

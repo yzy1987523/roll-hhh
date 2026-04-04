@@ -11,14 +11,12 @@
 [ext_resource type="Texture2D" uid="uid://bp2gkj73ffk72" path="res://art/sprites/UI/items/smallItem/dorm.png" id="8_dorm"]
 [ext_resource type="Texture2D" uid="uid://co48vbq7kyocc" path="res://art/sprites/UI/items/smallItem/Encyclopedia.png" id="9_encyclopedia"]
 [ext_resource type="Texture2D" uid="uid://x0btk78hil8p" path="res://art/sprites/UI/items/smallItem/close.png" id="10_close"]
-[ext_resource type="Texture2D" uid="uid://ht2vknq8ek0k" path="res://art/sprites/UI/items/item/item_013.png" id="12_item"]
 [ext_resource type="Texture2D" uid="uid://wxotl5d1lxgm" path="res://art/sprites/UI/items/smallItem/spawner0.png" id="13_cac7a"]
-[ext_resource type="Texture2D" uid="uid://brok1s4jfwo2d" path="res://art/sprites/UI/items/item/item_033.png" id="13_sacrifice"]
-[ext_resource type="Texture2D" path="res://art/sprites/UI/items/smallItem/xianji.png" id="17_xianji"]
 [ext_resource type="Texture2D" uid="uid://b4u4vkmgj8nuw" path="res://art/sprites/UI/items/smallItem/spawner1.png" id="14_8auva"]
-[ext_resource type="Texture2D" path="res://art/sprites/UI/panels/endBtn.png" id="18_endbtn"]
 [ext_resource type="Texture2D" uid="uid://c25vh10f0w554" path="res://art/sprites/UI/items/smallItem/spawner2.png" id="15_hrnlr"]
-[ext_resource type="Texture2D" path="res://art/sprites/UI/panels/detailPanel.png" id="19_detailpanel"]
+[ext_resource type="Texture2D" uid="uid://0os7j7df5d8r" path="res://art/sprites/UI/items/smallItem/xianji.png" id="17_xianji"]
+[ext_resource type="Texture2D" uid="uid://nbvvllprboxf" path="res://art/sprites/UI/panels/endBtn.png" id="18_endbtn"]
+[ext_resource type="Texture2D" uid="uid://btegp2rhlo35b" path="res://art/sprites/UI/panels/detailPanel.png" id="19_detailpanel"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_detailpanel"]
 
@@ -151,7 +149,6 @@ size_flags_horizontal = 3
 [node name="ScrollContainer" type="ScrollContainer" parent="MainLayout/RelicBar/RelicPanel" unique_id=308367483]
 layout_mode = 2
 size_flags_vertical = 3
-horizontal_scroll_mode = 1
 
 [node name="RelicList" type="HBoxContainer" parent="MainLayout/RelicBar/RelicPanel/ScrollContainer" unique_id=308367484]
 layout_mode = 2
@@ -161,8 +158,6 @@ theme_override_constants/separation = 4
 [node name="NextButton" type="Button" parent="MainLayout/RelicBar" unique_id=308367487]
 custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
-size_flags_vertical = 3
-text = "▶"
 size_flags_vertical = 3
 text = "▶"
 
@@ -235,13 +230,13 @@ custom_minimum_size = Vector2(0, 144)
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="EnergyContainer" type="HBoxContainer" parent="MainLayout/BottomBar/SpawnRow"]
+[node name="EnergyContainer" type="HBoxContainer" parent="MainLayout/BottomBar/SpawnRow" unique_id=1130546165]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 4
 
-[node name="EnergyIcon" type="TextureRect" parent="MainLayout/BottomBar/SpawnRow/EnergyContainer"]
+[node name="EnergyIcon" type="TextureRect" parent="MainLayout/BottomBar/SpawnRow/EnergyContainer" unique_id=1298048947]
 custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
 size_flags_vertical = 3
@@ -249,7 +244,7 @@ texture = ExtResource("4_energy")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="EnergyLabel" type="Label" parent="MainLayout/BottomBar/SpawnRow/EnergyContainer"]
+[node name="EnergyLabel" type="Label" parent="MainLayout/BottomBar/SpawnRow/EnergyContainer" unique_id=981737486]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 size_flags_vertical = 3
@@ -257,11 +252,11 @@ theme_override_font_sizes/font_size = 40
 text = "36/36"
 vertical_alignment = 1
 
-[node name="LeftSpacer" type="Control" parent="MainLayout/BottomBar/SpawnRow"]
+[node name="LeftSpacer" type="Control" parent="MainLayout/BottomBar/SpawnRow" unique_id=380423932]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="SpawnButtons" type="HBoxContainer" parent="MainLayout/BottomBar/SpawnRow"]
+[node name="SpawnButtons" type="HBoxContainer" parent="MainLayout/BottomBar/SpawnRow" unique_id=596627353]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 8
@@ -287,7 +282,7 @@ size_flags_vertical = 3
 texture_normal = ExtResource("15_hrnlr")
 stretch_mode = 5
 
-[node name="RightSpacer" type="Control" parent="MainLayout/BottomBar/SpawnRow"]
+[node name="RightSpacer" type="Control" parent="MainLayout/BottomBar/SpawnRow" unique_id=1840648407]
 layout_mode = 2
 size_flags_horizontal = 3
 
@@ -306,13 +301,13 @@ theme_override_styles/panel = SubResource("StyleBoxEmpty_detailpanel")
 
 [node name="DetailPanelBg" type="TextureRect" parent="MainLayout/DetailActionBar/DetailPanel" unique_id=945550927]
 custom_minimum_size = Vector2(700, 220)
-texture = ExtResource("19_detailpanel")
-expand_mode = 1
-stretch_mode = 4
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 mouse_filter = 2
+texture = ExtResource("19_detailpanel")
+expand_mode = 1
+stretch_mode = 4
 
 [node name="MainHBox" type="HBoxContainer" parent="MainLayout/DetailActionBar/DetailPanel" unique_id=945550923]
 layout_mode = 2
@@ -323,7 +318,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 4
 
-[node name="TopMargin" type="Control" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/LeftContent"]
+[node name="TopMargin" type="Control" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/LeftContent" unique_id=1306117940]
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
 
@@ -347,13 +342,12 @@ text = "提示文本"
 vertical_alignment = 1
 
 [node name="SacrificeButton" type="TextureButton" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox" unique_id=945550919]
+modulate = Color(1, 1, 1, 0)
 custom_minimum_size = Vector2(100, 100)
-texture_normal = ExtResource("17_xianji")
 layout_mode = 2
 size_flags_vertical = 4
+texture_normal = ExtResource("17_xianji")
 stretch_mode = 5
-visible = true
-modulate = Color(1, 1, 1, 0)
 
 [node name="Label" type="Label" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton" unique_id=945550931]
 layout_mode = 1
@@ -370,12 +364,13 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_colors/font_color = Color(1, 0, 0, 1)
 theme_override_font_sizes/font_size = 24
-text = "献祭\n获得 0 能量"
+text = "献祭
+获得 0 能量"
 horizontal_alignment = 1
 vertical_alignment = 1
-clip_text = false
 
 [node name="SacrificeIcon" type="TextureRect" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton" unique_id=945550928]
+modulate = Color(1, 1, 1, 0.5)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -385,15 +380,12 @@ grow_vertical = 2
 texture = ExtResource("17_xianji")
 expand_mode = 1
 stretch_mode = 5
-modulate = Color(1, 1, 1, 0.5)
 
 [node name="EndTurnButton" type="TextureButton" parent="MainLayout/DetailActionBar" unique_id=945550920]
 custom_minimum_size = Vector2(216, 216)
-texture_normal = ExtResource("18_endbtn")
 layout_mode = 2
-text = "🗵 结束回合"
-
 size_flags_vertical = 4
+texture_normal = ExtResource("18_endbtn")
 stretch_mode = 5
 
 [node name="Label" type="Label" parent="MainLayout/DetailActionBar/EndTurnButton" unique_id=945550930]
@@ -409,56 +401,69 @@ text = "结束回合"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="SettingsPanel" type="PanelContainer" parent="." unique_id=1089472691]
+[node name="SettingsBackdrop" type="ColorRect" parent="." unique_id=1089472690]
 visible = false
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -250.0
-offset_top = -350.0
-offset_right = 250.0
-offset_bottom = 350.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="SettingsVBox" type="VBoxContainer" parent="SettingsPanel" unique_id=1435528226]
-layout_mode = 2
-theme_override_constants/separation = 24
-
-[node name="TitleBar" type="Control" parent="SettingsPanel/SettingsVBox" unique_id=1725768073]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 60)
-
-[node name="SettingsTitle" type="Label" parent="SettingsPanel/SettingsVBox/TitleBar"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_font_sizes/font_size = 48
+mouse_filter = 2
+color = Color(0, 0, 0, 0.5)
+
+[node name="SettingsPanel" type="PanelContainer" parent="." unique_id=1089472691]
+visible = false
+z_index = 50
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -500.0
+offset_top = -400.0
+offset_right = 500.0
+offset_bottom = 400.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SettingsVBox" type="VBoxContainer" parent="SettingsPanel" unique_id=1435528226]
+layout_mode = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="TitleBar" type="Control" parent="SettingsPanel/SettingsVBox" unique_id=1725768073]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+
+[node name="SettingsTitle" type="Label" parent="SettingsPanel/SettingsVBox/TitleBar" unique_id=33893734]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 64
 text = "Settings"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="CloseButton" type="TextureButton" parent="SettingsPanel/SettingsVBox/TitleBar" unique_id=2035558326]
+custom_minimum_size = Vector2(100, 100)
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -110.0
-offset_top = 0.0
 offset_right = -10.0
 offset_bottom = 100.0
 grow_horizontal = 0
-custom_minimum_size = Vector2(100, 100)
 texture_normal = ExtResource("10_close")
 stretch_mode = 5
 
 [node name="LanguageRow" type="HBoxContainer" parent="SettingsPanel/SettingsVBox" unique_id=1453064821]
+visible = false
 layout_mode = 2
 theme_override_constants/separation = 20
 
@@ -474,6 +479,7 @@ theme_override_font_sizes/font_size = 32
 text = "EN"
 
 [node name="VolumeRow" type="HBoxContainer" parent="SettingsPanel/SettingsVBox" unique_id=1298891949]
+visible = false
 layout_mode = 2
 theme_override_constants/separation = 20
 
@@ -483,28 +489,30 @@ theme_override_font_sizes/font_size = 32
 text = "Volume"
 
 [node name="VolumeSlider" type="HSlider" parent="SettingsPanel/SettingsVBox/VolumeRow" unique_id=335025774]
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(0, 40)
 max_value = 1.0
 step = 0.1
 value = 1.0
 
-[node name="ResetTutorialButton" type="Button" parent="SettingsPanel/SettingsVBox" unique_id=86378731]
+[node name="LanguageButton2" type="Button" parent="SettingsPanel/SettingsVBox" unique_id=86378730]
+custom_minimum_size = Vector2(960, 160)
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 64
+text = "EN"
+
+[node name="ResetTutorialButton" type="Button" parent="SettingsPanel/SettingsVBox" unique_id=86378731]
+custom_minimum_size = Vector2(960, 160)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 64
 text = "Reset Tutorial"
 
 [node name="ClearSaveButton" type="Button" parent="SettingsPanel/SettingsVBox" unique_id=86378732]
+custom_minimum_size = Vector2(960, 160)
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
-text = "Clear Save"
-
-[node name="ResetConfirmLabel" type="Label" parent="SettingsPanel" unique_id=827146354]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
+size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 32
 text = "Tutorial reset!"
-horizontal_alignment = 1
-vertical_alignment = 1
