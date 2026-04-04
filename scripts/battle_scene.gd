@@ -813,13 +813,12 @@ func _update_enemy_display() -> void:
 	# 更新血条
 	enemy_hp_bar.max_value = e.max_hp
 	enemy_hp_bar.value = e.hp
-	enemy_hp_label.text = "HP: %d/%d" % [e.hp, e.max_hp]
 
 	# 血条长度：根据血量计算，范围100-600
 	var hp_bar_width: int = clampi(int(e.max_hp * 2), 100, 600)
 	enemy_hp_bar.custom_minimum_size = Vector2(hp_bar_width, 24)
 	
-	# 在血条上叠加血量文字（字号2倍，去掉HP字样）
+	# 更新血条上的血量文字
 	_update_enemy_hp_label(e, hp_bar_width)
 
 	# 加载敌人精灵图
@@ -828,30 +827,23 @@ func _update_enemy_display() -> void:
 
 ## 更新敌人血条上的血量文字
 func _update_enemy_hp_label(e: EnemyFactory.EnemyData, hp_bar_width: int) -> void:
-	# 清除旧的血量文字（通过名称查找）
-	var old_labels := []
-	for child in enemy_hp_bar.get_children():
-		if child.name == "HpText":
-			old_labels.append(child)
-	for old_label in old_labels:
-		old_label.queue_free()
-
-	# 更新enemy_hp_label的文字（确保静态Label也同步）
-	enemy_hp_label.text = "HP: %d/%d" % [e.hp, e.max_hp]
-
-	# 创建血量文字（叠加在血条上）
-	var hp_text := Label.new()
-	hp_text.name = "HpText"
-	hp_text.text = "%d/%d" % [e.hp, e.max_hp]
-	hp_text.custom_minimum_size = Vector2(hp_bar_width, 24)
-	hp_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hp_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	hp_text.add_theme_font_size_override("font_size", 32)  # 2倍字号
-	hp_text.add_theme_color_override("font_color", Color.WHITE)
-	hp_text.add_theme_color_override("font_outline_color", Color.BLACK)
-	hp_text.add_theme_constant_override("outline_size", 3)
-	hp_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	enemy_hp_bar.add_child(hp_text)
+	# 将enemy_hp_label移动到血条上（如果还没移动）
+	if enemy_hp_label.get_parent() != enemy_hp_bar:
+		enemy_hp_label.get_parent().remove_child(enemy_hp_label)
+		enemy_hp_bar.add_child(enemy_hp_label)
+	
+	# 设置样式
+	enemy_hp_label.name = "HpText"
+	enemy_hp_label.text = "%d/%d" % [e.hp, e.max_hp]
+	enemy_hp_label.custom_minimum_size = Vector2(hp_bar_width, 24)
+	enemy_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	enemy_hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	enemy_hp_label.add_theme_font_size_override("font_size", 32)
+	enemy_hp_label.add_theme_color_override("font_color", Color.WHITE)
+	enemy_hp_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	enemy_hp_label.add_theme_constant_override("outline_size", 3)
+	enemy_hp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	enemy_hp_label.visible = true
 	
 	# 更新敌人精灵图上的攻防图标
 	_update_enemy_sprite_ui(e)
