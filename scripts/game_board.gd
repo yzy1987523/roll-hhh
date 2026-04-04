@@ -2139,14 +2139,16 @@ func _use_item_direct(slot_index: int) -> void:
 	var success: bool = result.get("success", false)
 	var affected_target: int = result.get("target_index", -1)
 	
+	print(">>> [GameBoard] 使用道具 %s (直接使用), result: %s" % [item.name, result])
+	
 	if success:
 		GameManager.remove_item(slot_index)
 		_refresh_item_slots()
 		_refresh_board_display()
-		print(">>> [GameBoard] 使用道具: %s" % item.name)
 		
 		# 如果有受影响的目标，播放高亮动效
 		if affected_target >= 0:
+			print(">>> [GameBoard] 播放高亮动效，目标: %d" % affected_target)
 			_play_item_effect_highlight(affected_target)
 	else:
 		print(">>> [GameBoard] 使用道具失败: %s" % item.name)
@@ -2165,15 +2167,17 @@ func _use_item_on_target(target_index: int) -> void:
 	var success: bool = result.get("success", false)
 	var affected_target: int = result.get("target_index", -1)
 	
+	print(">>> [GameBoard] 使用道具 %s (目标: %d), result: %s" % [item.name, target_index, result])
+	
 	if success:
 		GameManager.remove_item(slot_index)
 		_refresh_item_slots()
 		_refresh_board_display()
-		print(">>> [GameBoard] 对格 %d 使用道具: %s" % [target_index, item.name])
 		
 		# 播放高亮动效（使用target_index，如果result中没有affected_target）
 		if affected_target < 0:
 			affected_target = target_index
+		print(">>> [GameBoard] 播放高亮动效，目标: %d" % affected_target)
 		_play_item_effect_highlight(affected_target)
 	else:
 		print(">>> [GameBoard] 使用道具失败: %s" % item.name)
@@ -2183,15 +2187,21 @@ func _use_item_on_target(target_index: int) -> void:
 
 ## 播放道具使用效果的高亮动效（0.5s红色高亮）
 func _play_item_effect_highlight(cell_index: int) -> void:
+	print(">>> [GameBoard] _play_item_effect_highlight 被调用，cell_index: %d" % cell_index)
+	
 	if cell_index < 0 or cell_index >= cell_sprites.size():
+		print(">>> [GameBoard] 无效的 cell_index: %d (范围: 0-%d)" % [cell_index, cell_sprites.size() - 1])
 		return
 	
 	var sprite: Control = cell_sprites[cell_index]
 	if sprite == null or not is_instance_valid(sprite):
+		print(">>> [GameBoard] sprite 无效或为空")
 		return
 	
 	# 保存原始颜色
 	var original_modulate: Color = sprite.modulate
+	
+	print(">>> [GameBoard] 开始播放高亮动效，格子: %d" % cell_index)
 	
 	# 创建高亮动画：红色闪烁
 	var tween := create_tween()
