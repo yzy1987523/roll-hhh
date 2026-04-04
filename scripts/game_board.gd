@@ -91,9 +91,6 @@ var _is_awaiting_drag: bool = false  # 是否等待拖拽判断
 const DRAG_THRESHOLD: float = 5.0  # 开始拖拽的移动阈值（像素）
 var merge_targets: Array = []   # 可合成的目标格子列表
 
-# ---- 生成动画锁 ----
-var is_spawning: bool = false   # 是否正在播放生成动画
-
 # ---- 教学系统 ----
 var tutorial_overlay = null
 
@@ -1429,9 +1426,8 @@ func _on_items_changed() -> void:
 # ---- 角色生成 (任务 2.2) ----
 
 func _on_spawn_pressed(job: int) -> void:
-	# 动画进行中，禁用连续点击
-	if is_spawning:
-		return
+	# 移除动画锁：角色已在数据中占位，不会冲突
+	# 之前的限制是为了防止重复生成，现在通过棋盘数据自动管理
 	
 	# 播放按钮点击音效
 	SoundSystem.play_button_click()
@@ -1497,12 +1493,13 @@ func _on_spawn_pressed(job: int) -> void:
 
 ## 生成动画：从按钮位置飞到目标格子
 func _play_spawn_animation(ch: DataModels.CharacterData, start_pos: Vector2, end_pos: Vector2, target_index: int) -> void:
-	is_spawning = true
+	# 立即刷新显示（角色已在数据中，直接显示）
+	_refresh_board_display()
 
-	# 先给目标格子添加"即将放置"标记（边框闪烁）
-	_play_spawn_cell_hint(target_index)
+	# 播放"落地"动效：缩小到0.95再还原（丝滑）
+	_play_land_animation(target_index)
 
-	# 创建独立的动画精灵（添加到根节点，不受格子约束）
+	# 创建飞入动画精灵（视觉反馈）
 	var anim_sprite := TextureRect.new()
 	anim_sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
 	anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -1525,79 +1522,18 @@ func _play_spawn_animation(ch: DataModels.CharacterData, start_pos: Vector2, end
 	# 动画：从小到大、从按钮位置飞到目标格子（终点也是左上角对齐）
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(anim_sprite, "global_position", end_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2), 0.4)\
+	tween.tween_property(anim_sprite, "global_position", end_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2), 0.3)\
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(anim_sprite, "scale", Vector2(1.0, 1.0), 0.4)\
+	tween.tween_property(anim_sprite, "scale", Vector2(1.0, 1.0), 0.3)\
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
-	await tween.finished
-
-	# 清理动画精灵
-	anim_sprite.queue_free()
-
-	# 清理目标格子标记
-	_clear_spawn_cell_hint(target_index)
-
-	# 刷新棋盘显示（此时才显示角色）
-	_refresh_board_display()
-
-	# 角色到达目标后播放"落地"动效：缩小到0.95再还原（丝滑）
-	_play_land_animation(target_index)
+	# 不等待动画完成，直接返回（允许连续点击）
+	# 动画结束后自动清理
+	tween.finished.connect(func():
+		anim_sprite.queue_free()
+	)
 
 	_try_advance_tutorial(1)
-
-	is_spawning = false
-
-
-## 生成前格子闪烁提示
-var _spawn_hint_panel: PanelContainer = null
-var _spawn_hint_tween: Tween = null
-
-func _play_spawn_cell_hint(target_index: int) -> void:
-	if target_index < 0 or target_index >= cell_panels.size():
-		return
-	var cell: Control = cell_panels[target_index]
-	if cell == null:
-		return
-
-	# 创建高亮面板
-	_spawn_hint_panel = PanelContainer.new()
-	_spawn_hint_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_spawn_hint_panel.z_index = 50
-
-	# 创建边框样式
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0, 0, 0, 0)
-	style.border_color = Color(1.0, 0.85, 0.0, 0.8)  # 金色边框
-	style.border_width_left = 3
-	style.border_width_right = 3
-	style.border_width_top = 3
-	style.border_width_bottom = 3
-	style.corner_radius_top_left = 4
-	style.corner_radius_top_right = 4
-	style.corner_radius_bottom_left = 4
-	style.corner_radius_bottom_right = 4
-	_spawn_hint_panel.add_theme_stylebox_override("panel", style)
-
-	cell.add_child(_spawn_hint_panel)
-
-	# 边框闪烁动画
-	_spawn_hint_tween = create_tween()
-	_spawn_hint_tween.set_parallel(true)
-	_spawn_hint_tween.tween_property(_spawn_hint_panel, "modulate:a", 0.4, 0.2)\
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT).from(1.0)
-	_spawn_hint_tween.tween_property(_spawn_hint_panel, "modulate:a", 1.0, 0.2)\
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
-	_spawn_hint_tween.set_loops(3)  # 闪烁3次
-
-
-func _clear_spawn_cell_hint(_target_index: int) -> void:
-	if _spawn_hint_tween != null and _spawn_hint_tween.is_valid():
-		_spawn_hint_tween.kill()
-		_spawn_hint_tween = null
-	if _spawn_hint_panel != null and is_instance_valid(_spawn_hint_panel):
-		_spawn_hint_panel.queue_free()
-		_spawn_hint_panel = null
 
 
 # ---- 宿舍操作 ----
