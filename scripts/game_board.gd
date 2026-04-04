@@ -1709,6 +1709,23 @@ func _refresh_relic_panel() -> void:
 	# 确保遗物面板可见
 	relic_panel.modulate = Color.WHITE
 	
+	# 添加 bar.png 背景（如果还没有）
+	if relic_panel.get_child_count() == 0 or not relic_panel.get_child(0).name == "RelicBarBg":
+		var bar_texture := preload("res://art/sprites/UI/panels/bar.png")
+		var bg := TextureRect.new()
+		bg.name = "RelicBarBg"
+		bg.texture = bar_texture
+		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bg.z_index = -1  # 确保在最底层
+		relic_panel.add_child(bg)
+		relic_panel.move_child(bg, 0)  # 移到最底层
+	
+	# 设置遗物列表间隔为10
+	relic_list.add_theme_constant_override("separation", 10)
+	
 	# 清空旧内容
 	for child in relic_list.get_children():
 		child.queue_free()
@@ -1721,10 +1738,17 @@ func _refresh_relic_panel() -> void:
 		relic_item.tooltip_text = "%s\n%s" % [relic.name, relic.description]
 		relic_item.pressed.connect(_on_relic_pressed.bind(relic))
 		
+		# 移除按钮的默认背景（去掉黑底）
+		var empty_style := StyleBoxEmpty.new()
+		relic_item.add_theme_stylebox_override("normal", empty_style)
+		relic_item.add_theme_stylebox_override("hover", empty_style)
+		relic_item.add_theme_stylebox_override("pressed", empty_style)
+		relic_item.add_theme_stylebox_override("disabled", empty_style)
+		
 		# 只添加图片
 		var texture_rect := TextureRect.new()
 		texture_rect.texture = _get_relic_texture(relic)
-		texture_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		texture_rect.expand_mode = TextureRect.EXPAND_FIT_HEIGHT
 		texture_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		texture_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 		texture_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
