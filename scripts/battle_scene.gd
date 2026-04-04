@@ -814,11 +814,17 @@ func _update_enemy_display() -> void:
 
 ## 更新敌人血条上的血量文字
 func _update_enemy_hp_label(e: EnemyFactory.EnemyData, hp_bar_width: int) -> void:
-	# 清除旧的血量文字
-	var old_label: Node = enemy_hp_bar.get_node_or_null("HpText")
-	if old_label != null:
+	# 清除旧的血量文字（通过名称查找）
+	var old_labels := []
+	for child in enemy_hp_bar.get_children():
+		if child.name == "HpText":
+			old_labels.append(child)
+	for old_label in old_labels:
 		old_label.queue_free()
-	
+
+	# 更新enemy_hp_label的文字（确保静态Label也同步）
+	enemy_hp_label.text = "HP: %d/%d" % [e.hp, e.max_hp]
+
 	# 创建血量文字（叠加在血条上）
 	var hp_text := Label.new()
 	hp_text.name = "HpText"
@@ -1419,6 +1425,112 @@ func _play_attack_animation(cell_index: int) -> void:
 	tween.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.1)
 
 
+## 我方角色被击中动画（与攻击动画相反：先x压缩y拉长，再x拉长y压缩）
+func _play_character_hit_animation(cell_index: int) -> void:
+	if cell_index < 0 or cell_index >= cell_sprites.size():
+		return
+	var sprite: Control = cell_sprites[cell_index]
+	if sprite == null or not is_instance_valid(sprite):
+		return
+
+	# 设置pivot_offset为中心
+	if "pivot_offset" in sprite:
+		sprite.pivot_offset = Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
+
+	# 重置
+	sprite.scale = Vector2(1.0, 1.0)
+
+	# 创建动画序列：与攻击动画相反
+	var tween := create_tween()
+	tween.set_parallel(false)
+
+	# Phase 1: x压缩 y拉长
+	tween.tween_property(sprite, "scale", Vector2(0.9, 1.1), 0.1).from(Vector2(1.0, 1.0))
+	# Phase 2: x拉长 y压缩
+	tween.tween_property(sprite, "scale", Vector2(1.1, 0.9), 0.15)
+	# Phase 3: 恢复原尺寸
+	tween.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.1)
+
+
+## 敌人被击中动画（squash & stretch，带叠加效果）
+var _enemy_hit_offset_x: float = 0.01  # x轴拉长增量
+var _enemy_hit_offset_y: float = 0.01   # y轴收缩增量
+
+func _play_enemy_hit_animation() -> void:
+	var enemy_sprite: Control = enemy_sprite_rect
+	if enemy_sprite == null or not is_instance_valid(enemy_sprite):
+		return
+
+	# 设置pivot_offset为中心
+	var sprite_size: Vector2 = enemy_sprite.size
+	if sprite_size.x > 0 and sprite_size.y > 0:
+		enemy_sprite.pivot_offset = sprite_size * 0.5
+	else:
+		enemy_sprite.pivot_offset = Vector2(100, 100)  # 默认200x200的中心
+
+	# 获取当前scale作为新的基准（叠加效果）
+	var base_scale: Vector2 = enemy_sprite.scale
+	# 如果当前scale接近(1,1)，说明是初始状态，重置基准
+	if absf(base_scale.x - 1.0) < 0.001 and absf(base_scale.y - 1.0) < 0.001:
+		base_scale = Vector2(1.0, 1.0)
+		_enemy_hit_offset_x = 0.01
+		_enemy_hit_offset_y = 0.01
+
+	# 叠加效果：增加偏移量
+	_enemy_hit_offset_x += 0.01
+	_enemy_hit_offset_y += 0.01
+
+	# 计算新的目标scale
+	var target_scale_x: float = base_scale.x + _enemy_hit_offset_x
+	var target_scale_y: float = base_scale.y - _enemy_hit_offset_y
+
+	# 创建动画：x拉长到1+offset，y收缩到1-offset，然后恢复
+	var tween := create_tween()
+	tween.set_parallel(false)
+
+	# Phase 1: x拉长 y收缩
+	tween.tween_property(enemy_sprite, "scale", Vector2(target_scale_x, target_scale_y), 0.08).from(base_scale)
+	# Phase 2: 恢复原尺寸
+	tween.tween_property(enemy_sprite, "scale", Vector2(1.0, 1.0), 0.12)
+
+	# 重置偏移量（动画结束后回归初始累积）
+	tween.tween_callback(_reset_enemy_hit_offset)
+
+
+## 重置敌人被击中动画的偏移量
+func _reset_enemy_hit_offset() -> void:
+	_enemy_hit_offset_x = 0.01
+	_enemy_hit_offset_y = 0.01
+
+
+## 敌人发射子弹动效（与我方角色被击中动画一致：x压缩y拉长 -> x拉长y压缩 -> 恢复）
+func _play_enemy_shoot_animation() -> void:
+	var enemy_sprite: Control = enemy_sprite_rect
+	if enemy_sprite == null or not is_instance_valid(enemy_sprite):
+		return
+
+	# 设置pivot_offset为中心
+	var sprite_size: Vector2 = enemy_sprite.size
+	if sprite_size.x > 0 and sprite_size.y > 0:
+		enemy_sprite.pivot_offset = sprite_size * 0.5
+	else:
+		enemy_sprite.pivot_offset = Vector2(100, 100)  # 默认200x200的中心
+
+	# 重置
+	enemy_sprite.scale = Vector2(1.0, 1.0)
+
+	# 创建动画序列：与角色被击中动画一致
+	var tween := create_tween()
+	tween.set_parallel(false)
+
+	# Phase 1: x压缩 y拉长
+	tween.tween_property(enemy_sprite, "scale", Vector2(0.9, 1.1), 0.08).from(Vector2(1.0, 1.0))
+	# Phase 2: x拉长 y压缩
+	tween.tween_property(enemy_sprite, "scale", Vector2(1.1, 0.9), 0.1)
+	# Phase 3: 恢复原尺寸
+	tween.tween_property(enemy_sprite, "scale", Vector2(1.0, 1.0), 0.08)
+
+
 ## 发射子弹（从源头到目标）
 ## @param bullet_type: 子弹类型 (ATTACK/HEAL/BLESS/ENEMY)
 ## @param damage: 伤害值
@@ -1452,6 +1564,21 @@ func _on_bullet_hit(target_idx: int, damage: int, bullet_type: int) -> void:
 			if engine.enemy != null and engine.enemy.is_alive():
 				engine.enemy.take_damage(damage)
 				_log_attack_result(engine.enemy.name, damage, engine.enemy.hp)
+				# 立即更新敌人血量显示（如果血条宽度未设置，使用默认120）
+				var hp_bar_w: int = int(enemy_hp_bar.custom_minimum_size.x)
+				if hp_bar_w <= 0:
+					hp_bar_w = 120
+				_update_enemy_hp_label(engine.enemy, hp_bar_w)
+				# 敌人被击中动画
+				_play_enemy_hit_animation()
+				# 检查敌人是否死亡
+				if not engine.enemy.is_alive():
+					# 敌人死亡，不等子弹完成，直接弹出结算
+					_handle_enemy_death()
+					return
+			else:
+				# 敌人已死亡，忽略此次命中
+				return
 		BULLET_TYPE_HEAL:
 			# 治疗我方角色
 			if target_idx < 0 or target_idx >= BoardData.BOARD_SLOTS:
@@ -1485,6 +1612,11 @@ func _on_bullet_hit(target_idx: int, damage: int, bullet_type: int) -> void:
 					return  # 格挡
 			ch.take_damage(damage)
 			_log_attack_result(ch.get_job_name(), damage, ch.hp)
+			# 我方角色被击中动画（与攻击动画相反：先x压缩y拉长，再x拉长y压缩）
+			_play_character_hit_animation(target_idx)
+			# 检查角色是否死亡
+			if not ch.is_alive():
+				_play_death_animation(target_idx)
 		_:
 			# 未知的子弹类型，忽略
 			print(">>> [BattleScene] 未知子弹类型: %d" % bullet_type)
@@ -1683,6 +1815,9 @@ func _execute_enemy_attack_phase() -> void:
 
 		# 计算伤害
 		var damage: int = maxi(engine.enemy.attack - target_ch.defense, 1)
+
+		# 敌人发射子弹动效（与我方角色被击中动画一致：x压缩y拉长 -> x拉长y压缩）
+		_play_enemy_shoot_animation()
 
 		# 发射子弹
 		_fire_bullet(BULLET_TYPE_ENEMY, damage, enemy_pos, target_pos, target_idx, enemy_job, enemy_tier)
