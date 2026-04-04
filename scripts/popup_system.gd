@@ -23,7 +23,7 @@ const POPUP_HEIGHT := 600
 const POPUP_PADDING := 32
 const BUTTON_HEIGHT := 56
 const CLOSE_TEXTURE := preload("res://art/sprites/UI/items/smallItem/close.png")
-const POP_TEXTURE := preload("res://art/sprites/UI/panels/pop.png")
+const POP_TEXTURE := preload("res://art/sprites/UI/items/smallItem/cell_0.png")
 
 
 func _ready() -> void:
@@ -55,8 +55,9 @@ func _create_popup_ui() -> void:
 	_popup_panel.custom_minimum_size = Vector2(POPUP_WIDTH, POPUP_HEIGHT)
 	_popup_panel.visible = false
 	_popup_panel.z_index = 100  # 设置层级，确保在所有面板之上
+	_popup_panel.self_modulate = Color(12.0/255.0, 46.0/255.0, 55.0/255.0, 0.9)  # 颜色(12,46,55) 透明度0.9
 
-	# 样式：使用 pop.png 作为背景
+	# 样式：使用 cell_0.png 作为背景
 	var style := StyleBoxTexture.new()
 	style.texture = POP_TEXTURE
 	style.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_STRETCH
@@ -107,7 +108,7 @@ func _create_popup_ui() -> void:
 	# 内容
 	_content_label = Label.new()
 	_content_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER  # 左右居中
-	_content_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	_content_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER  # 上下居中
 	_content_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_content_label.add_theme_font_size_override("font_size", 24)
 	_content_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
