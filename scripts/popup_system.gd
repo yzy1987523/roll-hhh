@@ -184,6 +184,9 @@ func show(
 	_confirm_button.text = confirm_text if confirm_text != "" else "确认"
 	_confirm_button.visible = confirm_text != ""
 
+	# 关闭按钮（如果close_text为空则隐藏）
+	_close_button.visible = close_text != ""
+
 	# 固定尺寸，无需动态计算
 	# _update_popup_size()
 

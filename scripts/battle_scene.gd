@@ -918,69 +918,85 @@ func _update_enemy_hp_label(e: EnemyFactory.EnemyData, hp_bar_width: int) -> voi
 var _cached_enemy_id: int = -1
 var _cached_enemy_texture: Texture = null
 
+# ---- 预定义的敌人图片列表（避免Web上DirAccess目录访问受限问题）----
+# NORMAL: enemy_id 1-14 → enemy_001-014
+const _NORMAL_ENEMY_SPRITES := [
+	"res://art/sprites/UI/items/enemy/normal/enemy_001.png",
+	"res://art/sprites/UI/items/enemy/normal/enemy_002.png",
+	"res://art/sprites/UI/items/enemy/normal/enemy_003.png",
+	"res://art/sprites/UI/items/enemy/normal/enemy_004.png",
+	"res://art/sprites/UI/items/enemy/normal/enemy_005.png",
+	"res://art/sprites/UI/items/enemy/normal/enemy_006.png",
+	"res://art/sprites/UI/items/enemy/normal/enemy_007.png",
+	"res://art/sprites/UI/items/enemy/normal/enemy_008.png",
+	"res://art/sprites/UI/items/enemy/normal/enemy_009.png",
+	"res://art/sprites/UI/items/enemy/normal/enemy_010.png",
+	"res://art/sprites/UI/items/enemy/normal/enemy_011.png",
+	"res://art/sprites/UI/items/enemy/normal/enemy_012.png",
+	"res://art/sprites/UI/items/enemy/normal/enemy_013.png",
+	"res://art/sprites/UI/items/enemy/normal/enemy_014.png",
+]
+# ELITE: enemy_id 15-18 → enemy_015-018 (4张)
+const _ELITE_ENEMY_SPRITES := [
+	"res://art/sprites/UI/items/enemy/elite/enemy_015.png",
+	"res://art/sprites/UI/items/enemy/elite/enemy_016.png",
+	"res://art/sprites/UI/items/enemy/elite/enemy_017.png",
+	"res://art/sprites/UI/items/enemy/elite/enemy_018.png",
+]
+# BOSS: enemy_id 19-20 → enemy_019-020 (2张)
+const _BOSS_ENEMY_SPRITES := [
+	"res://art/sprites/UI/items/enemy/boss/enemy_019.png",
+	"res://art/sprites/UI/items/enemy/boss/enemy_020.png",
+]
+
 
 ## 加载敌人精灵图
 func _load_enemy_sprite(e: EnemyFactory.EnemyData) -> void:
 	var enemy_id: int = e.enemy_id
-	
+
 	# 设置敌人sprite的尺寸限制（最大200x200）
 	enemy_sprite_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 	enemy_sprite_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	enemy_sprite_rect.custom_minimum_size = Vector2(200, 200)
-	
+
 	# 如果是同一个敌人，使用缓存的纹理
 	if _cached_enemy_id == enemy_id and _cached_enemy_texture != null:
 		enemy_sprite_rect.texture = _cached_enemy_texture
 		return
-	
-	var category: String = "normal"
-	match e.type:
-		EnemyFactory.TYPE_ELITE: category = "elite"
-		EnemyFactory.TYPE_BOSS: category = "boss"
 
-	# 尝试加载指定ID的图片
-	var sprite_path: String = "res://art/sprites/UI/items/enemy/%s/enemy_%03d.png" % [category, enemy_id]
-	if ResourceLoader.exists(sprite_path):
+	# 根据敌人类型选择对应的预定义图片列表
+	var sprite_list: Array = _NORMAL_ENEMY_SPRITES
+	match e.type:
+		EnemyFactory.TYPE_ELITE: sprite_list = _ELITE_ENEMY_SPRITES
+		EnemyFactory.TYPE_BOSS: sprite_list = _BOSS_ENEMY_SPRITES
+
+	# 根据敌人ID计算在列表中的索引
+	# NORMAL: enemy_id 1-14, 列表有5个
+	# ELITE: enemy_id 15-18, 列表有5个
+	# BOSS: enemy_id 19-20, 列表有2个
+	var index: int = 0
+	match e.type:
+		EnemyFactory.TYPE_NORMAL: index = (enemy_id - 1) % sprite_list.size()
+		EnemyFactory.TYPE_ELITE: index = (enemy_id - 15) % sprite_list.size()
+		EnemyFactory.TYPE_BOSS: index = (enemy_id - 19) % sprite_list.size()
+		_: index = 0
+
+	# 确保索引有效
+	index = clamp(index, 0, sprite_list.size() - 1)
+	var sprite_path: String = sprite_list[index]
+
+	# 如果指定图片存在，加载它
+	if sprite_path != "" and ResourceLoader.exists(sprite_path):
 		_cached_enemy_texture = load(sprite_path)
 		_cached_enemy_id = enemy_id
 		enemy_sprite_rect.texture = _cached_enemy_texture
 		return
 
-	# 如果指定图片不存在，随机选择一个该类型目录中的图片
-	var dir_path: String = "res://art/sprites/UI/items/enemy/%s/" % category
-	var available_sprites: Array = []
-
-	var dir := DirAccess.open(dir_path)
-	if dir != null:
-		dir.list_dir_begin()
-		var file_name := dir.get_next()
-		while file_name != "":
-			if not dir.current_is_dir() and file_name.ends_with(".png") and not file_name.ends_with(".import"):
-				available_sprites.append(file_name)
-			file_name = dir.get_next()
-
-	# 如果该类型目录有图片，随机选择一个
-	if available_sprites.size() > 0:
-		var random_sprite: String = available_sprites[randi_range(0, available_sprites.size() - 1)]
-		_cached_enemy_texture = load(dir_path + random_sprite)
-		_cached_enemy_id = enemy_id
-		enemy_sprite_rect.texture = _cached_enemy_texture
-		return
-
-	# 如果该类型目录没有图片，使用normal目录中的随机图片
-	if category != "normal":
-		var normal_dir := DirAccess.open("res://art/sprites/UI/items/enemy/normal/")
-		if normal_dir != null:
-			normal_dir.list_dir_begin()
-			var file_name := normal_dir.get_next()
-			while file_name != "":
-				if not normal_dir.current_is_dir() and file_name.ends_with(".png") and not file_name.ends_with(".import"):
-					available_sprites.append(file_name)
-				file_name = normal_dir.get_next()
-
-		if available_sprites.size() > 0:
-			var random_sprite: String = available_sprites[randi_range(0, available_sprites.size() - 1)]
-			_cached_enemy_texture = load("res://art/sprites/UI/items/enemy/normal/" + random_sprite)
+	# 如果指定ID图片不存在，从列表中随机选择一个
+	if sprite_list.size() > 0:
+		var random_path: String = sprite_list[randi_range(0, sprite_list.size() - 1)]
+		if ResourceLoader.exists(random_path):
+			_cached_enemy_texture = load(random_path)
 			_cached_enemy_id = enemy_id
 			enemy_sprite_rect.texture = _cached_enemy_texture
 			return
@@ -989,6 +1005,7 @@ func _load_enemy_sprite(e: EnemyFactory.EnemyData) -> void:
 	_cached_enemy_texture = null
 	_cached_enemy_id = enemy_id
 	enemy_sprite_rect.texture = null
+	print(">>> [BattleScene] 警告: 无法加载敌人类型 %d ID=%d 的图片" % [e.type, enemy_id])
 
 
 ## 更新敌人精灵图上的攻防图标
