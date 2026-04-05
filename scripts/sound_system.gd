@@ -67,7 +67,9 @@ func _connect_phase_signal() -> void:
 
 ## 播放BGM（带淡入淡出过渡）
 func play_bgm(bgm_path: String, fade_duration: float = BGM_FADE_DURATION) -> void:
+	print(">>> [SoundSystem] play_bgm called: ", bgm_path, " _current_bgm=", _current_bgm)
 	if bgm_path == _current_bgm:
+		print(">>> [SoundSystem] Same BGM, skipping")
 		return  # 相同BGM不重复播放
 	
 	_current_bgm = bgm_path
@@ -84,10 +86,13 @@ func play_bgm(bgm_path: String, fade_duration: float = BGM_FADE_DURATION) -> voi
 	if stream == null:
 		push_error(">>> [SoundSystem] 无法加载BGM: %s" % bgm_path)
 		return
-	
+
+	print(">>> [SoundSystem] BGM loaded successfully, stream=", stream)
 	next_player.stream = stream
 	next_player.volume_db = -80.0
+	stream.loop = true  # 设置BGM循环
 	next_player.play()
+	print(">>> [SoundSystem] BGM playing: ", next_player.playing, " volume_db=", next_player.volume_db)
 	
 	# 创建交叉淡入淡出动画
 	var tween := create_tween()
@@ -190,6 +195,7 @@ func _on_phase_changed(new_phase: String) -> void:
 
 ## 进入主菜单时调用
 func play_menu_bgm() -> void:
+	print(">>> [SoundSystem] play_menu_bgm called, BGM_PREPARE=", BGM_PREPARE)
 	play_bgm(BGM_PREPARE)
 
 

@@ -16,6 +16,9 @@ const BUTTON_OFFSET_Y: float = 300.0  # 从下方移入的距离
 
 func _ready() -> void:
 	print(">>> [MainMenu] _ready 开始")
+	# 播放主菜单BGM
+	print(">>> [MainMenu] Calling SoundSystem.play_menu_bgm()")
+	SoundSystem.play_menu_bgm()
 	# 全局设置中文字体（所有 Label 生效）
 	ThemeDB.set_fallback_font(chinese_font)
 

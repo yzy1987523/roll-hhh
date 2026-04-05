@@ -37,6 +37,8 @@ const JOB_COLORS := {
 }
 
 @onready var close_button: TextureButton = $EncyclopediaWindow/ContentMargin/VBox/TitleBarMargin/TitleBar/CloseButton
+@onready var title_label: Label = $EncyclopediaWindow/ContentMargin/VBox/TitleBarMargin/TitleBar/TitleLabel
+@onready var section_title: Label = $EncyclopediaWindow/ContentMargin/VBox/TopPanel/SectionTitle
 @onready var job_grid: GridContainer = $EncyclopediaWindow/ContentMargin/VBox/TopPanel/JobGridCenter/JobGrid
 @onready var evolution_scroll: ScrollContainer = $EncyclopediaWindow/ContentMargin/VBox/BottomPanel/ScrollWrapper/ScrollContainer
 @onready var evolution_container: HBoxContainer = $EncyclopediaWindow/ContentMargin/VBox/BottomPanel/ScrollWrapper/ScrollContainer/ContentMargin/EvolutionContainer
@@ -63,7 +65,13 @@ func _ready() -> void:
 	if dark_overlay:
 		dark_overlay.z_index = 100
 		dark_overlay.z_as_relative = false
-	
+
+	# 设置标题
+	if title_label:
+		title_label.text = LocalizationSystem.get_text("encyclopedia.title")
+	if section_title:
+		section_title.text = LocalizationSystem.get_text("encyclopedia.section_title")
+
 	# 为 ScrollContainer 添加拖拽滚动支持
 	evolution_scroll.gui_input.connect(_on_evolution_scroll_input)
 	
@@ -76,6 +84,7 @@ func _ready() -> void:
 		v_scroll.modulate.a = 0
 	
 	close_button.pressed.connect(_on_close)
+	_add_button_feedback(close_button)
 	LocalizationSystem.language_changed.connect(_on_localization_changed)
 	_build_job_grid()
 	_update_evolution_display()
@@ -139,13 +148,14 @@ func _create_job_cell(job_id: int, job_name: String, char_type: int) -> Control:
 		sprite.position = Vector2((CELL_SIZE - SPRITE_SIZE) / 2.0, (CELL_SIZE - SPRITE_SIZE) / 2.0 - 10)
 		container.add_child(sprite)
 		
-		# 角色名称（底部，最上层）
+		# 角色名称（底部，最上层，隐藏）
 		var name_lbl := Label.new()
 		name_lbl.text = job_name
 		name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		name_lbl.add_theme_font_size_override("font_size", 16)
 		name_lbl.position = Vector2(0, CELL_SIZE - 22)
 		name_lbl.size = Vector2(CELL_SIZE, 20)
+		name_lbl.visible = false
 		container.add_child(name_lbl)
 	else:
 		var unknown := Label.new()
@@ -199,7 +209,7 @@ func _on_job_cell_input(event: InputEvent, job_id: int) -> void:
 			SoundSystem.play_button_click()
 			# 检查是否有任何等级解锁
 			if not _is_any_level_unlocked(job_id):
-				TipManager.show_tip("角色未解锁，通过合成收集")
+				TipManager.show_tip(LocalizationSystem.get_text("encyclopedia.character_locked"))
 				return
 			_select_job(job_id)
 
@@ -223,11 +233,11 @@ func _update_evolution_display() -> void:
 		child.queue_free()
 	
 	if selected_job < 0:
-		evolution_title.text = "选择上方角色查看进化路线"
+		evolution_title.text = LocalizationSystem.get_text("encyclopedia.evolution_hint")
 		return
-	
+
 	var job_name := _get_job_name(selected_job)
-	evolution_title.text = "%s 的进化路线" % job_name
+	evolution_title.text = LocalizationSystem.get_text("encyclopedia.evolution_route", {"name": job_name})
 	
 	var job_color: Color = JOB_COLORS.get(selected_job, Color(0.5, 0.5, 0.5))
 	var char_type: int = 1
@@ -317,7 +327,7 @@ func _on_evolution_input(event: InputEvent, job_id: int, level: int) -> void:
 				SoundSystem.play_button_click()
 				# 检查是否解锁
 				if not _is_level_unlocked(job_id, level):
-					TipManager.show_tip("角色未解锁，通过合成收集")
+					TipManager.show_tip(LocalizationSystem.get_text("encyclopedia.character_locked"))
 					return
 				_show_level_popup(job_id, level)
 			is_dragging = false
@@ -362,16 +372,21 @@ func _show_level_popup(job_id: int, level: int) -> void:
 	var skill_desc: String = _get_skill_description(job_id)
 	var skill_full_desc: String = _get_skill_full_description(job_id, skill_lv)
 	
-	var content := "等级: %d\n\n属性:\n  血量: %d\n  攻击: %d\n  防御: %d\n\n%s\n%s" % [
-		level, hp, atk, def, skill_desc, skill_full_desc
+	var content := "%s: %d\n\n%s:\n  %s: %d\n  %s: %d\n  %s: %d\n\n%s\n%s" % [
+		LocalizationSystem.get_text("encyclopedia.level_label"), level,
+		LocalizationSystem.get_text("encyclopedia.hp_label"),
+		LocalizationSystem.get_text("encyclopedia.hp_label"), hp,
+		LocalizationSystem.get_text("encyclopedia.attack_label"), atk,
+		LocalizationSystem.get_text("encyclopedia.defense_label"), def,
+		skill_desc, skill_full_desc
 	]
 	
 	PopupSystem.show(
-		"%s Lv.%d" % [job_name, level],
+		LocalizationSystem.get_text("encyclopedia.level_format", {"name": job_name, "level": level}),
 		content,
 		"",
 		"",
-		"关闭",
+		LocalizationSystem.get_text("encyclopedia.back"),
 		Callable(),
 		Callable()
 	)
@@ -382,10 +397,10 @@ func _get_job_name(job_id: int) -> String:
 	if adv_name != "":
 		return adv_name
 	match job_id:
-		0: return "战士"
-		1: return "法师"
-		2: return "牧师"
-		_: return "未知"
+		0: return LocalizationSystem.get_text("jobs.warrior")
+		1: return LocalizationSystem.get_text("jobs.mage")
+		2: return LocalizationSystem.get_text("jobs.priest")
+		_: return LocalizationSystem.get_text("jobs.unknown")
 
 
 func _get_skill_id(job_id: int) -> int:
@@ -402,10 +417,10 @@ func _get_skill_id(job_id: int) -> int:
 func _get_skill_description(job_id: int) -> String:
 	var skill_id: int = _get_skill_id(job_id)
 	if skill_id == 0:
-		return "特技: 无"
+		return LocalizationSystem.get_text("encyclopedia.skill_label") + ": " + LocalizationSystem.get_text("encyclopedia.no_skill")
 	
 	var skill_name: String = LocalizationSystem.get_text("skill.%d_name" % skill_id, {})
-	return "特技: %s" % skill_name
+	return LocalizationSystem.get_text("encyclopedia.skill_label") + ": " + skill_name
 
 
 func _get_skill_full_description(job_id: int, skill_lv: int) -> String:
@@ -418,7 +433,7 @@ func _get_skill_full_description(job_id: int, skill_lv: int) -> String:
 	if skill_lv > 0:
 		level_text = " (Lv.%d)" % skill_lv
 	
-	return "效果: %s%s" % [skill_desc, level_text]
+	return LocalizationSystem.get_text("encyclopedia.effect_label") + ": " + skill_desc + level_text
 
 
 func _calc_hp(job_id: int, level: int) -> int:
@@ -445,5 +460,39 @@ func _on_close() -> void:
 	queue_free()
 
 
-func _on_localization_changed(lang: String) -> void:
-	print(">>> [Encyclopedia] 语言切换为: %s" % lang)
+func _on_localization_changed(_lang: String) -> void:
+	print(">>> [Encyclopedia] 语言切换为: %s" % _lang)
+	# 更新标题
+	if title_label:
+		title_label.text = LocalizationSystem.get_text("encyclopedia.title")
+	if section_title:
+		section_title.text = LocalizationSystem.get_text("encyclopedia.section_title")
+	_update_evolution_display()
+
+
+## 为按钮添加hover和press视觉反馈
+func _add_button_feedback(btn: BaseButton) -> void:
+	btn.mouse_entered.connect(_on_button_mouse_entered.bind(btn))
+	btn.mouse_exited.connect(_on_button_mouse_exited.bind(btn))
+	btn.button_down.connect(_on_button_down.bind(btn))
+	btn.button_up.connect(_on_button_up.bind(btn))
+
+
+func _on_button_mouse_entered(btn: BaseButton) -> void:
+	var alpha := btn.modulate.a
+	btn.modulate = Color(0.9, 0.9, 0.9, alpha)
+
+
+func _on_button_mouse_exited(btn: BaseButton) -> void:
+	var alpha := btn.modulate.a
+	btn.modulate = Color(1, 1, 1, alpha)
+
+
+func _on_button_down(btn: BaseButton) -> void:
+	var alpha := btn.modulate.a
+	btn.modulate = Color(0.8, 0.8, 0.8, alpha)
+
+
+func _on_button_up(btn: BaseButton) -> void:
+	var alpha := btn.modulate.a
+	btn.modulate = Color(0.9, 0.9, 0.9, alpha) if btn.get_global_rect().has_point(btn.get_viewport().get_mouse_position()) else Color(1, 1, 1, alpha)

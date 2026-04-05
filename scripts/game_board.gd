@@ -128,6 +128,9 @@ var tutorial_instance: Control = null
 
 func _ready() -> void:
 	print(">>> [GameBoard] _ready 开始")
+	# 播放备战阶段BGM
+	print(">>> [GameBoard] Calling SoundSystem.play_bgm(SoundSystem.BGM_PREPARE)")
+	SoundSystem.play_bgm(SoundSystem.BGM_PREPARE)
 	# 加载选中效果序列帧
 	_load_select_frames()
 	_connect_signals()
@@ -354,9 +357,13 @@ func _update_character_detail_panel() -> void:
 		if ch != null:
 			# 显示角色信息
 			name_label.text = ch.get_job_name()
-			detail_label.text = "Lv.%d  HP: %d/%d  ATK: %d  DEF: %d" % [
-				ch.level, ch.hp, ch.max_hp, ch.attack, ch.defense
-			]
+			detail_label.text = LocalizationSystem.get_text("game_board.character_stats", {
+				"level": ch.level,
+				"hp": ch.hp,
+				"max_hp": ch.max_hp,
+				"atk": ch.attack,
+				"def": ch.defense
+			})
 			# 显示特技信息
 			if ch.skill_id > 0:
 				var skill_name: String = LocalizationSystem.get_text("skill.%d_name" % ch.skill_id, {})
@@ -397,53 +404,12 @@ func _setup_dorm_panel() -> void:
 	add_child(dorm_scene_instance)
 	
 	# 连接信号
-	dorm_scene_instance.dorm_cell_clicked.connect(_show_dorm_character_popup)
 	dorm_scene_instance.close_requested.connect(_on_dorm_close)
 
 
 func _refresh_dorm_panel() -> void:
 	if dorm_scene_instance:
 		dorm_scene_instance.refresh(GameManager.board_data.dormitory)
-
-
-func _show_dorm_character_popup(dorm_index: int) -> void:
-	var ch: DataModels.CharacterData = GameManager.board_data.dormitory[dorm_index]
-	var content := "等级: %d\n血量: %d/%d\n攻击: %d\n防御: %d" % [
-		ch.level, ch.hp, ch.max_hp, ch.attack, ch.defense
-	]
-	
-	var is_marked: bool = GameManager.board_data.is_marked_for_removal(dorm_index)
-	var btn_text := "标记移出" if not is_marked else "取消标记"
-	
-	PopupSystem.show(
-		"%s Lv.%d" % [ch.get_job_name(), ch.level],
-		content,
-		"是否移出角色到棋盘？",
-		btn_text,
-		"关闭",
-		Callable(self, "_on_dorm_popup_confirm").bind(dorm_index),
-		Callable(self, "_on_dorm_popup_close")
-	)
-
-
-func _on_dorm_popup_confirm(dorm_index: int) -> void:
-	var bd: BoardData = GameManager.board_data
-	var is_marked: bool = bd.is_marked_for_removal(dorm_index)
-	
-	if is_marked:
-		bd.unmark_for_removal(dorm_index)
-	else:
-		# 检查棋盘是否有空间
-		if bd.get_empty_board_count() <= bd.marked_for_removal.size():
-			TipManager.show_tip("棋盘格已满，无法移出")
-			return
-		bd.marked_for_removal.append(dorm_index)
-	
-	_refresh_dorm_panel()
-
-
-func _on_dorm_popup_close() -> void:
-	pass  # 关闭弹窗不做额外操作
 
 
 # ---- 棋盘格拖拽处理 (任务 2.3 拖拽/选中) ----
@@ -490,9 +456,11 @@ func _on_cell_gui_input(event: InputEvent, cell_index: int) -> void:
 						# 有角色 → 显示详情（已选中）
 						_update_character_detail_panel()
 					else:
-						# 空格子 → 移动选中角色到此处
+						# 空格子 → 取消选中
 						if selected_index >= 0:
-							_handle_cell_action(cell_index)
+							selected_index = -1
+							_refresh_board_display()
+							_update_character_detail_panel()
 				# 重置按下状态
 				_is_awaiting_drag = false
 				_press_cell_index = -1
@@ -1311,12 +1279,12 @@ func _on_spawn_pressed(job: int) -> void:
 	# 检查棋盘是否已满
 	if GameManager.board_data.is_board_full():
 		print(">>> [GameBoard] 生成失败: 棋盘已满")
-		TipManager.show_tip("棋盘格已满")
+		TipManager.show_tip(LocalizationSystem.get_text("game_board.board_full"))
 		return
 
 	if not GameManager.spend_energy(1):
 		print(">>> [GameBoard] 生成失败: 能量不足")
-		TipManager.show_tip("能量不足")
+		TipManager.show_tip(LocalizationSystem.get_text("game_board.energy_insufficient"))
 		return
 
 	var level: int = randi_range(1, 3)
@@ -1428,7 +1396,7 @@ func _on_dorm_take_pressed(dorm_index: int) -> void:
 	SoundSystem.play_button_click()
 	if GameManager.board_data.is_board_full():
 		print(">>> [GameBoard] 取出失败: 棋盘已满")
-		TipManager.show_tip("棋盘格已满")
+		TipManager.show_tip(LocalizationSystem.get_text("game_board.board_full"))
 		return
 	var ch: DataModels.CharacterData = GameManager.board_data.take_from_dormitory(dorm_index)
 	if ch == null:
@@ -1453,18 +1421,18 @@ func _on_dorm_close() -> void:
 	# 执行所有标记移出的角色
 	if bd.marked_for_removal.size() > 0:
 		if not bd.can_remove_marked():
-			TipManager.show_tip("棋盘格已满，无法移出")
+			TipManager.show_tip(LocalizationSystem.get_text("game_board.cannot_remove_board_full"))
 			bd.marked_for_removal.clear()
 			_hide_dorm_ui()
 		else:
 			# 获取宿舍按钮中心位置作为动画起点（必须在隐藏面板之前获取）
 			var dorm_pos: Vector2 = dorm_button.global_position + Vector2(dorm_button.size.x / 2, dorm_button.size.y / 2)
-			
+
 			# 执行数据操作，获取每个角色被放置到的棋盘索引
 			var moved_data: Array = bd.execute_removal()
-			
+
 			if moved_data.size() > 0:
-				TipManager.show_tip("已移出 %d 个角色到棋盘" % moved_data.size())
+				TipManager.show_tip(LocalizationSystem.get_text("game_board.removed_characters", {"count": moved_data.size()}))
 				# 先隐藏宿舍UI
 				_hide_dorm_ui()
 				# 播放动画
@@ -1629,7 +1597,11 @@ func _on_relic_pressed(relic: DataModels.ItemData) -> void:
 	SoundSystem.play_button_click()
 	# 点击时显示详细信息（如果提示未显示）
 	if not _relic_tip_showing:
-		TipManager.show_tip("%s\n%s" % [relic.name, relic.description], 2.0)
+		var localized_relic: DataModels.ItemData = ItemDatabase.get_relic_by_id(relic.id)
+		if localized_relic:
+			TipManager.show_tip("%s\n%s" % [localized_relic.name, localized_relic.description], 2.0)
+		else:
+			TipManager.show_tip("%s\n%s" % [relic.name, relic.description], 2.0)
 		_relic_tip_showing = true
 		# 延迟重置标志
 		await get_tree().create_timer(2.0).timeout
@@ -1640,7 +1612,11 @@ func _on_relic_pressed(relic: DataModels.ItemData) -> void:
 func _on_relic_button_down(relic: DataModels.ItemData) -> void:
 	# 按住时显示说明（触屏支持）
 	if not _relic_tip_showing:
-		TipManager.show_tip("%s\n%s" % [relic.name, relic.description], 10.0)
+		var localized_relic: DataModels.ItemData = ItemDatabase.get_relic_by_id(relic.id)
+		if localized_relic:
+			TipManager.show_tip("%s\n%s" % [localized_relic.name, localized_relic.description], 10.0)
+		else:
+			TipManager.show_tip("%s\n%s" % [relic.name, relic.description], 10.0)
 		_relic_tip_showing = true
 
 
@@ -1654,7 +1630,11 @@ func _on_relic_button_up() -> void:
 func _on_relic_mouse_entered(relic: DataModels.ItemData) -> void:
 	# 悬停时显示说明
 	if not _relic_tip_showing:
-		TipManager.show_tip("%s\n%s" % [relic.name, relic.description], 10.0)
+		var localized_relic: DataModels.ItemData = ItemDatabase.get_relic_by_id(relic.id)
+		if localized_relic:
+			TipManager.show_tip("%s\n%s" % [localized_relic.name, localized_relic.description], 10.0)
+		else:
+			TipManager.show_tip("%s\n%s" % [relic.name, relic.description], 10.0)
 		_relic_tip_showing = true
 
 
@@ -1855,10 +1835,15 @@ func _show_item_detail(slot_index: int) -> void:
 	item_detail_popup_slot = slot_index
 	item_detail_visible = true
 
+	# 获取本地化的道具信息
+	var localized_item: DataModels.ItemData = ItemDatabase.get_consumable_by_id(item.id)
+	if localized_item == null:
+		localized_item = item
+
 	# 使用PopupSystem显示道具详情
 	PopupSystem.show(
-		item.name,  # 标题
-		item.description,  # 内容
+		localized_item.name,  # 标题
+		localized_item.description,  # 内容
 		"",  # 说明
 		LocalizationSystem.get_text("items.use"),  # 确认按钮文字
 		LocalizationSystem.get_text("items.close"),  # 关闭按钮文字
@@ -1931,7 +1916,7 @@ func _use_item_direct(slot_index: int) -> void:
 		print(">>> [GameBoard] 使用道具失败: %s" % item.name)
 		# 显示失败提示（延迟显示，避免被弹窗遮挡）
 		await get_tree().create_timer(0.15).timeout
-		TipManager.show_tip("无法使用道具，棋盘格已满")
+		TipManager.show_tip(LocalizationSystem.get_text("items.cannot_use_board_full"))
 
 
 func _use_item_on_target(target_index: int) -> void:
@@ -1961,7 +1946,7 @@ func _use_item_on_target(target_index: int) -> void:
 		print(">>> [GameBoard] 使用道具失败: %s" % item.name)
 		# 显示失败提示（延迟显示，避免被弹窗遮挡）
 		await get_tree().create_timer(0.15).timeout
-		TipManager.show_tip("无法使用道具，棋盘格已满")
+		TipManager.show_tip(LocalizationSystem.get_text("items.cannot_use_board_full"))
 	# 无论成功失败，都结束目标选择
 	_end_target_selection()
 
@@ -2063,7 +2048,7 @@ func _use_item_at_slot(slot_index: int) -> void:
 	# 查找选中的角色
 	if selected_index < 0:
 		print(">>> [GameBoard] 使用道具失败: 请先选中一个角色")
-		TipManager.show_tip("请先选中一个角色")
+		TipManager.show_tip(LocalizationSystem.get_text("game_board.select_character_first"))
 		return
 
 	var item: DataModels.ItemData = GameManager.items[slot_index]
@@ -2075,7 +2060,7 @@ func _use_item_at_slot(slot_index: int) -> void:
 		_refresh_board_display()
 	else:
 		print(">>> [GameBoard] 使用道具失败")
-		TipManager.show_tip("无法使用道具")
+		TipManager.show_tip(LocalizationSystem.get_text("items.cannot_use"))
 
 
 # ---- 道具栏面板 ----
@@ -2140,11 +2125,14 @@ func _refresh_item_panel() -> void:
 
 	for i in range(GameManager.items.size()):
 		var item: DataModels.ItemData = GameManager.items[i]
+		var localized_item: DataModels.ItemData = ItemDatabase.get_consumable_by_id(item.id)
+		if localized_item == null:
+			localized_item = item
 		var row := HBoxContainer.new()
 		list.add_child(row)
 
 		var info := Label.new()
-		info.text = "%s - %s" % [item.name, item.description]
+		info.text = "%s - %s" % [localized_item.name, localized_item.description]
 		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		info.clip_text = true
 		row.add_child(info)

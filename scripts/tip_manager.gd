@@ -60,7 +60,7 @@ func _create_tip_ui() -> void:
 	center.add_child(_tip_label)
 
 	# 设置层级，确保在所有面板之上
-	_tip_container.z_index = 100
+	_tip_container.z_index = 200
 	
 	# 添加到根节点 (延迟到场景树准备好)
 	if not _tip_container.get_parent() == get_tree().root:

@@ -9,12 +9,12 @@ const CELL_SIZE := 140
 @onready var backdrop: ColorRect = $Backdrop
 @onready var grid_container: GridContainer = $DormPanel/VBox/GridCenter/GridContainer
 @onready var close_button: TextureButton = $DormPanel/VBox/TitleBarMargin/TitleBar/CloseButton
+@onready var title_label: Label = $DormPanel/VBox/TitleBarMargin/TitleBar/Title
 
 # 排序后的宿舍索引
 var _dorm_sort_order: Array = []
 
 # 信号
-signal dorm_cell_clicked(dorm_index: int)
 signal close_requested
 
 
@@ -27,6 +27,7 @@ func _ready() -> void:
 	# 连接信号
 	if close_button:
 		close_button.pressed.connect(_on_close_pressed)
+		_add_button_feedback(close_button)
 	
 	if backdrop:
 		backdrop.gui_input.connect(_on_backdrop_input)
@@ -34,6 +35,10 @@ func _ready() -> void:
 	# 设置层级
 	backdrop.z_index = 100
 	backdrop.z_as_relative = false
+
+	# 设置标题
+	if title_label:
+		title_label.text = LocalizationSystem.get_text("game_board.dorm")
 
 
 func refresh(dormitory: Array) -> void:
@@ -108,9 +113,10 @@ func _create_cell(index: int, dormitory: Array) -> Control:
 		sprite.expand_mode = TextureRect.EXPAND_FIT_WIDTH
 		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		sprite.custom_minimum_size = Vector2(120, 120)
-		
+
 		var sprite_folder: String = ch.get_sprite_folder()
-		var sprite_path := "res://art/sprites/characters/%s/idle_0.png" % sprite_folder
+		var sprite_name: String = ch.get_sprite_path(1, 1)  # 待机动画第1帧
+		var sprite_path: String = "res://art/sprites/chars/" + sprite_folder + "/" + sprite_name + ".png"
 		if ResourceLoader.exists(sprite_path):
 			sprite.texture = load(sprite_path)
 		
@@ -137,7 +143,17 @@ func _on_cell_gui_input(event: InputEvent, dorm_index: int) -> void:
 	if event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
 		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
-			dorm_cell_clicked.emit(dorm_index)
+			SoundSystem.play_button_click()
+			var bd: BoardData = GameManager.board_data
+			if bd.is_marked_for_removal(dorm_index):
+				# 已选中，取消标记
+				bd.unmark_for_removal(dorm_index)
+				TipManager.show_tip(LocalizationSystem.get_text("game_board.dorm_unmarked"))
+			else:
+				# 未选中，标记为即将移除
+				bd.mark_for_removal(dorm_index)
+				TipManager.show_tip(LocalizationSystem.get_text("game_board.dorm_marked_for_removal"))
+			refresh(GameManager.board_data.dormitory)
 
 
 func _on_close_pressed() -> void:
@@ -150,3 +166,31 @@ func _on_backdrop_input(event: InputEvent) -> void:
 		var mb: InputEventMouseButton = event
 		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
 			_on_close_pressed()
+
+
+## 为按钮添加hover和press视觉反馈
+func _add_button_feedback(btn: BaseButton) -> void:
+	btn.mouse_entered.connect(_on_button_mouse_entered.bind(btn))
+	btn.mouse_exited.connect(_on_button_mouse_exited.bind(btn))
+	btn.button_down.connect(_on_button_down.bind(btn))
+	btn.button_up.connect(_on_button_up.bind(btn))
+
+
+func _on_button_mouse_entered(btn: BaseButton) -> void:
+	var alpha := btn.modulate.a
+	btn.modulate = Color(0.9, 0.9, 0.9, alpha)
+
+
+func _on_button_mouse_exited(btn: BaseButton) -> void:
+	var alpha := btn.modulate.a
+	btn.modulate = Color(1, 1, 1, alpha)
+
+
+func _on_button_down(btn: BaseButton) -> void:
+	var alpha := btn.modulate.a
+	btn.modulate = Color(0.8, 0.8, 0.8, alpha)
+
+
+func _on_button_up(btn: BaseButton) -> void:
+	var alpha := btn.modulate.a
+	btn.modulate = Color(0.9, 0.9, 0.9, alpha) if btn.get_global_rect().has_point(btn.get_viewport().get_mouse_position()) else Color(1, 1, 1, alpha)

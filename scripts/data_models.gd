@@ -224,8 +224,13 @@ class ItemData:
 		var item := ItemData.new()
 		item.id = d.get("id", 0)
 		item.type = d.get("type", 0)
-		item.name = d.get("name", "")
-		item.description = d.get("description", "")
+		# 根据类型重新获取本地化的 name 和 description
+		if item.type == ItemType.RELIC:
+			item.name = LocalizationSystem.get_text("relics." + str(item.id) + "_name")
+			item.description = LocalizationSystem.get_text("relics." + str(item.id) + "_desc")
+		else:
+			item.name = LocalizationSystem.get_text("items." + str(item.id) + "_name")
+			item.description = LocalizationSystem.get_text("items." + str(item.id) + "_desc")
 		item.stackable = d.get("stackable", false)
 		item.stack_count = d.get("stack_count", 1)
 		item.price = d.get("price", 0)

@@ -32,7 +32,7 @@ var target_control: Control = null
 const STEP_INFO := {
 	TutorialStep.PLAY: {
 		"hint": "tutorial.step4_play",
-		"target_path": "MainLayout/ControlBar/PauseButton",
+		"target_path": "MainLayout/ControlBarMargin/ControlBar/PauseButton",
 		"arrow_pos": "top",  # 修正：在按钮上方显示提示面板
 	},
 }

@@ -290,10 +290,15 @@ func _show_item_detail(slot_index: int) -> void:
 	item_detail_popup_slot = slot_index
 	item_detail_visible = true
 
+	# 获取本地化的道具信息
+	var localized_item: DataModels.ItemData = ItemDatabase.get_consumable_by_id(item.id)
+	if localized_item == null:
+		localized_item = item
+
 	# 使用PopupSystem显示道具详情
 	PopupSystem.show(
-		item.name,  # 标题
-		item.description,  # 内容
+		localized_item.name,  # 标题
+		localized_item.description,  # 内容
 		"",  # 说明
 		LocalizationSystem.get_text("items.use"),  # 确认按钮文字
 		LocalizationSystem.get_text("items.close"),  # 关闭按钮文字
@@ -333,7 +338,7 @@ func _on_item_use_pressed(slot_index: int) -> void:
 	else:
 		# 延迟显示提示，避免被弹窗遮挡
 		await get_tree().create_timer(0.15).timeout
-		TipManager.show_tip("无法使用道具", 2.0)
+		TipManager.show_tip(LocalizationSystem.get_text("items.cannot_use"), 2.0)
 
 
 # ---- 目标选择模式 ----
@@ -385,11 +390,11 @@ func _use_item_on_target(target_index: int) -> void:
 		_refresh_item_slots()
 		_refresh_board_display()
 		# 显示成功提示
-		TipManager.show_tip("使用成功: %s" % item.name, 1.5)
+		TipManager.show_tip(LocalizationSystem.get_text("items.use_success", {"name": item.name}), 1.5)
 	else:
 		# 显示失败提示
 		await get_tree().create_timer(0.15).timeout
-		TipManager.show_tip("无法使用道具", 2.0)
+		TipManager.show_tip(LocalizationSystem.get_text("items.cannot_use"), 2.0)
 	# 无论成功失败，都结束目标选择
 	_end_target_selection()
 
@@ -849,6 +854,24 @@ func _update_enemy_display() -> void:
 	# 更新血条
 	enemy_hp_bar.max_value = e.max_hp
 	enemy_hp_bar.value = e.hp
+	enemy_hp_bar.show_percentage = false
+
+	# 设置血条样式
+	var bg_style := StyleBoxFlat.new()
+	bg_style.bg_color = Color(0.2, 0.2, 0.2, 0.8)
+	bg_style.corner_radius_top_left = 4
+	bg_style.corner_radius_top_right = 4
+	bg_style.corner_radius_bottom_left = 4
+	bg_style.corner_radius_bottom_right = 4
+	enemy_hp_bar.add_theme_stylebox_override("background", bg_style)
+
+	var fill_style := StyleBoxFlat.new()
+	fill_style.bg_color = Color(0.9, 0.2, 0.2)  # 红色
+	fill_style.corner_radius_top_left = 4
+	fill_style.corner_radius_top_right = 4
+	fill_style.corner_radius_bottom_left = 4
+	fill_style.corner_radius_bottom_right = 4
+	enemy_hp_bar.add_theme_stylebox_override("fill", fill_style)
 
 	# 血条长度：根据血量计算，范围100-600
 	var hp_bar_width: int = clampi(int(e.max_hp * 2), 100, 600)
@@ -867,7 +890,10 @@ func _update_enemy_hp_label(e: EnemyFactory.EnemyData, hp_bar_width: int) -> voi
 	if enemy_hp_label.get_parent() != enemy_hp_bar:
 		enemy_hp_label.get_parent().remove_child(enemy_hp_label)
 		enemy_hp_bar.add_child(enemy_hp_label)
-	
+
+	# 更新血条值
+	enemy_hp_bar.value = e.hp
+
 	# 设置样式
 	enemy_hp_label.name = "HpText"
 	enemy_hp_label.text = "%d/%d" % [e.hp, e.max_hp]
@@ -976,8 +1002,8 @@ func _update_enemy_sprite_ui(e: EnemyFactory.EnemyData) -> void:
 	for child in children_to_remove:
 		child.queue_free()
 	
-	# 根据sprite实际尺寸计算位置
-	var sprite_size: Vector2 = enemy_sprite_rect.size
+	# 根据sprite实际尺寸计算位置（使用custom_minimum_size，因为纹理加载后size不会立即更新）
+	var sprite_size: Vector2 = enemy_sprite_rect.custom_minimum_size
 	var icon_size: int = 50  # 图标尺寸
 	var margin: int = 4  # 边距
 	
@@ -991,10 +1017,9 @@ func _update_enemy_sprite_ui(e: EnemyFactory.EnemyData) -> void:
 
 	var atk_icon := TextureRect.new()
 	atk_icon.texture = load("res://art/sprites/UI/items/smallItem/attack.png")
+	atk_icon.set_anchors_preset(Control.PRESET_FULL_RECT)
 	atk_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
 	atk_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	atk_icon.custom_minimum_size = Vector2(icon_size, icon_size)
-	atk_icon.position = Vector2(0, 0)
 	atk_icon.modulate = Color(1, 0.3, 0.3)  # 红色
 	atk_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	atk_container.add_child(atk_icon)
@@ -1021,10 +1046,9 @@ func _update_enemy_sprite_ui(e: EnemyFactory.EnemyData) -> void:
 
 	var def_icon := TextureRect.new()
 	def_icon.texture = load("res://art/sprites/UI/items/smallItem/defend.png")
+	def_icon.set_anchors_preset(Control.PRESET_FULL_RECT)
 	def_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
 	def_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	def_icon.custom_minimum_size = Vector2(icon_size, icon_size)
-	def_icon.position = Vector2(0, 0)
 	def_icon.modulate = Color(0.3, 0.5, 1)  # 蓝色
 	def_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	def_container.add_child(def_icon)
@@ -1908,8 +1932,8 @@ func _play_turn_async() -> void:
 	# 我方攻击阶段
 	await _execute_player_attack_phase()
 
-	# 检查敌方是否阵亡
-	if engine.enemy != null and not engine.enemy.is_alive():
+	# 检查敌方是否阵亡（如果子弹命中已经触发结算，battle_finished会是true，不会重复触发）
+	if not battle_finished and engine.enemy != null and not engine.enemy.is_alive():
 		_handle_enemy_death()
 		return
 

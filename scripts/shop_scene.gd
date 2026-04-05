@@ -13,7 +13,10 @@ const ITEM_SPACING := 20  # 商品间隔
 var shop_items: Array = []   # 当前商品列表
 
 # 节点引用
-@onready var round_label: Label = $ShopWindow/VBox/TitleBar/RoundLabel
+@onready var round_label: Label = $ShopWindow/VBox/TitleBarMargin/TitleBar/RoundLabel
+@onready var shop_title: Label = $ShopWindow/VBox/TitleBarMargin/TitleBar/ShopTitle
+@onready var item_section_title: Label = $ShopWindow/VBox/ItemSection/SectionTitle
+@onready var relic_section_title: Label = $ShopWindow/VBox/RelicSection/SectionTitle
 @onready var item_container: HBoxContainer = $ShopWindow/VBox/ItemSection/ItemCenter/ItemContainer
 @onready var relic_container: HBoxContainer = $ShopWindow/VBox/RelicSection/RelicCenter/RelicContainer
 @onready var close_button: TextureButton = $ShopWindow/VBox/TitleBarMargin/TitleBar/CloseButton
@@ -32,19 +35,43 @@ func _ready() -> void:
 	# 设置关闭按钮信号
 	if close_button:
 		close_button.pressed.connect(_on_close_pressed)
+		_add_button_feedback(close_button)
+
+	# 设置商店标题
+	if shop_title:
+		shop_title.text = LocalizationSystem.get_text("shop.title")
+
+	# 设置道具和遗物区域标题
+	if item_section_title:
+		item_section_title.text = LocalizationSystem.get_text("shop.tag_consumable")
+	if relic_section_title:
+		relic_section_title.text = LocalizationSystem.get_text("shop.tag_relic")
 
 	# 更新回合数显示
 	_update_round_display()
 
 	# 初始打开商店时判断是否需要刷新（仅当新回合时）
 	_check_and_refresh()
+	LocalizationSystem.language_changed.connect(_on_localization_changed)
 	print(">>> [Shop] 商店已打开")
+
+
+func _on_localization_changed(_lang: String) -> void:
+	# 更新标题
+	if shop_title:
+		shop_title.text = LocalizationSystem.get_text("shop.title")
+	# 更新道具和遗物区域标题
+	if item_section_title:
+		item_section_title.text = LocalizationSystem.get_text("shop.tag_consumable")
+	if relic_section_title:
+		relic_section_title.text = LocalizationSystem.get_text("shop.tag_relic")
+	_update_round_display()
 
 
 func _update_round_display() -> void:
 	# 更新回合数显示
 	if round_label:
-		round_label.text = "回合 %d" % GameManager.current_round
+		round_label.text = LocalizationSystem.get_text("shop.round", {"value": GameManager.current_round})
 
 
 func _check_and_refresh() -> void:
@@ -319,8 +346,8 @@ func _show_item_popup(index: int) -> void:
 	
 	var price: int = _get_actual_price(item)
 	
-	var item_type_text := "遗物" if is_relic else "道具"
-	var content := "%s\n%s\n\n价格: %d 金币" % [item_type_text, item.description, price]
+	var item_type_text := LocalizationSystem.get_text("shop.tag_relic") if is_relic else LocalizationSystem.get_text("shop.tag_consumable")
+	var content := "%s\n%s\n\n%s" % [item_type_text, item.description, LocalizationSystem.get_text("shop.detail_price", {"price": price})]
 	
 	# 检查是否可购买
 	var can_buy := true
@@ -328,21 +355,21 @@ func _show_item_popup(index: int) -> void:
 	
 	if not is_relic and GameManager.items.size() >= GameManager.MAX_ITEM_SLOTS:
 		can_buy = false
-		confirm_desc = "道具栏已满，无法购买"
+		confirm_desc = LocalizationSystem.get_text("shop.confirm_buy_inventory_full")
 	
 	if GameManager.gold < price:
 		can_buy = false
-		confirm_desc = "金币不足，无法购买"
+		confirm_desc = LocalizationSystem.get_text("shop.confirm_buy_cannot_afford")
 	
 	if can_buy:
-		confirm_desc = "是否花费 %d 金币购买？" % price
+		confirm_desc = LocalizationSystem.get_text("shop.confirm_buy", {"price": price})
 	
 	PopupSystem.show(
 		item.name,
 		content,
 		confirm_desc,
-		"购买" if can_buy else "",
-		"关闭",
+		LocalizationSystem.get_text("shop.buy") if can_buy else "",
+		LocalizationSystem.get_text("shop.close"),
 		Callable(self, "_on_confirm_buy").bind(index),
 		Callable(self, "_on_popup_close")
 	)
@@ -359,11 +386,11 @@ func _on_confirm_buy(index: int) -> void:
 
 	# 检查道具栏是否已满
 	if not is_relic and GameManager.items.size() >= GameManager.MAX_ITEM_SLOTS:
-		TipManager.show_tip("道具栏已满")
+		TipManager.show_tip(LocalizationSystem.get_text("shop.item_full"))
 		return
 
 	if not GameManager.spend_gold(price):
-		TipManager.show_tip("金币不足")
+		TipManager.show_tip(LocalizationSystem.get_text("shop.not_enough_gold"))
 		return
 
 	if is_relic:
@@ -372,7 +399,7 @@ func _on_confirm_buy(index: int) -> void:
 		GameManager.add_item(item)
 
 	print(">>> [Shop] 购买: %s, 花费 %d 金币" % [item.name, price])
-	TipManager.show_tip("购买成功: %s" % item.name)
+	TipManager.show_tip(LocalizationSystem.get_text("shop.purchase_success", {"name": item.name}))
 
 	# 标记为已售完（格子留下，只移除图片和价格）
 	shop_items[index]["sold"] = true
@@ -399,4 +426,32 @@ func _on_refresh_pressed() -> void:
 		_refresh_shop()
 		print(">>> [Shop] 刷新商店，花费 %d 金币" % REFRESH_COST)
 	else:
-		TipManager.show_tip("金币不足，无法刷新")
+		TipManager.show_tip(LocalizationSystem.get_text("shop.not_enough_gold_refresh"))
+
+
+## 为按钮添加hover和press视觉反馈
+func _add_button_feedback(btn: BaseButton) -> void:
+	btn.mouse_entered.connect(_on_button_mouse_entered.bind(btn))
+	btn.mouse_exited.connect(_on_button_mouse_exited.bind(btn))
+	btn.button_down.connect(_on_button_down.bind(btn))
+	btn.button_up.connect(_on_button_up.bind(btn))
+
+
+func _on_button_mouse_entered(btn: BaseButton) -> void:
+	var alpha := btn.modulate.a
+	btn.modulate = Color(0.9, 0.9, 0.9, alpha)
+
+
+func _on_button_mouse_exited(btn: BaseButton) -> void:
+	var alpha := btn.modulate.a
+	btn.modulate = Color(1, 1, 1, alpha)
+
+
+func _on_button_down(btn: BaseButton) -> void:
+	var alpha := btn.modulate.a
+	btn.modulate = Color(0.8, 0.8, 0.8, alpha)
+
+
+func _on_button_up(btn: BaseButton) -> void:
+	var alpha := btn.modulate.a
+	btn.modulate = Color(0.9, 0.9, 0.9, alpha) if btn.get_global_rect().has_point(btn.get_viewport().get_mouse_position()) else Color(1, 1, 1, alpha)
