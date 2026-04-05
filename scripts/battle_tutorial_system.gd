@@ -154,11 +154,17 @@ func _create_hint_panel() -> void:
 	hint_label.add_theme_font_size_override("font_size", 28)  # 放大到2倍
 	vbox.add_child(hint_label)
 
-	hint_arrow = Label.new()
-	hint_arrow.text = "v"
-	hint_arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint_arrow.add_theme_color_override("font_color", Color(1.0, 0.8, 0.0))
-	hint_arrow.add_theme_font_size_override("font_size", 48)  # 放大到2倍
+	# 使用三角形替代箭头文字（避免字体问题）
+	hint_arrow = PanelContainer.new()
+	hint_arrow.custom_minimum_size = Vector2(40, 30)
+	hint_arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var arrow_style := StyleBoxFlat.new()
+	arrow_style.bg_color = Color(1.0, 0.8, 0.0)
+	arrow_style.corner_radius_top_left = 8
+	arrow_style.corner_radius_top_right = 8
+	arrow_style.corner_radius_bottom_left = 0
+	arrow_style.corner_radius_bottom_right = 0
+	hint_arrow.add_theme_stylebox_override("panel", arrow_style)
 	vbox.add_child(hint_arrow)
 
 
@@ -272,7 +278,7 @@ func _update_highlight(target: Control, arrow_pos: String) -> void:
 
 	# 计算提示面板位置
 	var panel_pos: Vector2
-	var arrow_text: String
+	var arrow_rotation: float
 
 	match arrow_pos:
 		"bottom":
@@ -280,25 +286,25 @@ func _update_highlight(target: Control, arrow_pos: String) -> void:
 				global_rect.position.x + global_rect.size.x / 2.0 - 200.0,  # 调整为面板宽度的一半(400/2)
 				global_rect.end.y + 20
 			)
-			arrow_text = "^"
+			arrow_rotation = 0  # 指向上
 		"top":
 			panel_pos = Vector2(
 				global_rect.position.x + global_rect.size.x / 2.0 - 200.0,  # 调整为面板宽度的一半(400/2)
 				global_rect.position.y - 150  # 调整为面板高度+间距
 			)
-			arrow_text = "v"
+			arrow_rotation = 180  # 指向下
 		"right":
 			panel_pos = Vector2(global_rect.end.x + 20, global_rect.position.y)
-			arrow_text = "<"
+			arrow_rotation = -90  # 指向左
 		"left":
 			panel_pos = Vector2(global_rect.position.x - 420, global_rect.position.y)  # 调整为面板宽度+间距
-			arrow_text = ">"
+			arrow_rotation = 90  # 指向右
 		_:
 			panel_pos = Vector2(global_rect.position.x, global_rect.end.y + 20)
-			arrow_text = "^"
+			arrow_rotation = 0
 
 	hint_panel.position = panel_pos
-	hint_arrow.text = arrow_text
+	hint_arrow.rotation_degrees = arrow_rotation
 
 
 func _process(_delta: float) -> void:
