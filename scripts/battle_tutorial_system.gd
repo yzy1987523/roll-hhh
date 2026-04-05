@@ -15,6 +15,7 @@ enum TutorialStep {
 # ---- 当前状态 ----
 var current_step: TutorialStep = TutorialStep.PLAY
 var is_tutorial_active: bool = false
+var last_target_rect: Rect2 = Rect2(0, 0, 0, 0)  # 缓存目标位置，避免重复更新
 
 # ---- UI 节点 ----
 var overlay_container: Control = null  # 遮罩容器
@@ -154,23 +155,24 @@ func _create_hint_panel() -> void:
 	hint_label.add_theme_font_size_override("font_size", 28)  # 放大到2倍
 	vbox.add_child(hint_label)
 
-	# 使用三角形替代箭头文字（避免字体问题）
+	# 箭头独立于面板（放在面板外面）
 	var arrow_container := Control.new()
 	arrow_container.custom_minimum_size = Vector2(40, 30)
 	arrow_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	arrow_container.z_index = 101  # 确保在面板之上
 	hint_arrow = arrow_container
 	
-	# 创建三角形
+	# 创建三角形（顶点在原点，这样旋转不会偏移）
 	var triangle := Polygon2D.new()
 	triangle.polygon = PackedVector2Array([
-		Vector2(20, 0),   # 顶点
-		Vector2(0, 30),   # 左下
-		Vector2(40, 30)   # 右下
+		Vector2(0, 0),    # 顶点在原点
+		Vector2(-20, 30), # 左下
+		Vector2(20, 30)   # 右下
 	])
 	triangle.color = Color(1.0, 0.8, 0.0)
 	triangle.position = Vector2(0, 0)
 	arrow_container.add_child(triangle)
-	vbox.add_child(arrow_container)
+	add_child(arrow_container)  # 添加到场景根节点，而不是vbox
 
 
 func _connect_game_signals() -> void:
@@ -204,6 +206,9 @@ func _show_step(step: TutorialStep) -> void:
 	if not STEP_INFO.has(step):
 		return
 
+	# 重置缓存的位置，强制更新新步骤的遮罩
+	last_target_rect = Rect2(-1, -1, -1, -1)
+
 	var info: Dictionary = STEP_INFO[step]
 	hint_label.text = LocalizationSystem.get_text(info["hint"])
 
@@ -211,7 +216,8 @@ func _show_step(step: TutorialStep) -> void:
 	target_control = _get_node_by_path(path)
 
 	if target_control != null:
-		_update_highlight(target_control, info["arrow_pos"])
+		_update_highlight_mask_only(target_control, info["arrow_pos"])
+		_setup_arrow_position(info["arrow_pos"])
 	else:
 		# 隐藏所有遮罩
 		overlay_top.visible = false
@@ -222,11 +228,19 @@ func _show_step(step: TutorialStep) -> void:
 	print(">>> [BattleTutorial] 步骤: %s" % info["hint"])
 
 
-func _update_highlight(target: Control, arrow_pos: String) -> void:
+func _update_highlight_mask_only(target: Control, arrow_pos: String) -> void:
 	if target == null:
 		return
 
 	var global_rect: Rect2 = target.get_global_rect()
+	
+	# 优化：只在目标位置变化时才更新遮罩和面板
+	if global_rect.position == last_target_rect.position and global_rect.size == last_target_rect.size:
+		return  # 位置没变化，跳过更新
+	
+	# 位置变化了，记录新位置并更新
+	last_target_rect = global_rect
+	
 	var padding: int = 10
 	var screen_size: Vector2 = get_viewport().get_visible_rect().size
 	
@@ -240,7 +254,7 @@ func _update_highlight(target: Control, arrow_pos: String) -> void:
 			set_meta("_highlight_retry_count", retry_count + 1)
 			print(">>> [BattleTutorial] 目标位置无效(0,0)，延迟重试 (%d/3)" % (retry_count + 1))
 			await get_tree().create_timer(0.1).timeout
-			_update_highlight(target, arrow_pos)
+			_update_highlight_mask_only(target, arrow_pos)
 			return
 		else:
 			# 超过重试次数，隐藏所有遮罩
@@ -281,45 +295,90 @@ func _update_highlight(target: Control, arrow_pos: String) -> void:
 	overlay_right.position = Vector2(hole_end.x, hole_pos.y)
 	overlay_right.size = Vector2(max(0, screen_size.x - hole_end.x), hole_size.y)
 
-	# 计算提示面板位置
+	# 计算提示面板位置（使用面板实际大小）
+	var panel_width: float = hint_panel.size.x
+	var panel_height: float = hint_panel.size.y
 	var panel_pos: Vector2
-	var arrow_rotation: float
-
+	
 	match arrow_pos:
 		"bottom":
 			panel_pos = Vector2(
-				global_rect.position.x + global_rect.size.x / 2.0 - 200.0,  # 调整为面板宽度的一半(400/2)
+				global_rect.position.x + global_rect.size.x / 2.0 - panel_width / 2.0,
 				global_rect.end.y + 20
 			)
-			arrow_rotation = 0  # 指向上
 		"top":
 			panel_pos = Vector2(
-				global_rect.position.x + global_rect.size.x / 2.0 - 200.0,  # 调整为面板宽度的一半(400/2)
-				global_rect.position.y - 150  # 调整为面板高度+间距
+				global_rect.position.x + global_rect.size.x / 2.0 - panel_width / 2.0,
+				global_rect.position.y - panel_height - 30
 			)
-			arrow_rotation = 180  # 指向下
 		"right":
 			panel_pos = Vector2(global_rect.end.x + 20, global_rect.position.y)
-			arrow_rotation = -90  # 指向左
 		"left":
-			panel_pos = Vector2(global_rect.position.x - 420, global_rect.position.y)  # 调整为面板宽度+间距
-			arrow_rotation = 90  # 指向右
+			panel_pos = Vector2(global_rect.position.x - panel_width - 20, global_rect.position.y)
 		_:
 			panel_pos = Vector2(global_rect.position.x, global_rect.end.y + 20)
+
+	# print(">>> [BattleTutorial] 目标位置变化，更新遮罩: %s, 面板位置: %s" % [global_rect.position, panel_pos])
+	hint_panel.position = panel_pos
+	# 同时更新箭头位置
+	_update_arrow_position(arrow_pos)
+
+
+func _update_arrow_position(arrow_pos: String) -> void:
+	# 箭头位置跟随面板位置更新
+	var panel_pos: Vector2 = hint_panel.position
+	var panel_width: float = hint_panel.size.x
+	var panel_height: float = hint_panel.size.y
+	var arrow_position: Vector2
+	var arrow_rotation: float
+	var arrow_offset := 35  # 箭头距离面板的间距
+	
+	match arrow_pos:
+		"bottom":
+			arrow_position = Vector2(
+				panel_pos.x + panel_width / 2.0,
+				panel_pos.y - arrow_offset
+			)
+			arrow_rotation = 0
+		"top":
+			arrow_position = Vector2(
+				panel_pos.x + panel_width / 2.0,
+				panel_pos.y + panel_height + arrow_offset
+			)
+			arrow_rotation = 180
+		"right":
+			arrow_position = Vector2(
+				panel_pos.x - arrow_offset,
+				panel_pos.y + panel_height / 2.0
+			)
+			arrow_rotation = -90
+		"left":
+			arrow_position = Vector2(
+				panel_pos.x + panel_width + arrow_offset,
+				panel_pos.y + panel_height / 2.0
+			)
+			arrow_rotation = 90
+		_:
+			arrow_position = Vector2(panel_pos.x + panel_width / 2.0, panel_pos.y - arrow_offset)
 			arrow_rotation = 0
 
-	hint_panel.position = panel_pos
+	hint_arrow.position = arrow_position
 	hint_arrow.rotation_degrees = arrow_rotation
+
+
+func _setup_arrow_position(_arrow_pos: String) -> void:
+	# 不再需要，箭头位置在 _update_highlight_mask_only 中更新
+	pass
 
 
 func _process(_delta: float) -> void:
 	if not is_tutorial_active:
 		return
 
-	# 持续更新提示面板位置
+	# 持续更新遮罩和面板位置（不更新箭头）
 	if target_control != null:
 		var info: Dictionary = STEP_INFO[current_step]
-		_update_highlight(target_control, info["arrow_pos"])
+		_update_highlight_mask_only(target_control, info["arrow_pos"])
 
 
 func _complete_tutorial() -> void:
