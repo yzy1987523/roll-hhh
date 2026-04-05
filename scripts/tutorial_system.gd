@@ -37,7 +37,7 @@ var target_control: Control = null
 const STEP_INFO := {
 	TutorialStep.SPAWN_WARRIOR: {
 		"hint": "tutorial.step1_action",
-		"target_path": "MainLayout/BottomBar/SpawnRow/SpawnButtons/SpawnWarrior",
+		"target_path": "MainLayout/BottomBarContainer/BottomBar/SpawnRow/SpawnButtons/SpawnWarrior",
 		"arrow_pos": "bottom",
 	},
 	TutorialStep.MERGE: {

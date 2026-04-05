@@ -12,7 +12,7 @@ var SELECT_FRAMES: Array[Texture2D] = []
 
 # ---- 节点引用 ----
 @onready var gold_label: Label = $MainLayout/TopBar/GoldContainer/GoldLabel
-@onready var energy_label: Label = $MainLayout/BottomBar/SpawnRow/EnergyContainer/EnergyLabel
+@onready var energy_label: Label = $MainLayout/BottomBarContainer/BottomBar/SpawnRow/EnergyContainer/EnergyLabel
 @onready var round_label: Label = $MainLayout/TopBar/RoundContainer/RoundLabel
 # ---- 节点引用 ----
 @onready var settings_button: Button = $MainLayout/TopBar/SettingsButton
@@ -24,9 +24,9 @@ var SELECT_FRAMES: Array[Texture2D] = []
 
 @onready var grid_container: GridContainer = $MainLayout/BoardCenter/GridContainer
 @onready var board_sprite: Sprite2D = $BoardSprite
-@onready var spawn_warrior: TextureButton = $MainLayout/BottomBar/SpawnRow/SpawnButtons/SpawnWarrior
-@onready var spawn_mage: TextureButton = $MainLayout/BottomBar/SpawnRow/SpawnButtons/SpawnMage
-@onready var spawn_priest: TextureButton = $MainLayout/BottomBar/SpawnRow/SpawnButtons/SpawnPriest
+@onready var spawn_warrior: TextureButton = $MainLayout/BottomBarContainer/BottomBar/SpawnRow/SpawnButtons/SpawnWarrior
+@onready var spawn_mage: TextureButton = $MainLayout/BottomBarContainer/BottomBar/SpawnRow/SpawnButtons/SpawnMage
+@onready var spawn_priest: TextureButton = $MainLayout/BottomBarContainer/BottomBar/SpawnRow/SpawnButtons/SpawnPriest
 @onready var end_turn_button: TextureButton = $MainLayout/DetailActionBar/EndTurnButton
 @onready var item_bar: HBoxContainer = $MainLayout/MiddleBar/ItemBar
 @onready var dorm_button: TextureButton = $MainLayout/MiddleBar/DormButton
@@ -39,7 +39,7 @@ var SELECT_FRAMES: Array[Texture2D] = []
 @onready var detail_label: Label = $MainLayout/DetailActionBar/DetailPanel/MainHBox/LeftContent/DetailLabel
 @onready var hint_label: Label = $MainLayout/DetailActionBar/DetailPanel/MainHBox/LeftContent/HintLabel
 @onready var sacrifice_button: TextureButton = $MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton
-@onready var sacrifice_label: Label = $MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton/Label
+@onready var sacrifice_label: Label = $MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton/VBoxContainer/HBoxContainer/Label
 
 # ---- 设置面板节点 ----
 @onready var settings_backdrop: ColorRect = $SettingsBackdrop
@@ -137,6 +137,7 @@ func _ready() -> void:
 	_update_resource_labels()
 	_refresh_relic_panel()
 	_refresh_item_slots()
+	_refresh_game_board_texts()
 	_start_tutorial()
 	print(">>> [GameBoard] 备战阶段界面已加载")
 
@@ -366,7 +367,7 @@ func _update_character_detail_panel() -> void:
 			else:
 				hint_label.text = ""
 			var energy := GameManager.calc_sacrifice_energy(ch.level)
-			sacrifice_label.text = "献祭\n获得 %d 能量" % energy
+			sacrifice_label.text = "%d" % energy
 			# 性能优化：使用透明度而非visible，避免HBoxContainer重布局
 			sacrifice_button.modulate.a = 1.0
 			sacrifice_button.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -1763,23 +1764,6 @@ func _refresh_relic_panel() -> void:
 	# 确保遗物面板可见
 	relic_panel.modulate = Color.WHITE
 	
-	# 添加 bar.png 背景到 RelicPanel（如果还没有）
-	if not relic_panel.has_node("RelicBarBg"):
-		var bar_texture := preload("res://art/sprites/UI/panels/bar.png")
-		var bg := TextureRect.new()
-		bg.name = "RelicBarBg"
-		bg.texture = bar_texture
-		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		bg.z_index = -1  # 确保在最底层
-		relic_panel.add_child(bg)
-		relic_panel.move_child(bg, 0)  # 移到最底层
-	
-	# 设置遗物栏高度为80（适应bar.png和遗物图标）
-	relic_panel.custom_minimum_size = Vector2(0, 80)
-	
 	# 设置遗物列表间隔为10
 	relic_list.add_theme_constant_override("separation", 10)
 	
@@ -2510,6 +2494,13 @@ func _refresh_game_board_texts() -> void:
 	var encyclopedia_label = encyclopedia_button.get_node_or_null("Label")
 	if encyclopedia_label:
 		encyclopedia_label.text = LocalizationSystem.get_text("game_board.encyclopedia")
+	
+	# 献祭按钮标题
+	var vbox = sacrifice_button.get_node_or_null("VBoxContainer")
+	if vbox:
+		var label2 = vbox.get_node_or_null("Label2")
+		if label2:
+			label2.text = LocalizationSystem.get_text("game_board.sacrifice")
 
 
 func _on_volume_changed(value: float) -> void:

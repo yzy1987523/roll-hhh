@@ -244,7 +244,7 @@ func _handle_normal_gameplay() -> void:
 	print(">>> 正常游戏流程")
 	
 	# 生成一些角色
-	var spawn_btn = current_root_child.get_node_or_null("MainLayout/BottomBar/SpawnRow/SpawnButtons/SpawnWarrior")
+	var spawn_btn = current_root_child.get_node_or_null("MainLayout/BottomBarContainer/BottomBar/SpawnRow/SpawnButtons/SpawnWarrior")
 	if spawn_btn != null:
 		for i in range(3):
 			spawn_btn.pressed.emit()

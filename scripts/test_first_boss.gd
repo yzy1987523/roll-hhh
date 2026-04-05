@@ -9,11 +9,11 @@ const MAX_ITERATIONS := 15
 # 节点路径
 const PATH_START_BUTTON := "StartButton"
 const PATH_END_TURN_BUTTON := "MainLayout/DetailActionBar/EndTurnButton"
-const PATH_SKIP_BUTTON := "MainLayout/BottomBar/SkipButton"
+const PATH_SKIP_BUTTON := "MainLayout/BottomBarContainer/BottomBar/SkipButton"
 const PATH_CONTINUE_BUTTON := "ResultPanel/ResultVBox/ContinueButton"
-const PATH_SPAWN_WARRIOR := "MainLayout/BottomBar/SpawnRow/SpawnWarrior"
-const PATH_SPAWN_MAGE := "MainLayout/BottomBar/SpawnRow/SpawnMage"
-const PATH_SPAWN_PRIEST := "MainLayout/BottomBar/SpawnRow/SpawnPriest"
+const PATH_SPAWN_WARRIOR := "MainLayout/BottomBarContainer/BottomBar/SpawnRow/SpawnWarrior"
+const PATH_SPAWN_MAGE := "MainLayout/BottomBarContainer/BottomBar/SpawnRow/SpawnMage"
+const PATH_SPAWN_PRIEST := "MainLayout/BottomBarContainer/BottomBar/SpawnRow/SpawnPriest"
 
 var cycle_count: int = 0
 var iteration: int = 0
