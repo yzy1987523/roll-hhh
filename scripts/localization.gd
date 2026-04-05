@@ -6,7 +6,7 @@ extends Node
 signal language_changed(lang: String)
 
 var config: Dictionary = {}
-var current_lang: String = "en"
+var current_lang: String = "zh"
 
 func _ready() -> void:
 	load_config()
