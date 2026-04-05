@@ -153,6 +153,7 @@ func _create_hint_panel() -> void:
 	hint_label.text = ""
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_label.add_theme_font_size_override("font_size", 28)  # 放大到2倍
+	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART  # 启用自动换行
 	vbox.add_child(hint_label)
 
 	# 箭头独立于面板（放在面板外面）
@@ -161,16 +162,16 @@ func _create_hint_panel() -> void:
 	arrow_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	arrow_container.z_index = 101  # 确保在面板之上
 	hint_arrow = arrow_container
-	
-	# 创建三角形（顶点在原点，这样旋转不会偏移）
+
+	# 创建三角形（顶点位于容器顶部中央，这样旋转时能正确指向上方）
 	var triangle := Polygon2D.new()
+	# 顶点(20,0)在容器顶部中央，旋转180度后顶点朝上
 	triangle.polygon = PackedVector2Array([
-		Vector2(0, 0),    # 顶点在原点
-		Vector2(-20, 30), # 左下
-		Vector2(20, 30)   # 右下
+		Vector2(20, 0),   # 顶点在容器顶部中央
+		Vector2(0, 30),  # 左下
+		Vector2(40, 30)  # 右下
 	])
 	triangle.color = Color(1.0, 0.8, 0.0)
-	triangle.position = Vector2(0, 0)
 	arrow_container.add_child(triangle)
 	add_child(arrow_container)  # 添加到场景根节点，而不是vbox
 
@@ -295,9 +296,13 @@ func _update_highlight_mask_only(target: Control, arrow_pos: String) -> void:
 	overlay_right.position = Vector2(hole_end.x, hole_pos.y)
 	overlay_right.size = Vector2(max(0, screen_size.x - hole_end.x), hole_size.y)
 
-	# 计算提示面板位置（使用面板实际大小）
-	var panel_width: float = hint_panel.size.x
-	var panel_height: float = hint_panel.size.y
+	# 计算提示面板位置（使用面板实际最小尺寸，确保内容完整显示）
+	var panel_size: Vector2 = hint_panel.get_combined_minimum_size()
+	# 如果最小尺寸小于固定尺寸，使用固定尺寸
+	panel_size.x = max(panel_size.x, hint_panel.size.x)
+	panel_size.y = max(panel_size.y, hint_panel.size.y)
+	var panel_width: float = panel_size.x
+	var panel_height: float = panel_size.y
 	var panel_pos: Vector2
 	
 	match arrow_pos:
@@ -327,8 +332,12 @@ func _update_highlight_mask_only(target: Control, arrow_pos: String) -> void:
 func _update_arrow_position(arrow_pos: String) -> void:
 	# 箭头位置跟随面板位置更新
 	var panel_pos: Vector2 = hint_panel.position
-	var panel_width: float = hint_panel.size.x
-	var panel_height: float = hint_panel.size.y
+	# 使用实际最小尺寸，与 _update_highlight_mask_only 保持一致
+	var panel_size: Vector2 = hint_panel.get_combined_minimum_size()
+	panel_size.x = max(panel_size.x, hint_panel.size.x)
+	panel_size.y = max(panel_size.y, hint_panel.size.y)
+	var panel_width: float = panel_size.x
+	var panel_height: float = panel_size.y
 	var arrow_position: Vector2
 	var arrow_rotation: float
 	var arrow_offset := 35  # 箭头距离面板的间距

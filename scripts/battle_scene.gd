@@ -1005,11 +1005,10 @@ func _update_enemy_sprite_ui(e: EnemyFactory.EnemyData) -> void:
 	# 根据sprite实际尺寸计算位置（使用custom_minimum_size，因为纹理加载后size不会立即更新）
 	var sprite_size: Vector2 = enemy_sprite_rect.custom_minimum_size
 	var icon_size: int = 50  # 图标尺寸
-	var margin: int = 4  # 边距
-	
-	# 攻击图标+数值（左下角）
+
+	# 攻击图标+数值（左下角外侧）
 	var atk_container := Control.new()
-	atk_container.position = Vector2(margin, sprite_size.y - icon_size - margin)
+	atk_container.position = Vector2(-5, sprite_size.y - icon_size + 5)
 	atk_container.custom_minimum_size = Vector2(icon_size, icon_size)
 	atk_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	enemy_sprite_rect.add_child(atk_container)
@@ -1017,9 +1016,10 @@ func _update_enemy_sprite_ui(e: EnemyFactory.EnemyData) -> void:
 
 	var atk_icon := TextureRect.new()
 	atk_icon.texture = load("res://art/sprites/UI/items/smallItem/attack.png")
-	atk_icon.set_anchors_preset(Control.PRESET_FULL_RECT)
 	atk_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
 	atk_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	atk_icon.custom_minimum_size = Vector2(icon_size, icon_size)
+	atk_icon.position = Vector2(0, 0)
 	atk_icon.modulate = Color(1, 0.3, 0.3)  # 红色
 	atk_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	atk_container.add_child(atk_icon)
@@ -1036,9 +1036,9 @@ func _update_enemy_sprite_ui(e: EnemyFactory.EnemyData) -> void:
 	atk_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	atk_container.add_child(atk_label)
 
-	# 防御图标+数值（右下角）
+	# 防御图标+数值（右下角外侧）
 	var def_container := Control.new()
-	def_container.position = Vector2(sprite_size.x - icon_size - margin, sprite_size.y - icon_size - margin)
+	def_container.position = Vector2(sprite_size.x -10, sprite_size.y - icon_size + 5)
 	def_container.custom_minimum_size = Vector2(icon_size, icon_size)
 	def_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	enemy_sprite_rect.add_child(def_container)
@@ -1046,9 +1046,10 @@ func _update_enemy_sprite_ui(e: EnemyFactory.EnemyData) -> void:
 
 	var def_icon := TextureRect.new()
 	def_icon.texture = load("res://art/sprites/UI/items/smallItem/defend.png")
-	def_icon.set_anchors_preset(Control.PRESET_FULL_RECT)
 	def_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
 	def_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	def_icon.custom_minimum_size = Vector2(icon_size, icon_size)
+	def_icon.position = Vector2(0, 0)
 	def_icon.modulate = Color(0.3, 0.5, 1)  # 蓝色
 	def_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	def_container.add_child(def_icon)
