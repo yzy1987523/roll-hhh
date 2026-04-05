@@ -24,7 +24,7 @@ var overlay_left: ColorRect = null     # 左侧遮罩
 var overlay_right: ColorRect = null    # 右侧遮罩
 var hint_panel: PanelContainer = null
 var hint_label: Label = null
-var hint_arrow: Label = null
+var hint_arrow: Control = null
 var target_control: Control = null
 
 # ---- 步骤配置 ----
