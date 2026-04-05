@@ -155,17 +155,22 @@ func _create_hint_panel() -> void:
 	vbox.add_child(hint_label)
 
 	# 使用三角形替代箭头文字（避免字体问题）
-	hint_arrow = PanelContainer.new()
-	hint_arrow.custom_minimum_size = Vector2(40, 30)
-	hint_arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var arrow_style := StyleBoxFlat.new()
-	arrow_style.bg_color = Color(1.0, 0.8, 0.0)
-	arrow_style.corner_radius_top_left = 8
-	arrow_style.corner_radius_top_right = 8
-	arrow_style.corner_radius_bottom_left = 0
-	arrow_style.corner_radius_bottom_right = 0
-	hint_arrow.add_theme_stylebox_override("panel", arrow_style)
-	vbox.add_child(hint_arrow)
+	var arrow_container := Control.new()
+	arrow_container.custom_minimum_size = Vector2(40, 30)
+	arrow_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hint_arrow = arrow_container
+	
+	# 创建三角形
+	var triangle := Polygon2D.new()
+	triangle.polygon = PackedVector2Array([
+		Vector2(20, 0),   # 顶点
+		Vector2(0, 30),   # 左下
+		Vector2(40, 30)   # 右下
+	])
+	triangle.color = Color(1.0, 0.8, 0.0)
+	triangle.position = Vector2(0, 0)
+	arrow_container.add_child(triangle)
+	vbox.add_child(arrow_container)
 
 
 func _connect_game_signals() -> void:

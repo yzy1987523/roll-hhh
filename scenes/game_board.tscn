@@ -140,7 +140,7 @@ theme_override_constants/separation = 0
 custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
 size_flags_vertical = 3
-text = "◀"
+text = "<"
 
 [node name="RelicPanel" type="PanelContainer" parent="MainLayout/RelicBar" unique_id=308367482]
 self_modulate = Color(0.28627452, 0.16078432, 0.46666667, 1)
@@ -169,7 +169,7 @@ theme_override_constants/separation = 4
 custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
 size_flags_vertical = 3
-text = "▶"
+text = ">"
 
 [node name="MiddleBar" type="HBoxContainer" parent="MainLayout" unique_id=584068900]
 custom_minimum_size = Vector2(0, 120)
