@@ -211,7 +211,7 @@ func _create_item_cell(item: DataModels.ItemData, index: int, sold: bool = false
 		
 		# 价格标签（格子下方）
 		var price_label := Label.new()
-		price_label.text = "💰 %d" % _get_actual_price(item)
+		price_label.text = "$ %d" % _get_actual_price(item)
 		price_label.add_theme_font_size_override("font_size", 18)
 		price_label.add_theme_color_override("font_color", Color(1, 0.9, 0.5))
 		price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
