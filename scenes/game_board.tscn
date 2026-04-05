@@ -92,6 +92,7 @@ vertical_alignment = 1
 
 [node name="RoundContainer" type="HBoxContainer" parent="MainLayout/TopBar" unique_id=1383262398]
 layout_mode = 2
+size_flags_horizontal = 6
 size_flags_vertical = 3
 theme_override_constants/separation = 4
 
@@ -113,7 +114,6 @@ vertical_alignment = 1
 
 [node name="Spacer" type="Control" parent="MainLayout/TopBar" unique_id=1825867427]
 layout_mode = 2
-size_flags_horizontal = 3
 
 [node name="SettingsButton" type="Button" parent="MainLayout/TopBar" unique_id=2027233340]
 custom_minimum_size = Vector2(128, 128)
@@ -140,6 +140,7 @@ theme_override_constants/separation = 0
 custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_font_sizes/font_size = 40
 text = "<"
 
 [node name="RelicPanel" type="PanelContainer" parent="MainLayout/RelicBar" unique_id=308367482]
@@ -169,6 +170,7 @@ theme_override_constants/separation = 4
 custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_font_sizes/font_size = 40
 text = ">"
 
 [node name="MiddleBar" type="HBoxContainer" parent="MainLayout" unique_id=584068900]
