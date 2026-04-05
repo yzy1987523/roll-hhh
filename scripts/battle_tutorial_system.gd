@@ -155,7 +155,7 @@ func _create_hint_panel() -> void:
 	vbox.add_child(hint_label)
 
 	hint_arrow = Label.new()
-	hint_arrow.text = "▼"
+	hint_arrow.text = "v"
 	hint_arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_arrow.add_theme_color_override("font_color", Color(1.0, 0.8, 0.0))
 	hint_arrow.add_theme_font_size_override("font_size", 48)  # 放大到2倍
@@ -280,22 +280,22 @@ func _update_highlight(target: Control, arrow_pos: String) -> void:
 				global_rect.position.x + global_rect.size.x / 2.0 - 200.0,  # 调整为面板宽度的一半(400/2)
 				global_rect.end.y + 20
 			)
-			arrow_text = "▲"
+			arrow_text = "^"
 		"top":
 			panel_pos = Vector2(
 				global_rect.position.x + global_rect.size.x / 2.0 - 200.0,  # 调整为面板宽度的一半(400/2)
 				global_rect.position.y - 150  # 调整为面板高度+间距
 			)
-			arrow_text = "▼"
+			arrow_text = "v"
 		"right":
 			panel_pos = Vector2(global_rect.end.x + 20, global_rect.position.y)
-			arrow_text = "◀"
+			arrow_text = "<"
 		"left":
 			panel_pos = Vector2(global_rect.position.x - 420, global_rect.position.y)  # 调整为面板宽度+间距
-			arrow_text = "▶"
+			arrow_text = ">"
 		_:
 			panel_pos = Vector2(global_rect.position.x, global_rect.end.y + 20)
-			arrow_text = "▲"
+			arrow_text = "^"
 
 	hint_panel.position = panel_pos
 	hint_arrow.text = arrow_text
