@@ -7,13 +7,13 @@ class_name BattleScene
 # ---- 节点引用 ----
 @onready var grid_container: GridContainer = $MainLayout/BoardCenter/GridContainer
 @onready var log_label: RichTextLabel = $MainLayout/LogScroll/LogLabel
-@onready var play_button: Button = $MainLayout/ControlBar/PlayButton
-@onready var skip_button: Button = $MainLayout/ControlBar/SkipButton
+@onready var play_button: Button = $MainLayout/ControlBarMargin/ControlBar/PlayButton
+@onready var skip_button: Button = $MainLayout/ControlBarMargin/ControlBar/SkipButton
 @onready var result_label: Label = $BottomBar/ResultLabel
-@onready var pause_button: Button = $MainLayout/ControlBar/PauseButton
-@onready var speed_1x: Button = $MainLayout/ControlBar/Speed1x
-@onready var speed_2x: Button = $MainLayout/ControlBar/Speed2x
-@onready var speed_3x: Button = $MainLayout/ControlBar/Speed3x
+@onready var pause_button: Button = $MainLayout/ControlBarMargin/ControlBar/PauseButton
+@onready var speed_1x: Button = $MainLayout/ControlBarMargin/ControlBar/Speed1x
+@onready var speed_2x: Button = $MainLayout/ControlBarMargin/ControlBar/Speed2x
+@onready var speed_3x: Button = $MainLayout/ControlBarMargin/ControlBar/Speed3x
 @onready var pause_hint: Label = $MainLayout/PauseHintBar/PauseHint
 
 # ---- Turn & Relic Area 节点 ----
@@ -36,9 +36,9 @@ class_name BattleScene
 @onready var skill_desc_label: Label = $MainLayout/EnemyArea/EnemyInfoPanel/SkillSection/SkillDesc
 
 # ---- ItemBar 节点 ----
-@onready var item_slot0: PanelContainer = $MainLayout/ControlBar/ItemSlot0
-@onready var item_slot1: PanelContainer = $MainLayout/ControlBar/ItemSlot1
-@onready var item_slot2: PanelContainer = $MainLayout/ControlBar/ItemSlot2
+@onready var item_slot0: PanelContainer = $MainLayout/ControlBarMargin/ControlBar/ItemSlot0
+@onready var item_slot1: PanelContainer = $MainLayout/ControlBarMargin/ControlBar/ItemSlot1
+@onready var item_slot2: PanelContainer = $MainLayout/ControlBarMargin/ControlBar/ItemSlot2
 
 # ---- 常量 ----
 const GRID_SIZE := 6
@@ -332,6 +332,7 @@ func _on_item_use_pressed(slot_index: int) -> void:
 	if result.success:
 		GameManager.remove_item(slot_index)
 		_refresh_item_slots()
+		_refresh_board_display()  # 刷新棋盘显示
 	else:
 		# 延迟显示提示，避免被弹窗遮挡
 		await get_tree().create_timer(0.15).timeout

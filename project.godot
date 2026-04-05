@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="roll_hhh"
-run/main_scene="uid://lhfpkjexs7e5"
+run/main_scene="uid://c5n344whm0omu"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
 
@@ -31,7 +31,6 @@ window/size/viewport_width=1080
 window/size/viewport_height=1920
 window/size/initial_position_type=0
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
 window/size/window_width=1920
 window/size/window_height=1080
 window/size/remember_window_size=true

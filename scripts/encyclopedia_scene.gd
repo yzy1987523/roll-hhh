@@ -3,12 +3,11 @@ extends Control
 ## 图鉴系统（弹窗模式）
 ## 9个角色图片 + 1-9级进化路线 + 详情弹窗
 
-const CELL_SIZE := 180
+const CELL_SIZE := 130
 const CELL_SPACING := 10
-const SPRITE_SIZE := 168
+const SPRITE_SIZE := 118
 const CELL_TEXTURE := preload("res://art/sprites/UI/items/smallItem/cell_0.png")
 const CELL_SELECTED_TEXTURE := preload("res://art/sprites/UI/items/smallItem/cell_1.png")
-const CLOSE_TEXTURE := preload("res://art/sprites/UI/items/smallItem/close.png")
 
 # 图鉴显示顺序：按职业类型分列（战士、法师、牧师各一列）
 const ALL_JOBS := [
@@ -37,11 +36,11 @@ const JOB_COLORS := {
 	31: Color(0.9, 0.85, 0.5),
 }
 
-@onready var close_button: TextureButton = $EncyclopediaWindow/VBox/TitleBar/CloseButton
-@onready var job_grid: GridContainer = $EncyclopediaWindow/VBox/TopPanel/JobGridCenter/JobGrid
-@onready var evolution_scroll: ScrollContainer = $EncyclopediaWindow/VBox/BottomPanel/ScrollWrapper/ScrollContainer
-@onready var evolution_container: HBoxContainer = $EncyclopediaWindow/VBox/BottomPanel/ScrollWrapper/ScrollContainer/EvolutionContainer
-@onready var evolution_title: Label = $EncyclopediaWindow/VBox/BottomPanel/EvolutionTitle
+@onready var close_button: TextureButton = $EncyclopediaWindow/ContentMargin/VBox/TitleBarMargin/TitleBar/CloseButton
+@onready var job_grid: GridContainer = $EncyclopediaWindow/ContentMargin/VBox/TopPanel/JobGridCenter/JobGrid
+@onready var evolution_scroll: ScrollContainer = $EncyclopediaWindow/ContentMargin/VBox/BottomPanel/ScrollWrapper/ScrollContainer
+@onready var evolution_container: HBoxContainer = $EncyclopediaWindow/ContentMargin/VBox/BottomPanel/ScrollWrapper/ScrollContainer/ContentMargin/EvolutionContainer
+@onready var evolution_title: Label = $EncyclopediaWindow/ContentMargin/VBox/BottomPanel/EvolutionTitle
 
 var selected_job: int = -1
 var job_cells: Array = []
@@ -58,23 +57,6 @@ func _ready() -> void:
 	var encyclopedia_window = $EncyclopediaWindow
 	var empty_style := StyleBoxEmpty.new()
 	encyclopedia_window.add_theme_stylebox_override("panel", empty_style)
-	
-	# 添加 panel.png 背景
-	if encyclopedia_window and (encyclopedia_window.get_child_count() == 0 or not encyclopedia_window.get_child(0).name == "PanelBg"):
-		var panel_texture := preload("res://art/sprites/UI/panels/panel.png")
-		var bg := TextureRect.new()
-		bg.name = "PanelBg"
-		bg.texture = panel_texture
-		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
-		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		encyclopedia_window.add_child(bg)
-		encyclopedia_window.move_child(bg, 0)  # 移到最底层
-	
-	# 设置层级，确保在角色之上（使用全局层级）
-	encyclopedia_window.z_index = 101
-	encyclopedia_window.z_as_relative = false
 	
 	# 设置遮罩层级（在窗口之下）
 	var dark_overlay = $DarkOverlay
@@ -93,7 +75,6 @@ func _ready() -> void:
 	if v_scroll:
 		v_scroll.modulate.a = 0
 	
-	close_button.texture_normal = CLOSE_TEXTURE
 	close_button.pressed.connect(_on_close)
 	LocalizationSystem.language_changed.connect(_on_localization_changed)
 	_build_job_grid()

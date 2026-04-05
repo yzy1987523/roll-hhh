@@ -7,6 +7,9 @@ extends Control
 const CELL_BG_TEXTURE := preload("res://art/sprites/UI/items/smallItem/cell_0.png")
 const CELL_SELECT_TEXTURE := preload("res://art/sprites/UI/items/smallItem/cell_1.png")
 
+# 宿舍场景
+const DormScene = preload("res://scenes/dorm_scene.tscn")
+
 # 选中效果序列帧 (fx01)
 var SELECT_FRAMES: Array[Texture2D] = []
 
@@ -44,13 +47,13 @@ var SELECT_FRAMES: Array[Texture2D] = []
 # ---- 设置面板节点 ----
 @onready var settings_backdrop: ColorRect = $SettingsBackdrop
 @onready var settings_panel: PanelContainer = $SettingsPanel
-@onready var settings_vbox: VBoxContainer = $SettingsPanel/SettingsVBox
-@onready var settings_title: Label = $SettingsPanel/SettingsVBox/TitleBar/SettingsTitle
-@onready var language_button: Button = $SettingsPanel/SettingsVBox/LanguageButton2
-@onready var volume_slider: HSlider = $SettingsPanel/SettingsVBox/VolumeRow/VolumeSlider
-@onready var reset_tutorial_button: Button = $SettingsPanel/SettingsVBox/ResetTutorialButton
-@onready var clear_save_button: Button = $SettingsPanel/SettingsVBox/ClearSaveButton
-@onready var close_settings_button: TextureButton = $SettingsPanel/SettingsVBox/TitleBar/CloseButton
+@onready var settings_vbox: VBoxContainer = $SettingsPanel/SettingsMargin/SettingsVBox
+@onready var settings_title: Label = $SettingsPanel/SettingsMargin/SettingsVBox/TitleBarMargin/TitleBar/SettingsTitle
+@onready var language_button: Button = $SettingsPanel/SettingsMargin/SettingsVBox/LanguageButton2
+
+@onready var reset_tutorial_button: Button = $SettingsPanel/SettingsMargin/SettingsVBox/ResetTutorialButton
+@onready var clear_save_button: Button = $SettingsPanel/SettingsMargin/SettingsVBox/ClearSaveButton
+@onready var close_settings_button: TextureButton = $SettingsPanel/SettingsMargin/SettingsVBox/TitleBarMargin/TitleBar/CloseButton
 
 # ---- 常量 ----
 const GRID_SIZE := 6
@@ -98,9 +101,8 @@ var moving_cells: Array = []   # 正在移动动画中的格子索引列表
 var tutorial_overlay = null
 
 # ---- 宿舍面板 ----
-var dorm_panel: PanelContainer = null
+var dorm_scene_instance: Control = null
 var dorm_visible: bool = false
-var dorm_backdrop: ColorRect = null  # 宿舍遮罩
 
 # ---- 道具栏格子 ----
 const ITEM_SLOT_COUNT := 3
@@ -183,7 +185,6 @@ func _connect_signals() -> void:
 	relic_next_button.pressed.connect(_on_relic_next_pressed)
 	# 设置面板信号
 	language_button.pressed.connect(_on_language_toggled)
-	volume_slider.value_changed.connect(_on_volume_changed)
 	reset_tutorial_button.pressed.connect(_on_reset_tutorial_pressed)
 	clear_save_button.pressed.connect(_on_clear_save_pressed)
 	close_settings_button.pressed.connect(_on_close_settings)
@@ -389,220 +390,20 @@ func _on_sacrifice_button_pressed() -> void:
 
 
 # ---- 宿舍面板 ----
-var _dorm_sort_order: Array = []  # 排序后的宿舍索引
-
 func _setup_dorm_panel() -> void:
-	# 遮罩层（先创建，放在最底层）
-	dorm_backdrop = ColorRect.new()
-	dorm_backdrop.color = Color(0, 0, 0, 0.5)
-	dorm_backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
-	dorm_backdrop.visible = false
-	dorm_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
-	dorm_backdrop.gui_input.connect(_on_dorm_backdrop_clicked)
-	dorm_backdrop.z_index = 100  # 设置层级（全局）
-	dorm_backdrop.z_as_relative = false  # 使用全局层级
-	add_child(dorm_backdrop)
+	# 实例化宿舍场景
+	dorm_scene_instance = DormScene.instantiate()
+	dorm_scene_instance.visible = false
+	add_child(dorm_scene_instance)
 	
-	dorm_panel = PanelContainer.new()
-	dorm_panel.visible = false
-	dorm_panel.set_anchors_preset(Control.PRESET_CENTER)
-	dorm_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	dorm_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
-	dorm_panel.z_index = 101  # 确保在遮罩之上，在角色之上（全局）
-	dorm_panel.z_as_relative = false  # 使用全局层级
-	# 宿舍尺寸：800x1000
-	dorm_panel.custom_minimum_size = Vector2(800, 1000)
-	dorm_panel.offset_left = -400.0
-	dorm_panel.offset_top = -500.0
-	dorm_panel.offset_right = 400.0
-	dorm_panel.offset_bottom = 500.0
-	
-	# 移除 PanelContainer 默认黑底
-	var empty_style := StyleBoxEmpty.new()
-	dorm_panel.add_theme_stylebox_override("panel", empty_style)
-	
-	# 使用panel.png作为背景
-	var panel_texture := preload("res://art/sprites/UI/panels/panel.png")
-	var bg := TextureRect.new()
-	bg.name = "PanelBg"
-	bg.texture = panel_texture
-	bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
-	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	dorm_panel.add_child(bg)
-	dorm_panel.move_child(bg, 0)  # 确保背景在最底层
-	
-	add_child(dorm_panel)
+	# 连接信号
+	dorm_scene_instance.dorm_cell_clicked.connect(_show_dorm_character_popup)
+	dorm_scene_instance.close_requested.connect(_on_dorm_close)
 
 
 func _refresh_dorm_panel() -> void:
-	# 清空旧内容（保留背景）
-	for child in dorm_panel.get_children():
-		if child.name != "PanelBg":
-			child.queue_free()
-
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 12)
-	dorm_panel.add_child(vbox)
-
-	# 标题行
-	var title_row := HBoxContainer.new()
-	vbox.add_child(title_row)
-	
-	var title := Label.new()
-	title.text = "宿  舍"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 22)
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_row.add_child(title)
-	
-	# 关闭按钮（右上角）
-	var close_btn := TextureButton.new()
-	close_btn.texture_normal = load("res://art/sprites/UI/items/smallItem/close.png")
-	close_btn.custom_minimum_size = Vector2(80, 80)
-	close_btn.pressed.connect(_on_dorm_close)
-	title_row.add_child(close_btn)
-
-	# 格子居中容器
-	var grid_center := CenterContainer.new()
-	grid_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	grid_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(grid_center)
-
-	# 4x4 网格
-	var grid := GridContainer.new()
-	grid.columns = 4
-	grid.add_theme_constant_override("h_separation", 10)
-	grid.add_theme_constant_override("v_separation", 10)
-	grid_center.add_child(grid)
-
-	# 获取排序后的宿舍索引（按等级从高到低）
-	_dorm_sort_order.clear()
-	var dorm_data: Array = []
-	for i in range(GameManager.board_data.dormitory.size()):
-		var ch: DataModels.CharacterData = GameManager.board_data.dormitory[i]
-		dorm_data.append({"index": i, "level": ch.level, "job": ch.job})
-	
-	# 排序：等级高的在前
-	dorm_data.sort_custom(func(a, b): 
-		if a["level"] != b["level"]:
-			return a["level"] > b["level"]  # 等级降序
-		return a["job"] < b["job"]  # 同等级按职业ID排序
-	)
-	
-	for data in dorm_data:
-		_dorm_sort_order.append(data["index"])
-
-	# 创建格子
-	for i in range(BoardData.DORM_CAPACITY):
-		var cell := _create_dorm_cell(i)
-		grid.add_child(cell)
-
-
-func _create_dorm_cell(index: int) -> Control:
-	# 使用 PanelContainer 作为格子容器
-	var container := PanelContainer.new()
-	container.custom_minimum_size = Vector2(140, 140)
-	container.mouse_filter = Control.MOUSE_FILTER_STOP
-	
-	# 移除 PanelContainer 默认黑底
-	var empty_style := StyleBoxEmpty.new()
-	container.add_theme_stylebox_override("panel", empty_style)
-	
-	# 背景层（cell_0）
-	var bg := TextureRect.new()
-	bg.texture = load("res://art/sprites/UI/items/smallItem/cell_0.png")
-	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	container.add_child(bg)
-	
-	# 选择框叠加层（cell_1）- 初始隐藏
-	var overlay := TextureRect.new()
-	overlay.name = "Overlay"
-	overlay.texture = load("res://art/sprites/UI/items/smallItem/cell_1.png")
-	overlay.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	overlay.visible = false
-	container.add_child(overlay)
-	
-	# 判断是否有角色
-	var is_occupied := index < _dorm_sort_order.size()
-	if is_occupied:
-		var dorm_idx: int = _dorm_sort_order[index]
-		var ch: DataModels.CharacterData = GameManager.board_data.dormitory[dorm_idx]
-		var is_marked: bool = GameManager.board_data.is_marked_for_removal(dorm_idx)
-		
-		# 角色居中容器
-		var center := CenterContainer.new()
-		center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		center.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		container.add_child(center)
-		
-		# 角色精灵（使用 TextureRect 便于控制尺寸和居中）
-		var sprite := TextureRect.new()
-		sprite.texture = _load_character_sprite(ch)
-		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		sprite.custom_minimum_size = Vector2(100, 100)  # 比格子小40像素
-		center.add_child(sprite)
-		
-		# 等级标签
-		var lv_label := Label.new()
-		lv_label.text = "Lv.%d" % ch.level
-		lv_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lv_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-		lv_label.add_theme_font_size_override("font_size", 14)
-		lv_label.add_theme_color_override("font_color", Color(1, 0.9, 0.6))
-		center.add_child(lv_label)
-		
-		# 标记高亮 - 叠加层显示
-		if is_marked:
-			overlay.visible = true
-		
-		# 点击事件
-		container.gui_input.connect(_on_dorm_cell_input.bind(dorm_idx))
-	
-	return container
-
-
-func _on_dorm_cell_clicked(dorm_index: int) -> void:
-	_show_dorm_character_popup(dorm_index)
-
-
-func _load_character_sprite(ch: DataModels.CharacterData) -> Texture2D:
-	# 根据角色职业和等级加载 sprite
-	var folder := ch.get_sprite_folder()
-	var sprite_name := ch.get_sprite_path(1, 1)  # 待机动画第1帧
-	var path := "res://art/sprites/chars/%s/%s.png" % [folder, sprite_name]
-	var tex: Texture2D = load(path)
-	if tex == null:
-		# 回退到战士默认图
-		tex = load("res://art/sprites/chars/char_01/char_010101.png")
-	return tex
-
-
-func _get_dorm_job_color(job_id: int) -> Color:
-	match job_id:
-		0: return Color(0.85, 0.25, 0.25)  # 战士 - 红色
-		1: return Color(0.4, 0.25, 0.85)  # 法师 - 紫色
-		2: return Color(0.25, 0.7, 0.25)  # 牧师 - 绿色
-		10: return Color(0.9, 0.3, 0.1)  # 狂战士 - 深红
-		11: return Color(0.5, 0.5, 0.6)  # 骑士 - 银灰
-		20: return Color(0.3, 0.8, 0.9)  # 冰法 - 冰蓝
-		21: return Color(0.9, 0.4, 0.1)  # 火法 - 橙红
-		30: return Color(0.4, 0.2, 0.5)  # 暗牧 - 暗紫
-		31: return Color(0.9, 0.85, 0.5)  # 圣骑士 - 金色
-		_: return Color(0.5, 0.5, 0.5)
-
-
-func _on_dorm_cell_input(event: InputEvent, dorm_index: int) -> void:
-	if event is InputEventMouseButton:
-		var mb: InputEventMouseButton = event
-		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
-			_show_dorm_character_popup(dorm_index)
+	if dorm_scene_instance:
+		dorm_scene_instance.refresh(GameManager.board_data.dormitory)
 
 
 func _show_dorm_character_popup(dorm_index: int) -> void:
@@ -1618,8 +1419,7 @@ func _play_spawn_animation(ch: DataModels.CharacterData, start_pos: Vector2, end
 func _on_dorm_pressed() -> void:
 	SoundSystem.play_button_click()
 	dorm_visible = !dorm_visible
-	dorm_panel.visible = dorm_visible
-	dorm_backdrop.visible = dorm_visible
+	dorm_scene_instance.visible = dorm_visible
 	if dorm_visible:
 		_refresh_dorm_panel()
 
@@ -1676,8 +1476,7 @@ func _on_dorm_close() -> void:
 
 func _hide_dorm_ui() -> void:
 	dorm_visible = false
-	dorm_panel.visible = false
-	dorm_backdrop.visible = false
+	dorm_scene_instance.visible = false
 
 
 func _play_dorm_to_board_animation(moved_data: Array, start_pos: Vector2) -> void:
@@ -2503,10 +2302,6 @@ func _refresh_game_board_texts() -> void:
 			label2.text = LocalizationSystem.get_text("game_board.sacrifice")
 
 
-func _on_volume_changed(value: float) -> void:
-	_save_volume(value)
-
-
 func _on_reset_tutorial_pressed() -> void:
 	SoundSystem.play_button_click()
 	GameManager.reset_tutorial()
@@ -2542,12 +2337,6 @@ func _load_volume() -> float:
 	if err == OK:
 		return config.get_value("audio", "volume", 1.0)
 	return 1.0
-
-
-func _save_volume(value: float) -> void:
-	var config := ConfigFile.new()
-	config.set_value("audio", "volume", value)
-	config.save("user://settings.cfg")
 
 
 # ---- 教学系统辅助 (任务 7.1) ----

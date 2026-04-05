@@ -1,8 +1,10 @@
 [gd_scene format=3 uid="uid://gh82crrqi2o2"]
 
 [ext_resource type="Script" uid="uid://no2ggulwp0l0" path="res://scripts/shop_scene.gd" id="1_shop"]
+[ext_resource type="Texture2D" uid="uid://d2wku35vuuwpc" path="res://art/sprites/UI/panels/panel.png" id="2_panel"]
+[ext_resource type="Texture2D" uid="uid://x0btk78hil8p" path="res://art/sprites/UI/items/smallItem/close.png" id="3_close"]
 
-[node name="ShopScene" type="Control"]
+[node name="ShopScene" type="Control" unique_id=2097235870]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,17 +13,21 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_shop")
 
-[node name="DarkOverlay" type="ColorRect" parent="."]
+[node name="DarkOverlay" type="ColorRect" parent="." unique_id=836860355]
+self_modulate = Color(0, 0, 0, 0.4117647)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.6)
 mouse_filter = 2
+color = Color(0, 0, 0, 0.78431374)
 
-[node name="ShopWindow" type="PanelContainer" parent="."]
+[node name="ShopWindow" type="PanelContainer" parent="." unique_id=444728339]
+self_modulate = Color(1, 1, 1, 0)
+z_index = 100
+z_as_relative = false
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -35,82 +41,120 @@ offset_bottom = 500.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBox" type="VBoxContainer" parent="ShopWindow"]
+[node name="PanelBg" type="TextureRect" parent="ShopWindow" unique_id=118009716]
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("2_panel")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VBox" type="VBoxContainer" parent="ShopWindow" unique_id=103440357]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="TitleBar" type="HBoxContainer" parent="ShopWindow/VBox"]
+[node name="TitleBarMargin" type="MarginContainer" parent="ShopWindow/VBox" unique_id=411081138]
 layout_mode = 2
+theme_override_constants/margin_left = 170
+theme_override_constants/margin_top = 50
+theme_override_constants/margin_right = 90
+theme_override_constants/margin_bottom = 10
+
+[node name="TitleBar" type="HBoxContainer" parent="ShopWindow/VBox/TitleBarMargin" unique_id=411081139]
 custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="ShopTitle" type="Label" parent="ShopWindow/VBox/TitleBar"]
+[node name="ShopTitle" type="Label" parent="ShopWindow/VBox/TitleBarMargin/TitleBar" unique_id=1060454409]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.11213394, 0.5435751, 0.6630175, 1)
+theme_override_font_sizes/font_size = 40
 text = "商  店"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="RoundLabel" type="Label" parent="ShopWindow/VBox/TitleBar"]
-layout_mode = 2
+[node name="RoundLabel" type="Label" parent="ShopWindow/VBox/TitleBarMargin/TitleBar" unique_id=1888111661]
+visible = false
 custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
 text = "回合 1"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CloseButton" type="TextureButton" parent="ShopWindow/VBox/TitleBar"]
-layout_mode = 2
+[node name="CloseButton" type="TextureButton" parent="ShopWindow/VBox/TitleBarMargin/TitleBar" unique_id=666086398]
 custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+texture_normal = ExtResource("3_close")
+ignore_texture_size = true
 stretch_mode = 5
 
-[node name="ItemSection" type="VBoxContainer" parent="ShopWindow/VBox"]
+[node name="ItemSection" type="VBoxContainer" parent="ShopWindow/VBox" unique_id=1137635374]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 8
 
-[node name="SectionTitle" type="Label" parent="ShopWindow/VBox/ItemSection"]
+[node name="PanelContainer2" type="PanelContainer" parent="ShopWindow/VBox/ItemSection" unique_id=672966878]
+self_modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
+
+[node name="SectionTitle" type="Label" parent="ShopWindow/VBox/ItemSection" unique_id=269001049]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.13333334, 1, 1, 1)
+theme_override_font_sizes/font_size = 30
 text = "道  具"
 horizontal_alignment = 1
 
-[node name="ItemCenter" type="CenterContainer" parent="ShopWindow/VBox/ItemSection"]
+[node name="ItemCenter" type="CenterContainer" parent="ShopWindow/VBox/ItemSection" unique_id=1806543071]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="ItemContainer" type="HBoxContainer" parent="ShopWindow/VBox/ItemSection/ItemCenter"]
+[node name="ItemContainer" type="HBoxContainer" parent="ShopWindow/VBox/ItemSection/ItemCenter" unique_id=1475170725]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="RelicSection" type="VBoxContainer" parent="ShopWindow/VBox"]
+[node name="RelicSection" type="VBoxContainer" parent="ShopWindow/VBox" unique_id=504549303]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 8
 
-[node name="SectionTitle" type="Label" parent="ShopWindow/VBox/RelicSection"]
+[node name="PanelContainer3" type="PanelContainer" parent="ShopWindow/VBox/RelicSection" unique_id=852875676]
+self_modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(80, 30)
 layout_mode = 2
+
+[node name="SectionTitle" type="Label" parent="ShopWindow/VBox/RelicSection" unique_id=1052833081]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7404196, 0.7393386, 0, 1)
+theme_override_font_sizes/font_size = 30
 text = "遗  物"
 horizontal_alignment = 1
 
-[node name="RelicCenter" type="CenterContainer" parent="ShopWindow/VBox/RelicSection"]
+[node name="RelicCenter" type="CenterContainer" parent="ShopWindow/VBox/RelicSection" unique_id=794166988]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="RelicContainer" type="HBoxContainer" parent="ShopWindow/VBox/RelicSection/RelicCenter"]
+[node name="RelicContainer" type="HBoxContainer" parent="ShopWindow/VBox/RelicSection/RelicCenter" unique_id=28920126]
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="BottomBar" type="HBoxContainer" parent="ShopWindow/VBox"]
-visible = false
+[node name="PanelContainer2" type="PanelContainer" parent="ShopWindow/VBox" unique_id=785897100]
+self_modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(80, 230)
 layout_mode = 2
+
+[node name="BottomBar" type="HBoxContainer" parent="ShopWindow/VBox" unique_id=2100207027]
+visible = false
 custom_minimum_size = Vector2(0, 70)
+layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="RefreshButton" type="Button" parent="ShopWindow/VBox/BottomBar"]
+[node name="RefreshButton" type="Button" parent="ShopWindow/VBox/BottomBar" unique_id=1447202581]
 layout_mode = 2
 text = "🔄 刷新 (10💰)"
 
-[node name="Spacer" type="Control" parent="ShopWindow/VBox/BottomBar"]
+[node name="Spacer" type="Control" parent="ShopWindow/VBox/BottomBar" unique_id=1168000030]
 layout_mode = 2
 size_flags_horizontal = 3

@@ -16,12 +16,11 @@ var shop_items: Array = []   # 当前商品列表
 @onready var round_label: Label = $ShopWindow/VBox/TitleBar/RoundLabel
 @onready var item_container: HBoxContainer = $ShopWindow/VBox/ItemSection/ItemCenter/ItemContainer
 @onready var relic_container: HBoxContainer = $ShopWindow/VBox/RelicSection/RelicCenter/RelicContainer
-@onready var close_button: TextureButton = $ShopWindow/VBox/TitleBar/CloseButton
+@onready var close_button: TextureButton = $ShopWindow/VBox/TitleBarMargin/TitleBar/CloseButton
 
 # 预加载纹理
 const CELL_TEXTURE := preload("res://art/sprites/UI/items/smallItem/cell_0.png")
 const CHECK_TEXTURE := preload("res://art/sprites/UI/items/smallItem/check.png")
-const CLOSE_TEXTURE := preload("res://art/sprites/UI/items/smallItem/close.png")
 
 
 func _ready() -> void:
@@ -29,34 +28,10 @@ func _ready() -> void:
 	var shop_window = $ShopWindow
 	var empty_style := StyleBoxEmpty.new()
 	shop_window.add_theme_stylebox_override("panel", empty_style)
-	
-	# 添加 panel.png 背景
-	var panel_texture := preload("res://art/sprites/UI/panels/panel.png")
-	var bg := TextureRect.new()
-	bg.name = "PanelBg"
-	bg.texture = panel_texture
-	bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
-	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	shop_window.add_child(bg)
-	shop_window.move_child(bg, 0)
-	
-	# 设置商店窗口z_index，确保在角色之上（使用全局层级）
-	shop_window.z_index = 100
-	shop_window.z_as_relative = false
 
-	# 设置关闭按钮纹理
+	# 设置关闭按钮信号
 	if close_button:
-		close_button.texture_normal = CLOSE_TEXTURE
 		close_button.pressed.connect(_on_close_pressed)
-
-	# 设置遮罩层层级和mouse_filter，阻止点击穿透到下层
-	var dark_overlay = $DarkOverlay
-	if dark_overlay:
-		dark_overlay.z_index = 100
-		dark_overlay.z_as_relative = false
-		dark_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 
 	# 更新回合数显示
 	_update_round_display()
@@ -178,7 +153,7 @@ func _rebuild_shop_display() -> void:
 func _create_item_cell(item: DataModels.ItemData, index: int, sold: bool = false) -> Control:
 	# 外层容器：格子大小
 	var container := Control.new()
-	container.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE + 30)  # 格子 + 价格区域
+	container.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE + 40)  # 格子 + 价格区域
 	container.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	container.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	container.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -212,12 +187,25 @@ func _create_item_cell(item: DataModels.ItemData, index: int, sold: bool = false
 		# 价格标签（格子下方）
 		var price_label := Label.new()
 		price_label.text = "$ %d" % _get_actual_price(item)
-		price_label.add_theme_font_size_override("font_size", 18)
-		price_label.add_theme_color_override("font_color", Color(1, 0.9, 0.5))
+		price_label.add_theme_font_size_override("font_size", 30)
+		price_label.add_theme_color_override("font_color", Color(1, 0.141, 0.290))
+		price_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		price_label.add_theme_constant_override("outline_size", 2)
 		price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		price_label.position = Vector2(0, CELL_SIZE + 5)
-		price_label.size = Vector2(CELL_SIZE, 25)
+		price_label.size = Vector2(CELL_SIZE, 35)
 		container.add_child(price_label)
+		
+		# 阴影层（偏移1像素）
+		var shadow_label := Label.new()
+		shadow_label.text = "$ %d" % _get_actual_price(item)
+		shadow_label.add_theme_font_size_override("font_size", 30)
+		shadow_label.add_theme_color_override("font_color", Color(0, 0, 0, 1))
+		shadow_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		shadow_label.position = Vector2(1, CELL_SIZE + 6)
+		shadow_label.size = Vector2(CELL_SIZE, 35)
+		shadow_label.z_index = -1
+		container.add_child(shadow_label)
 	else:
 		# 已售完：显示已售标记（格子中央）
 		var check := TextureRect.new()
