@@ -222,26 +222,17 @@ func _create_item_cell(item: DataModels.ItemData, index: int, sold: bool = false
 
 
 func _get_item_texture(item: DataModels.ItemData) -> Texture2D:
-	# 可用的道具图片ID列表
-	var available_item_ids := [13, 15, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42]
-	# 可用的遗物图片ID列表
-	var available_relic_ids := [4, 5, 6, 7, 8, 9, 20, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45]
-	
 	if item.is_relic():
-		# 遗物：根据item.id映射到可用图片ID
-		var img_id: int = available_relic_ids[item.id % available_relic_ids.size()]
-		var path := "res://art/sprites/UI/items/relic/relic_%03d.png" % img_id
-		var tex := load(path) as Texture2D
-		if tex:
-			return tex
+		# 遗物: ID 1-26
+		var path := "res://art/sprites/UI/items/relic/relic_%03d.png" % item.id
+		if ResourceLoader.exists(path):
+			return load(path) as Texture2D
 		return _create_color_texture(Color(0.4, 0.3, 0.5))
 	else:
-		# 道具：根据item.id映射到可用图片ID
-		var img_id: int = available_item_ids[item.id % available_item_ids.size()]
-		var path := "res://art/sprites/UI/items/item/item_%03d.png" % img_id
-		var tex := load(path) as Texture2D
-		if tex:
-			return tex
+		# 道具: ID 1-22
+		var path := "res://art/sprites/UI/items/item/item_%03d.png" % item.id
+		if ResourceLoader.exists(path):
+			return load(path) as Texture2D
 		return _create_color_texture(Color(0.3, 0.4, 0.6))
 
 

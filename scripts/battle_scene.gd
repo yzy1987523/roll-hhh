@@ -221,11 +221,8 @@ func _refresh_item_slots() -> void:
 
 ## 获取道具图片
 func _get_item_texture(item: DataModels.ItemData) -> Texture2D:
-	# 可用的道具图片ID列表
-	var available_item_images := [13, 15, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42]
-	# 道具ID从1开始，数组索引从0开始
-	var img_id: int = available_item_images[item.id - 1]
-	var path := "res://art/sprites/UI/items/item/item_%03d.png" % img_id
+	# 道具: ID 1-22
+	var path := "res://art/sprites/UI/items/item/item_%03d.png" % item.id
 	if ResourceLoader.exists(path):
 		return load(path) as Texture2D
 	return null
@@ -900,6 +897,11 @@ var _cached_enemy_texture: Texture = null
 func _load_enemy_sprite(e: EnemyFactory.EnemyData) -> void:
 	var enemy_id: int = e.enemy_id
 	
+	# 设置敌人sprite的尺寸限制（最大200x200）
+	enemy_sprite_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	enemy_sprite_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	enemy_sprite_rect.custom_minimum_size = Vector2(200, 200)
+	
 	# 如果是同一个敌人，使用缓存的纹理
 	if _cached_enemy_id == enemy_id and _cached_enemy_texture != null:
 		enemy_sprite_rect.texture = _cached_enemy_texture
@@ -974,10 +976,15 @@ func _update_enemy_sprite_ui(e: EnemyFactory.EnemyData) -> void:
 	for child in children_to_remove:
 		child.queue_free()
 	
-	# 攻击图标+数值（左下角，尺寸50）
+	# 根据sprite实际尺寸计算位置
+	var sprite_size: Vector2 = enemy_sprite_rect.size
+	var icon_size: int = 50  # 图标尺寸
+	var margin: int = 4  # 边距
+	
+	# 攻击图标+数值（左下角）
 	var atk_container := Control.new()
-	atk_container.position = Vector2(4, 148)
-	atk_container.custom_minimum_size = Vector2(50, 50)
+	atk_container.position = Vector2(margin, sprite_size.y - icon_size - margin)
+	atk_container.custom_minimum_size = Vector2(icon_size, icon_size)
 	atk_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	enemy_sprite_rect.add_child(atk_container)
 	atk_container.name = "AtkBox"
@@ -986,8 +993,9 @@ func _update_enemy_sprite_ui(e: EnemyFactory.EnemyData) -> void:
 	atk_icon.texture = load("res://art/sprites/UI/items/smallItem/attack.png")
 	atk_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
 	atk_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	atk_icon.custom_minimum_size = Vector2(50, 50)
+	atk_icon.custom_minimum_size = Vector2(icon_size, icon_size)
 	atk_icon.position = Vector2(0, 0)
+	atk_icon.modulate = Color(1, 0.3, 0.3)  # 红色
 	atk_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	atk_container.add_child(atk_icon)
 
@@ -1003,11 +1011,10 @@ func _update_enemy_sprite_ui(e: EnemyFactory.EnemyData) -> void:
 	atk_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	atk_container.add_child(atk_label)
 
-	# 防御图标+数值（右下角，尺寸50）
-	# 敌人精灵图尺寸为200x200，所以右下角位置是 200 - 50 - 2 = 148
+	# 防御图标+数值（右下角）
 	var def_container := Control.new()
-	def_container.position = Vector2(148, 148)
-	def_container.custom_minimum_size = Vector2(50, 50)
+	def_container.position = Vector2(sprite_size.x - icon_size - margin, sprite_size.y - icon_size - margin)
+	def_container.custom_minimum_size = Vector2(icon_size, icon_size)
 	def_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	enemy_sprite_rect.add_child(def_container)
 	def_container.name = "DefBox"
@@ -1016,8 +1023,9 @@ func _update_enemy_sprite_ui(e: EnemyFactory.EnemyData) -> void:
 	def_icon.texture = load("res://art/sprites/UI/items/smallItem/defend.png")
 	def_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
 	def_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	def_icon.custom_minimum_size = Vector2(50, 50)
+	def_icon.custom_minimum_size = Vector2(icon_size, icon_size)
 	def_icon.position = Vector2(0, 0)
+	def_icon.modulate = Color(0.3, 0.5, 1)  # 蓝色
 	def_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	def_container.add_child(def_icon)
 
@@ -1329,6 +1337,7 @@ func _update_cell_ui(cell: Control, ch: DataModels.CharacterData) -> void:
 	atk_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	atk_icon.custom_minimum_size = Vector2(39, 39)
 	atk_icon.position = Vector2(0, 0)
+	atk_icon.modulate = Color(1, 0.3, 0.3)  # 红色
 	atk_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	atk_container.add_child(atk_icon)
 	
@@ -1358,6 +1367,7 @@ func _update_cell_ui(cell: Control, ch: DataModels.CharacterData) -> void:
 	def_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	def_icon.custom_minimum_size = Vector2(39, 39)
 	def_icon.position = Vector2(0, 0)
+	def_icon.modulate = Color(0.3, 0.5, 1)  # 蓝色
 	def_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	def_container.add_child(def_icon)
 	
