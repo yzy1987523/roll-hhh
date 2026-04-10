@@ -29,11 +29,12 @@ SoundSystem="*res://scripts/sound_system.gd"
 
 window/size/viewport_width=1080
 window/size/viewport_height=1920
-window/size/initial_position_type=0
 window/stretch/mode="canvas_items"
-window/size/window_width=1920
-window/size/window_height=1080
+window/handheld/orientation=1
+window/size/window_width=1080
+window/size/window_height=1920
 window/size/remember_window_size=true
+window/orientation=0
 
 [editor]
 
@@ -84,3 +85,4 @@ textures/canvas_textures/default_texture_filter=0
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true
