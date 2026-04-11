@@ -40,6 +40,10 @@ window/orientation=0
 
 version_control/autoload_on_startup=true
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gut/plugin.cfg")
+
 [gui]
 
 theme/custom_font="uid://dxq75khofpwb4"

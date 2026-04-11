@@ -1,0 +1,48 @@
+[gd_scene load_steps=2 format=3 uid="uid://test_ui_scene"]
+
+[ext_resource type="Script" path="res://test/test_ui/test_input.gd" id="1_test_script"]
+
+[node name="TestScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_test_script")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -150.0
+offset_right = 200.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TitleLabel" type="Label" parent="CanvasLayer/VBoxContainer"]
+layout_mode = 2
+text = "UI 测试场景"
+horizontal_alignment = 1
+
+[node name="StartButton" type="Button" parent="CanvasLayer/VBoxContainer"]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+text = "开始游戏"
+
+[node name="SettingsButton" type="Button" parent="CanvasLayer/VBoxContainer"]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+text = "设置"
+
+[node name="QuitButton" type="Button" parent="CanvasLayer/VBoxContainer"]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+text = "退出"
