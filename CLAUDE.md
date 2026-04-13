@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Godot 4** game project (v4.6.1, GL Compatibility renderer) with GDScript.
 
 - Main scene: `res://scenes/main_menu.tscn`
-- Game board scene: `res://scenes/game_board.tscn` (6x6 grid)
+- Game board scene: `res://scenes/game_board.tscn` (7x9 grid)
 - Scripts: `res://scripts/*.gd`
 - Main entry point: `project.godot` → `application/run/main_scene`
 
@@ -54,6 +54,63 @@ scripts/      # GDScript scripts
 scenes/       # .tscn scene files
 test_*.gd     # Test scripts (development only)
 ```
+
+## 游戏设定 (Game Definitions)
+
+### 名词定义
+
+- **屏幕**: 1080x1920 竖屏显示
+- **棋盘**: 7x9 个格子构建的棋盘
+- **棋子**: 能放置在棋盘格上的物品，相同（等级和 id 一致）的棋子可合成高一级棋子
+  - 生成器: 1-3 级不可生成，4 级开始才能生成物品
+  - 产出物: 被生成器生成，可以是生成器或资源
+  - 背包: 完成任务获得的棋子，初始 8 格，可用金币解锁
+  - 资源: 具备消耗属性（体力球、金币、钻石、道具、宝箱）
+
+### 体力系统
+
+- 点击生成器生成一次消耗 1 点体力
+- 自动恢复：每 2 分钟恢复 1 点
+- 上限 100：达到 100 时不再自动恢复，但可消耗体力球超过 100
+- 钻石购买：5 钻石换 100 体力
+
+### 货币与奖励
+
+- **星星**: 完成任务（交付棋子）获得，用于购买家具
+- **经验/宝箱**: 购买家具获得
+
+### 道具栏
+
+- 奖励获得的物品先进入道具栏（无上限）
+- 物品以堆叠形式存放，先获得的在下层
+- 点击道具栏时，道具移入棋盘（棋盘已满则不移动）
+
+### 棋盘格状态
+
+| 状态 | 描述 |
+|------|------|
+| 空 | 格子上没有棋子 |
+| 有棋子 | 格子上有自由棋子 |
+| 锁定 | 棋子不可交互，被遮罩挡住，不可见 |
+| 半锁定 | 棋子不可拖拽，被半遮罩挡住，可见部分 |
+
+### 棋子状态
+
+| 状态 | 描述 |
+|------|------|
+| 选中 | 显示选中框，显示物品详情 |
+| 未选中 | 隐藏选中框 |
+
+### 交互方式
+
+- **拖拽**: 自由棋子可拖动到新格子、拖入背包、挤开不同棋子、与相同棋子合成
+- **点击**: 未选中棋子首次点击切换为选中；选中棋子点击调用其方法（生成/消耗/开箱/打开背包）
+
+### 锁定规则
+
+- 初始格子锁定/半锁定状态由配置表确定
+- 半锁定状态棋子被合成时，切换为自由状态
+- 棋子触发合成时，上下左右相连的锁定格子切换为半锁定
 
 ## Coding Standards
 

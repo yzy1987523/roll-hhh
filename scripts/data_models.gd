@@ -13,6 +13,17 @@ enum Job { WARRIOR = 0, MAGE = 1, PRIEST = 2 }
 # ---- 物品类型常量 ----
 enum ItemType { CONSUMABLE = 0, RELIC = 1 }
 
+# ---- 棋盘物品类型常量 (对应ItemConfig.json中的type字段) ----
+enum BoardItemType {
+	COIN = 0,         # 金币
+	COMPOSITE = 1,    # 可合成物品
+	MAX = 2,          # 最高级合成物
+	EGG = 3,          # 龙蛋类
+	MAXEGG = 4,      # 最高级龙蛋
+	PRODUCTION = 5,  # 生产型物品
+	MAXPRODUCTION = 6 # 最高级生产型物品
+}
+
 # ---- Buff 触发时机 ----
 enum BuffTrigger {
 	ON_HIT,            # 受到攻击时
@@ -84,6 +95,11 @@ class CharacterData:
 	var skill_level: int = 0     # 特技等级
 	var buffs: Array = []        # Array of BuffEffect
 	var position: Vector2i = Vector2i(-1, -1)  # (-1,-1) = 宿舍
+
+	# 物品配置数据 (从ItemConfig获取, 用于显示物品sprite)
+	var item_id: int = 0         # 物品配置ID
+	var merge_chain: int = 0      # 合成链ID (用于判断不同物品是否能合成, item_id/100)
+	var sprite_override: String = ""  # 物品sprite覆盖路径 (为空则用职业默认sprite)
 
 	# 是否在棋盘上
 	func is_on_board() -> bool:
@@ -175,7 +191,8 @@ class CharacterData:
 			"hp": hp, "max_hp": max_hp,
 			"attack": attack, "defense": defense,
 			"skill_id": skill_id, "skill_level": skill_level,
-			"pos_x": position.x, "pos_y": position.y
+			"pos_x": position.x, "pos_y": position.y,
+			"item_id": item_id, "merge_chain": merge_chain, "sprite_override": sprite_override
 		}
 
 	# 从字典反序列化
@@ -191,6 +208,9 @@ class CharacterData:
 		ch.skill_id = d.get("skill_id", 0)
 		ch.skill_level = d.get("skill_level", 0)
 		ch.position = Vector2i(d.get("pos_x", -1), d.get("pos_y", -1))
+		ch.item_id = d.get("item_id", 0)
+		ch.merge_chain = d.get("merge_chain", 0)
+		ch.sprite_override = d.get("sprite_override", "")
 		return ch
 
 
@@ -235,3 +255,85 @@ class ItemData:
 		item.stack_count = d.get("stack_count", 1)
 		item.price = d.get("price", 0)
 		return item
+
+
+# ==== BoardItemData ====
+# 棋盘物品数据 (从ItemConfig获取, 用于显示物品sprite和合成链)
+class BoardItemData:
+	var id: int = 0          # 物品配置ID
+	var name: String = ""    # 物品名称(key, 用于本地化)
+	var level: int = 1      # 等级
+	var sprite: String = ""   # 精灵图文件名(不含路径)
+	var item_type: int = 0   # BoardItemType enum
+	var next_composite: int = 0  # 合成后的物品ID (0=不可合成)
+	var count: int = 1      # 叠加数量
+
+	# 是否可合成
+	func can_merge() -> bool:
+		return next_composite > 0
+
+	# 获取合成后的物品ID
+	func get_next_item_id() -> int:
+		return next_composite
+
+	# 获取合成链ID (物品ID/100)
+	func get_merge_chain() -> int:
+		return id / 100
+
+	# 获取完整精灵图路径
+	func get_sprite_path() -> String:
+		if sprite.is_empty():
+			return ""
+		return "res://art/sprites/items/%s.png" % sprite
+
+	# 是否可叠加
+	func is_stackable() -> bool:
+		return count > 1
+
+	# 叠加物品
+	func add_count(amount: int = 1) -> void:
+		count += amount
+
+	# 从配置字典创建
+	static func from_config(cfg: Dictionary) -> BoardItemData:
+		var data := BoardItemData.new()
+		data.id = cfg.get("id", 0)
+		data.name = cfg.get("name", "")
+		data.level = cfg.get("level", 1)
+		data.sprite = cfg.get("sprite", "")
+		data.item_type = cfg.get("type", 0)
+		data.next_composite = cfg.get("next_composite", 0)
+		data.count = 1
+		return data
+
+	# 复制物品
+	func duplicate() -> BoardItemData:
+		var data := BoardItemData.new()
+		data.id = id
+		data.name = name
+		data.level = level
+		data.sprite = sprite
+		data.item_type = item_type
+		data.next_composite = next_composite
+		data.count = count
+		return data
+
+	# 序列化为字典 (仅包含需要持久化的字段)
+	func to_dict() -> Dictionary:
+		return {
+			"id": id, "name": name, "level": level,
+			"sprite": sprite, "item_type": item_type,
+			"next_composite": next_composite, "count": count
+		}
+
+	# 从字典反序列化
+	static func from_dict(d: Dictionary) -> BoardItemData:
+		var data := BoardItemData.new()
+		data.id = d.get("id", 0)
+		data.name = d.get("name", "")
+		data.level = d.get("level", 1)
+		data.sprite = d.get("sprite", "")
+		data.item_type = d.get("item_type", 0)
+		data.next_composite = d.get("next_composite", 0)
+		data.count = d.get("count", 1)
+		return data

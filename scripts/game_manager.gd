@@ -47,7 +47,7 @@ var shop_last_refresh_round: int = -1  # 商店上次刷新的回合数
 var shop_items_data: Array = []  # 商店商品数据 [{"id": int, "is_relic": bool, "sold": bool}, ...]
 
 # ---- 教程状态 ----
-var tutorial_completed: bool = false  # 新手教程是否已完成
+var tutorial_completed: bool = true  # 新手教程是否已完成 (已屏蔽)
 
 # ---- 属性 ----
 var has_tutorial_completed: bool:
@@ -299,8 +299,6 @@ func reset_after_defeat() -> void:
 	items.clear()
 	relics.clear()
 	board_data.clear_board()
-	# 生成初始角色：战士、牧师、法师
-	_spawn_initial_characters()
 	gold_changed.emit(gold)
 	energy_changed.emit(energy)
 	round_changed.emit(current_round)
@@ -310,6 +308,7 @@ func reset_after_defeat() -> void:
 	print(">>> [GameManager] 战败重置 (图鉴保留)")
 	if _initialized and is_instance_valid(get_node_or_null("/root/SaveSystem")):
 		SaveSystem.clear_game_save()
+		SaveSystem.init_board_from_config()  # 从MapConfig重新初始化
 
 
 func _reset_to_defaults() -> void:
@@ -325,31 +324,13 @@ func _reset_to_defaults() -> void:
 	board_data.clear_board()
 	
 	# 生成初始角色：战士、牧师、法师
-	_spawn_initial_characters()
+	spawn_initial_characters()
 
 
 ## 生成初始角色：战士、牧师、法师
-func _spawn_initial_characters() -> void:
-	# 预加载CharacterFactory
-	const CF = preload("res://scripts/character_factory.gd")
-	
-	# 创建1级角色
-	var warrior = CF.create_character(DataModels.Job.WARRIOR, 1)  # 战士
-	var priest = CF.create_character(DataModels.Job.PRIEST, 1)    # 牧师
-	var mage = CF.create_character(DataModels.Job.MAGE, 1)        # 法师
-	
-	# 6x6棋盘布局：
-	# 行0: [0] [1] [2] [3] [4] [5]   <- 第一行
-	# 行1: [6] [7] [8] [9] [10] [11]  <- 第二行
-	# ...
-	# 行5: [30] [31] [32] [33] [34] [35]  <- 最后一行
-	
-	# 放置角色到指定位置
-	board_data.place_character(warrior, Vector2i(2, 0))  # 战士：第一行中央偏左
-	board_data.place_character(priest, Vector2i(2, 1))   # 牧师：第二行中央偏左
-	board_data.place_character(mage, Vector2i(2, 5))     # 法师：最后一行中央偏左
-	
-	print(">>> [GameManager] 初始角色已生成: 战士(第一行中央), 牧师(第二行中央), 法师(最后一行中央)")
+## 注意：当前版本棋盘使用物品，由SaveSystem从MapConfig初始化
+func spawn_initial_characters() -> void:
+	print(">>> [GameManager] 当前版本棋盘由SaveSystem从MapConfig初始化，跳过角色生成")
 
 
 ## 自动存档辅助 (仅在初始化完成且SaveSystem可用时调用)

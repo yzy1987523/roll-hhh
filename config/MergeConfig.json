@@ -1,0 +1,30 @@
+{
+    "grid": {
+        "rows": 7,
+        "cols": 9,
+        "cellSize": 124,
+        "spacing": 0,
+        "margin": 0
+    },
+    "initialUnlockedGrids": [
+        {"row": 1, "col": 1},
+        {"row": 1, "col": 2},
+        {"row": 1, "col": 3},
+        {"row": 1, "col": 4}
+    ],
+    "gridState": {
+        "LOCKED": 1,
+        "DUSTY": 2,
+        "OCCUPIED": 3,
+        "EMPTY": 4
+    },
+    "itemType": {
+        "COMPOSITE": "composite",
+        "PRODUCTION": "production",
+        "MAX_PRODUCTION": "maxproduction",
+        "EGG": "egg",
+        "COIN": "coin",
+        "MAX_EGG": "maxegg",
+        "MAX": "max"
+    }
+}

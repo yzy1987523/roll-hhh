@@ -1,0 +1,77 @@
+{
+    "MAX_LEVEL": 10,
+    "levels": {
+        "2": {
+            "expRequired": 100,
+            "taskUnlock": [4, 5],
+            "rewards": {
+                "coin": 0,
+                "items": [2010104]
+            }
+        },
+        "3": {
+            "expRequired": 100,
+            "taskUnlock": [6, 7, 8],
+            "rewards": {
+                "coin": 0,
+                "items": [1012201, 2010105]
+            }
+        },
+        "4": {
+            "expRequired": 100,
+            "taskUnlock": [9, 10],
+            "rewards": {
+                "coin": 0,
+                "items": [2030104]
+            }
+        },
+        "5": {
+            "expRequired": 100,
+            "taskUnlock": [11, 12, 13],
+            "rewards": {
+                "coin": 0,
+                "items": [2040104]
+            }
+        },
+        "6": {
+            "expRequired": 100,
+            "taskUnlock": [14, 15],
+            "rewards": {
+                "coin": 1000,
+                "items": [2060104]
+            }
+        },
+        "7": {
+            "expRequired": 100,
+            "taskUnlock": [16, 17, 18],
+            "rewards": {
+                "coin": 1500,
+                "items": [1010104, 1010105]
+            }
+        },
+        "8": {
+            "expRequired": 100,
+            "taskUnlock": [19, 20],
+            "rewards": {
+                "coin": 2000,
+                "items": [1020104, 1020105]
+            }
+        },
+        "9": {
+            "expRequired": 100,
+            "taskUnlock": [21, 22, 23],
+            "rewards": {
+                "coin": 3000,
+                "items": [1010107, 1010108]
+            }
+        },
+        "10": {
+            "expRequired": 100,
+            "taskUnlock": [24, 25],
+            "rewards": {
+                "coin": 5000,
+                "items": [1020107, 1020108]
+            }
+        }
+    }
+}

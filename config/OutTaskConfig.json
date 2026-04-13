@@ -1,0 +1,31 @@
+{
+    "tasks": [
+        {"id": 1, "name": "合成新手", "desc": "完成3次合成任务", "type": "mergeTaskCount", "target": 3, "expReward": 100, "unlockLevel": 1},
+        {"id": 2, "name": "继续合成", "desc": "完成3次合成任务", "type": "mergeTaskCount", "target": 3, "expReward": 50, "unlockLevel": 2},
+        {"id": 3, "name": "初次孵化", "desc": "成功孵化1只恐龙", "type": "hatchCount", "target": 1, "expReward": 50, "unlockLevel": 2},
+        {"id": 4, "name": "合成", "desc": "完成5次合成任务", "type": "mergeTaskCount", "target": 5, "expReward": 50, "unlockLevel": 3},
+        {"id": 5, "name": "喂食", "desc": "喂食恐龙1次", "type": "feedCount", "target": 1, "expReward": 50, "unlockLevel": 3},
+        {"id": 6, "name": "地块探索", "desc": "解锁1个地块", "type": "landCount", "target": 1, "expReward": 100, "unlockLevel": 4},
+        {"id": 7, "name": "恐龙收藏家", "desc": "拥有2只恐龙", "type": "dinosaurCount", "target": 3, "expReward": 80, "unlockLevel": 5},
+        {"id": 8, "name": "合成专家", "desc": "完成10次合成任务", "type": "mergeTaskCount", "target": 10, "expReward": 100, "unlockLevel": 6},
+        {"id": 9, "name": "孵化大师", "desc": "成功孵化5只恐龙", "type": "hatchCount", "target": 5, "expReward": 100, "unlockLevel": 7},
+        {"id": 10, "name": "恐龙饲养员", "desc": "喂食恐龙10次", "type": "feedCount", "target": 10, "expReward": 70, "unlockLevel": 7},
+        {"id": 11, "name": "土地开发者", "desc": "解锁15个地块", "type": "landCount", "target": 15, "expReward": 100, "unlockLevel": 7},
+        {"id": 12, "name": "恐龙园主", "desc": "拥有5只恐龙", "type": "dinosaurCount", "target": 5, "expReward": 120, "unlockLevel": 7},
+        {"id": 13, "name": "合成大师", "desc": "完成200次合成任务", "type": "mergeTaskCount", "target": 200, "expReward": 100, "unlockLevel": 7},
+        {"id": 14, "name": "孵化专家", "desc": "成功孵化10只恐龙", "type": "hatchCount", "target": 10, "expReward": 150, "unlockLevel": 7},
+        {"id": 15, "name": "勤奋饲养", "desc": "喂食恐龙30次", "type": "feedCount", "target": 30, "expReward": 120, "unlockLevel": 7},
+        {"id": 16, "name": "土地大亨", "desc": "解锁25个地块", "type": "landCount", "target": 25, "expReward": 150, "unlockLevel": 7},
+        {"id": 17, "name": "恐龙大亨", "desc": "拥有8只恐龙", "type": "dinosaurCount", "target": 8, "expReward": 180, "unlockLevel": 7},
+        {"id": 18, "name": "合成宗师", "desc": "完成500次合成任务", "type": "mergeTaskCount", "target": 500, "expReward": 150, "unlockLevel": 7},
+        {"id": 19, "name": "孵化宗师", "desc": "成功孵化15只恐龙", "type": "hatchCount", "target": 15, "expReward": 200, "unlockLevel": 7},
+        {"id": 20, "name": "专业饲养", "desc": "喂食恐龙50次", "type": "feedCount", "target": 50, "expReward": 160, "unlockLevel": 7},
+        {"id": 21, "name": "土地霸主", "desc": "解锁40个地块", "type": "landCount", "target": 40, "expReward": 200, "unlockLevel": 8},
+        {"id": 22, "name": "恐龙帝国", "desc": "拥有12只恐龙", "type": "dinosaurCount", "target": 12, "expReward": 250, "unlockLevel": 8},
+        {"id": 23, "name": "合成传奇", "desc": "完成1000次合成任务", "type": "mergeTaskCount", "target": 1000, "expReward": 200, "unlockLevel": 9},
+        {"id": 24, "name": "孵化传奇", "desc": "成功孵化25只恐龙", "type": "hatchCount", "target": 25, "expReward": 300, "unlockLevel": 9},
+        {"id": 25, "name": "饲养传奇", "desc": "喂食恐龙100次", "type": "feedCount", "target": 100, "expReward": 220, "unlockLevel": 9},
+        {"id": 26, "name": "土地王者", "desc": "解锁全部地块", "type": "landCount", "target": 63, "expReward": 300, "unlockLevel": 10},
+        {"id": 27, "name": "恐龙王者", "desc": "拥有20只恐龙", "type": "dinosaurCount", "target": 20, "expReward": 500, "unlockLevel": 10}
+    ]
+}

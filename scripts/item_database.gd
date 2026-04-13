@@ -34,33 +34,12 @@ static func use_consumable(item: DataModels.ItemData, target_index: int = -1) ->
 			GameManager.restore_energy(value)
 
 		"spawn_characters":
-			if bd.is_board_full(): return {"success": false, "target_index": -1}
-			var count: int = eff.get("count", 1)
-			var min_lv: int = eff.get("min_level", 1)
-			var max_lv: int = eff.get("max_level", 1)
-			for n in range(count):
-				if bd.is_board_full(): break
-				var job: int = randi_range(0, 2)
-				var lv: int = randi_range(min_lv, max_lv)
-				var ch := CharacterFactory.create_character(job, lv)
-				bd.place_character_first_empty(ch)
+			# 当前版本禁用角色生成（角色系统暂不考虑）
+			return {"success": false, "target_index": -1}
 
 		"summon":
-			if bd.is_board_full(): return {"success": false, "target_index": -1}
-			var job: int = eff.get("job", 0)
-			var lv: int = eff.get("level", 1)
-			var ch := CharacterFactory.create_character(job, lv)
-			
-			# 遗物: 召唤等级加成 (ID 20) - 5%概率额外+3级
-			if ItemDatabase.has_relic(20, GameManager.relics):
-				var cfg: Dictionary = MechanicsDb.get_relic_effect(20)
-				var chance: float = cfg.get("chance", 0.05)
-				var bonus: int = cfg.get("level", 3)
-				if randf() < chance:
-					ch.level = mini(ch.level + bonus, CharacterFactory.MAX_LEVEL)
-					CharacterFactory.recalc_stats(ch)
-			
-			bd.place_character_first_empty(ch)
+			# 当前版本禁用角色召唤（角色系统暂不考虑）
+			return {"success": false, "target_index": -1}
 
 		"level_up_random":
 			var chars: Array = bd.get_all_board_characters()

@@ -41,7 +41,8 @@ class_name BattleScene
 @onready var item_slot2: PanelContainer = $MainLayout/ControlBarMargin/ControlBar/ItemSlot2
 
 # ---- 常量 ----
-const GRID_SIZE := 6
+const GRID_COLS := 7
+const GRID_ROWS := 9
 const CELL_SIZE := 144
 const CHAR_SIZE := 140
 const BASE_TURN_DELAY := 0.5  # 播放模式每回合间隔(秒)
@@ -500,9 +501,9 @@ func _setup_board_display() -> void:
 	cell_labels.clear()
 	cell_sprites.clear()
 	prev_alive_status.clear()
-	grid_container.columns = GRID_SIZE
+	grid_container.columns = GRID_COLS
 
-	for i in range(GRID_SIZE * GRID_SIZE):
+	for i in range(GRID_COLS * GRID_ROWS):
 		var cell := Control.new()
 		cell.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
 		cell.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -517,8 +518,8 @@ func _setup_board_display() -> void:
 
 		# 交替灰度和透明度
 		@warning_ignore("integer_division")
-		var row := i / GRID_SIZE
-		var col := i % GRID_SIZE
+		var row := i / GRID_COLS
+		var col := i % GRID_COLS
 		var is_even := (row + col) % 2 == 0
 		bg.modulate = Color(0.5, 0.5, 0.5, 0.9) if is_even else Color(0.8, 0.8, 0.8, 0.7)
 		cell.add_child(bg)
@@ -1177,8 +1178,8 @@ func _refresh_board_display() -> void:
 
 				# 角色格子：不设置背景颜色，保持默认交替灰度
 				@warning_ignore("integer_division")
-				var row := i / GRID_SIZE
-				var col := i % GRID_SIZE
+				var row := i / GRID_COLS
+				var col := i % GRID_COLS
 				var is_even := (row + col) % 2 == 0
 				cell_rects[i].modulate = Color(0.5, 0.5, 0.5, 0.9) if is_even else Color(0.8, 0.8, 0.8, 0.7)
 
@@ -1218,8 +1219,8 @@ func _refresh_board_display() -> void:
 			# 空格子：恢复交替灰度
 			prev_alive_status[i] = false
 			@warning_ignore("integer_division")
-			var row := i / GRID_SIZE
-			var col := i % GRID_SIZE
+			var row := i / GRID_COLS
+			var col := i % GRID_COLS
 			var is_even := (row + col) % 2 == 0
 			cell_rects[i].modulate = Color(0.5, 0.5, 0.5, 0.9) if is_even else Color(0.8, 0.8, 0.8, 0.7)
 			cell_labels[i].text = ""
@@ -1880,9 +1881,9 @@ func _execute_enemy_attack_phase() -> void:
 	# 构建列到角色的映射（每列取最前面的存活角色）
 	# 从row 0开始找，每列只要有存活角色就发射子弹
 	var col_to_target: Dictionary = {}
-	for row in range(GRID_SIZE):  # 从前排开始
-		for col in range(GRID_SIZE):
-			var index: int = row * GRID_SIZE + col
+	for row in range(GRID_ROWS):  # 从前排开始
+		for col in range(GRID_COLS):
+			var index: int = row * GRID_COLS + col
 			var ch: DataModels.CharacterData = bd.get_character_at_index(index)
 			if ch != null and ch.is_alive() and not col_to_target.has(col):
 				col_to_target[col] = ch

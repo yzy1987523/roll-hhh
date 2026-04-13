@@ -99,21 +99,21 @@ theme_override_font_sizes/font_size = 40
 text = "20000"
 vertical_alignment = 1
 
-[node name="RoundContainer" type="HBoxContainer" parent="MainLayout/TopBar" unique_id=1383262398]
+[node name="EnergyContainer" type="HBoxContainer" parent="MainLayout/TopBar" unique_id=1130546165]
+custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
-size_flags_horizontal = 6
 size_flags_vertical = 3
 theme_override_constants/separation = 4
 
-[node name="RoundIcon" type="TextureRect" parent="MainLayout/TopBar/RoundContainer" unique_id=1383262399]
+[node name="EnergyIcon" type="TextureRect" parent="MainLayout/TopBar/EnergyContainer" unique_id=1298048947]
 custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
 size_flags_vertical = 3
-texture = ExtResource("5_time")
+texture = ExtResource("4_energy")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="RoundLabel" type="Label" parent="MainLayout/TopBar/RoundContainer" unique_id=1383262400]
+[node name="EnergyLabel" type="Label" parent="MainLayout/TopBar/EnergyContainer" unique_id=981737486]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 size_flags_vertical = 3
@@ -141,6 +141,7 @@ layout_mode = 2
 size_flags_horizontal = 0
 
 [node name="RelicBar" type="HBoxContainer" parent="MainLayout" unique_id=308367481]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 0
@@ -219,6 +220,7 @@ layout_mode = 2
 size_flags_vertical = 4
 
 [node name="DormButton" type="TextureButton" parent="MainLayout/MiddleBar" unique_id=656967448]
+visible = false
 custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -272,6 +274,7 @@ grow_vertical = 2
 theme_override_constants/separation = 0
 
 [node name="SpawnRow" type="HBoxContainer" parent="MainLayout/BottomBarContainer/BottomBar" unique_id=1992617331]
+visible = false
 custom_minimum_size = Vector2(0, 120)
 layout_mode = 2
 theme_override_constants/separation = 8
@@ -467,6 +470,7 @@ custom_minimum_size = Vector2(80, 10)
 layout_mode = 2
 
 [node name="EndTurnButton" type="TextureButton" parent="MainLayout/DetailActionBar" unique_id=945550920]
+visible = false
 custom_minimum_size = Vector2(216, 216)
 layout_mode = 2
 size_flags_vertical = 4

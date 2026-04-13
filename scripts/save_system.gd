@@ -6,6 +6,9 @@ extends Node
 # 预加载依赖类 (Autoload 需要显式预加载)
 const BD = preload("res://scripts/board_data.gd")
 const DM = preload("res://scripts/data_models.gd")
+const CF = preload("res://scripts/character_factory.gd")
+const MCL = preload("res://scripts/map_config_loader.gd")
+const ICL = preload("res://scripts/item_config_loader.gd")
 
 const SAVE_KEY := "roll_hhh_save"
 const ENCYCLOPEDIA_KEY := "roll_hhh_encyclopedia"
@@ -22,7 +25,8 @@ func _ready() -> void:
 		_apply_save(save_data)
 		print(">>> [SaveSystem] 存档已加载")
 	else:
-		print(">>> [SaveSystem] 无存档, 使用默认状态")
+		_init_board_from_map_config()
+		print(">>> [SaveSystem] 无存档, 从MapConfig加载棋盘布局")
 
 
 ## 保存游戏状态
@@ -80,6 +84,67 @@ func is_tutorial_done() -> bool:
 	return raw == "true"
 
 
+## 公开初始化方法 - 供 GameManager 调用 (清空存档后重新初始化)
+func init_board_from_config() -> void:
+	_init_board_from_map_config()
+
+
+## 从 MapConfig 初始化棋盘布局
+func _init_board_from_map_config() -> void:
+	var map_loader := MCL.new()
+	if not map_loader.load_config():
+		print(">>> [SaveSystem] MapConfig加载失败")
+		return
+
+	GameManager.board_data.clear_board()
+
+	var cells: Array = map_loader.get_initial_cells()
+	print(">>> [SaveSystem] 从MapConfig初始化 %d 个格子" % cells.size())
+
+	for cell in cells:
+		var row: int = cell.get("row", 0)
+		var col: int = cell.get("col", 0)
+		var item_id: int = cell.get("item_id", 0)
+		var _state: int = cell.get("state", MCL.GridState.LOCKED)
+
+		if item_id == 0:
+			continue
+
+		# 使用ItemManager获取物品数据并复制一份
+		var board_item: DataModels.BoardItemData = ItemManager.get_item(item_id)
+		if board_item == null:
+			print(">>> [SaveSystem] 警告: 物品ID %d 在ItemConfig中未找到" % item_id)
+			continue
+
+		# 复制物品数据(因为ItemManager的缓存是共享的)
+		var item: DataModels.BoardItemData = board_item.duplicate()
+		var pos := Vector2i(col, row)
+
+		# 放置到棋盘
+		GameManager.board_data.place_item(item, pos)
+
+		print(">>> [SaveSystem] 初始化格子 (%d,%d): item_id=%d, name=%s, level=%d, sprite=%s" % [
+			row, col, item_id, item.name, item.level, item.get_sprite_path()
+		])
+
+
+## 根据物品ID获取职业 (临时实现，需要根据实际ID规则调整)
+func _get_job_from_item_id(item_id: int) -> int:
+	# 物品ID第3-4位表示职业链
+	# 01=化石/龙蛋, 02=宝箱/龙蛋, 03=骨头/食肉龙蛋, 04=装备/仪器
+	# 05=水生/水龙蛋, 06=地图/物资, 07=文物/飞龙蛋
+	var chain := (item_id / 10000) % 100
+	match chain:
+		1: return 0  # 战士相关
+		2: return 0  # 战士相关
+		3: return 0  # 战士相关
+		4: return 1  # 法师相关
+		5: return 1  # 法师相关
+		6: return 2  # 牧师相关
+		7: return 2  # 牧师相关
+		_: return 0
+
+
 ## 标记新手教学已完成
 func mark_tutorial_done() -> void:
 	if OS.has_feature("web"):
@@ -107,21 +172,21 @@ func _build_save_data() -> Dictionary:
 	data["shop_last_refresh_round"] = GameManager.shop_last_refresh_round
 	data["shop_items_data"] = GameManager.shop_items_data
 
-	# 棋盘角色
-	var board_chars: Array = []
+	# 棋盘物品
+	var board_items: Array = []
 	for i in range(BD.BOARD_SLOTS):
-		var ch = GameManager.board_data.board[i]
-		if ch != null:
-			var d: Dictionary = ch.to_dict()
+		var item: DataModels.BoardItemData = GameManager.board_data.board[i]
+		if item != null:
+			var d: Dictionary = item.to_dict()
 			d["board_index"] = i
-			board_chars.append(d)
-	data["board"] = board_chars
+			board_items.append(d)
+	data["board"] = board_items
 
-	# 宿舍角色
-	var dorm_chars: Array = []
-	for ch in GameManager.board_data.dormitory:
-		dorm_chars.append(ch.to_dict())
-	data["dormitory"] = dorm_chars
+	# 宿舍物品
+	var dorm_items: Array = []
+	for item in GameManager.board_data.dormitory:
+		dorm_items.append(item.to_dict())
+	data["dormitory"] = dorm_items
 
 	# 道具
 	var items_data: Array = []
@@ -155,28 +220,26 @@ func _apply_save(data: Dictionary) -> void:
 	# 清空棋盘再填充
 	GameManager.board_data.clear_board()
 
-	# 恢复棋盘角色
-	var board_chars: Array = data.get("board", [])
-	for cd in board_chars:
-		var ch := DM.CharacterData.from_dict(cd)
-		var idx: int = cd.get("board_index", -1)
+	# 恢复棋盘物品
+	var board_items: Array = data.get("board", [])
+	for idata in board_items:
+		var item := DM.BoardItemData.from_dict(idata)
+		var idx: int = idata.get("board_index", -1)
 		if idx >= 0 and idx < BD.BOARD_SLOTS:
-			var pos: Vector2i = BD.index_to_pos(idx)
-			GameManager.board_data.board[idx] = ch
-			ch.position = pos
+			GameManager.board_data.board[idx] = item
 
-	# 恢复宿舍角色
-	var dorm_chars: Array = data.get("dormitory", [])
-	for cd in dorm_chars:
-		var ch := DM.CharacterData.from_dict(cd)
-		ch.position = Vector2i(-1, -1)
-		GameManager.board_data.dormitory.append(ch)
+	# 恢复宿舍物品
+	GameManager.board_data.dormitory.clear()
+	var dorm_items: Array = data.get("dormitory", [])
+	for idata in dorm_items:
+		var item := DM.BoardItemData.from_dict(idata)
+		GameManager.board_data.dormitory.append(item)
 
 	# 恢复道具
 	GameManager.items.clear()
 	var items_data: Array = data.get("items", [])
-	for id_data in items_data:
-		var item := DM.ItemData.from_dict(id_data)
+	for idata in items_data:
+		var item := DM.ItemData.from_dict(idata)
 		GameManager.items.append(item)
 
 	# 恢复遗物
@@ -185,9 +248,6 @@ func _apply_save(data: Dictionary) -> void:
 	for rd in relics_data:
 		var item := DM.ItemData.from_dict(rd)
 		GameManager.relics.append(item)
-
-	# 刷新所有角色的遗物加成
-	CharacterFactory.refresh_all_characters_relics()
 
 	# 发射信号更新UI
 	GameManager.gold_changed.emit(GameManager.gold)

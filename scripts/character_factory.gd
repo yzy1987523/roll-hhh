@@ -116,11 +116,11 @@ static func create_random_character() -> DataModels.CharacterData:
 	return ch
 
 
-## 合成升级: 两个同职业同等级角色 → 高1级角色
+## 合成升级: 两个同合成链同等级角色 → 高1级角色
 ## 返回升级后的新角色, 失败返回 null
 static func merge_characters(a: DataModels.CharacterData, b: DataModels.CharacterData) -> DataModels.CharacterData:
-	if a.job != b.job:
-		print(">>> [CharacterFactory] 合成失败: 职业不同 (%s vs %s)" % [a.get_job_name(), b.get_job_name()])
+	if a.merge_chain != b.merge_chain:
+		print(">>> [CharacterFactory] 合成失败: 合成链不同 (%d vs %d)" % [a.merge_chain, b.merge_chain])
 		return null
 	if a.level != b.level:
 		print(">>> [CharacterFactory] 合成失败: 等级不同 (%d vs %d)" % [a.level, b.level])
@@ -132,8 +132,15 @@ static func merge_characters(a: DataModels.CharacterData, b: DataModels.Characte
 	var new_level: int = a.level + 1
 	var ch := create_character(a.job, new_level)
 	ch.position = a.position  # 继承位置
-	print(">>> [CharacterFactory] 合成成功: %s Lv.%d → Lv.%d (HP:%d ATK:%d DEF:%d)" % [
-		ch.get_job_name(), a.level, ch.level, ch.max_hp, ch.attack, ch.defense
+
+	# 继承物品配置数据 (sprite_override, item_id, merge_chain)
+	# 使用a的物品数据（同一链的物品应该有相同的item_id规则）
+	ch.item_id = a.item_id
+	ch.merge_chain = a.merge_chain
+	ch.sprite_override = a.sprite_override
+
+	print(">>> [CharacterFactory] 合成成功: merge_chain=%d Lv.%d → Lv.%d (sprite:%s)" % [
+		ch.merge_chain, a.level, ch.level, ch.sprite_override
 	])
 	return ch
 
