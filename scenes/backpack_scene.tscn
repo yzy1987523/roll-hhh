@@ -1,0 +1,104 @@
+[gd_scene format=3 uid="uid://bpack001"]
+
+[ext_resource type="Script" uid="uid://bpackscript001" path="res://scripts/backpack_scene.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://d2wku35vuuwpc" path="res://art/sprites/UI/panels/panel.png" id="2_panel"]
+[ext_resource type="Texture2D" uid="uid://x0btk78hil8p" path="res://art/sprites/UI/items/smallItem/close.png" id="3_close"]
+
+[node name="BackpackScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.78431374)
+
+[node name="BackpackPanel" type="PanelContainer" parent="."]
+z_index = 101
+z_as_relative = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -500.0
+offset_right = 400.0
+offset_bottom = 500.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelBg" type="TextureRect" parent="BackpackPanel"]
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("2_panel")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VBox" type="VBoxContainer" parent="BackpackPanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="PanelContainer3" type="PanelContainer" parent="BackpackPanel/VBox"]
+self_modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(80, 30)
+layout_mode = 2
+
+[node name="TitleBarMargin" type="MarginContainer" parent="BackpackPanel/VBox"]
+layout_mode = 2
+theme_override_constants/margin_left = 170
+theme_override_constants/margin_top = 50
+theme_override_constants/margin_right = 90
+theme_override_constants/margin_bottom = 10
+
+[node name="TitleBar" type="HBoxContainer" parent="BackpackPanel/VBox/TitleBarMargin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Title" type="Label" parent="BackpackPanel/VBox/TitleBarMargin/TitleBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.11213394, 0.5435751, 0.6630175, 1)
+theme_override_font_sizes/font_size = 40
+text = "背  包"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CloseButton" type="TextureButton" parent="BackpackPanel/VBox/TitleBarMargin/TitleBar"]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+texture_normal = ExtResource("3_close")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="PanelContainer" type="PanelContainer" parent="BackpackPanel/VBox"]
+self_modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+
+[node name="GridCenter" type="CenterContainer" parent="BackpackPanel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="GridContainer" type="GridContainer" parent="BackpackPanel/VBox/GridCenter"]
+layout_mode = 2
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
+columns = 4
+
+[node name="PanelContainer2" type="PanelContainer" parent="BackpackPanel/VBox"]
+self_modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(80, 250)
+layout_mode = 2

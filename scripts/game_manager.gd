@@ -85,10 +85,12 @@ var board_data: BoardData = BoardData.new()
 # ---- 背包数据 ----
 var items: Array = []         # 道具背包 Array of ItemData
 var relics: Array = []        # 遗物栏 Array of ItemData
-var out_items: Array[int] = [99]  # 局外道具，默认包含背包
+var out_items: Array[int] = []  # 局外道具（背包ID 99由SaveSystem在新游戏时添加）
+var backpack_items: Array = []  # 背包中的棋盘物品 Array of BoardItemData
 signal items_changed()
 signal relics_changed()
 signal out_items_changed()
+signal backpack_items_changed()
 
 
 ## 添加道具到背包
@@ -132,6 +134,28 @@ func remove_out_item(item_id: int) -> void:
 ## 获取局外道具列表
 func get_out_items() -> Array[int]:
 	return out_items
+
+
+## 添加物品到背包（棋盘物品）
+func add_to_backpack(board_item: DM.BoardItemData) -> bool:
+	backpack_items.append(board_item)
+	backpack_items_changed.emit()
+	print(">>> [GameManager] 物品移入背包: %s (Lv.%d)" % [board_item.name, board_item.level])
+	return true
+
+
+## 从背包移除物品
+func remove_from_backpack(index: int) -> void:
+	if index >= 0 and index < backpack_items.size():
+		var item: DM.BoardItemData = backpack_items[index]
+		backpack_items.remove_at(index)
+		backpack_items_changed.emit()
+		print(">>> [GameManager] 物品移出背包: %s (Lv.%d)" % [item.name, item.level])
+
+
+## 获取背包物品列表
+func get_backpack_items() -> Array:
+	return backpack_items
 
 
 ## 添加遗物

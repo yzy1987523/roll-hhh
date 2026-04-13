@@ -9,6 +9,7 @@ const DM = preload("res://scripts/data_models.gd")
 const CF = preload("res://scripts/character_factory.gd")
 const MCL = preload("res://scripts/map_config_loader.gd")
 const ICL = preload("res://scripts/item_config_loader.gd")
+const IM = preload("res://scripts/item_manager.gd")
 
 const SAVE_KEY := "roll_hhh_save"
 const ENCYCLOPEDIA_KEY := "roll_hhh_encyclopedia"
@@ -102,6 +103,13 @@ func _init_board_from_map_config() -> void:
 	print(">>> [SaveSystem] MapConfig加载成功，rows=%d, cols=%d" % [map_loader.rows, map_loader.cols])
 	GameManager.board_data.clear_board()
 
+	# 初始化局外道具（只有新游戏才包含背包）
+	GameManager.out_items.clear()
+	GameManager.out_items.append(99)  # 背包物品ID
+
+	# 清空背包
+	GameManager.backpack_items.clear()
+
 	# 初始化所有格子状态（从 MapConfig）
 	GameManager.board_data.init_grid_states_from_config(map_loader)
 
@@ -130,6 +138,10 @@ func _init_board_from_map_config() -> void:
 
 		# 放置到棋盘（格子状态已在 init_grid_states_from_config 中设置）
 		GameManager.board_data.place_item(item, pos)
+		# 如果是生成器，注册到 ProducerManager（Autoload单例）
+		var board_index: int = pos.y * BD.GRID_COLS + pos.x
+		if IM.new().is_producer(item.id):
+			get_node("/root/ProducerManager").register_producer(board_index, item.id)
 
 		print(">>> [SaveSystem] 初始化格子 (%d,%d): item_id=%d, name=%s, level=%d, state=%d" % [
 			row, col, item_id, item.name, item.level, state
@@ -214,6 +226,20 @@ func _build_save_data() -> Dictionary:
 		relics_data.append(relic.to_dict())
 	data["relics"] = relics_data
 
+	# 局外道具
+	data["out_items"] = GameManager.out_items.duplicate()
+
+	# 背包物品
+	var backpack_data: Array = []
+	for item in GameManager.backpack_items:
+		backpack_data.append(item.to_dict())
+	data["backpack_items"] = backpack_data
+
+	# 任务系统状态
+	var tm = get_node_or_null("/root/TaskManager")
+	if tm != null:
+		data["taskSystem"] = tm.build_save_data()
+
 	return data
 
 
@@ -241,6 +267,9 @@ func _apply_save(data: Dictionary) -> void:
 		var idx: int = idata.get("board_index", -1)
 		if idx >= 0 and idx < BD.BOARD_SLOTS:
 			GameManager.board_data.board[idx] = item
+			# 如果是生成器，注册到 ProducerManager
+			if item != null and IM.new().is_producer(item.id):
+				get_node("/root/ProducerManager").register_producer(idx, item.id)
 
 	# 恢复棋盘格子状态
 	var grid_states: Array = data.get("grid_states", [])
@@ -273,6 +302,26 @@ func _apply_save(data: Dictionary) -> void:
 	for rd in relics_data:
 		var item := DM.ItemData.from_dict(rd)
 		GameManager.relics.append(item)
+
+	# 恢复局外道具
+	GameManager.out_items.clear()
+	var out_items_data: Array = data.get("out_items", [])
+	for oid in out_items_data:
+		GameManager.out_items.append(oid)
+
+	# 恢复背包物品
+	GameManager.backpack_items.clear()
+	var backpack_data: Array = data.get("backpack_items", [])
+	for idata in backpack_data:
+		var item := DM.BoardItemData.from_dict(idata)
+		GameManager.backpack_items.append(item)
+
+	# 恢复任务系统状态
+	var tm = get_node_or_null("/root/TaskManager")
+	if tm != null:
+		var task_data: Dictionary = data.get("taskSystem", {})
+		if not task_data.is_empty():
+			tm.load_from_save_data(task_data)
 
 	# 发射信号更新UI
 	GameManager.gold_changed.emit(GameManager.gold)
