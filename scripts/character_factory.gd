@@ -27,6 +27,31 @@ const GROWTH_RATE := {
 # ---- 最高等级 ----
 const MAX_LEVEL := 9
 
+# ---- 运行时获取单例 helper ----
+static func _get_gm():
+	if Engine.has_singleton("GameManager"):
+		return Engine.get_singleton("GameManager")
+	var tree = Engine.get_main_loop()
+	if tree and tree.root.has_node("/root/GameManager"):
+		return tree.root.get_node("/root/GameManager")
+	return null
+
+static func _get_mdb():
+	if Engine.has_singleton("MechanicsDb"):
+		return Engine.get_singleton("MechanicsDb")
+	var tree = Engine.get_main_loop()
+	if tree and tree.root.has_node("/root/MechanicsDb"):
+		return tree.root.get_node("/root/MechanicsDb")
+	return null
+
+static func _get_ls():
+	if Engine.has_singleton("LocalizationSystem"):
+		return Engine.get_singleton("LocalizationSystem")
+	var tree = Engine.get_main_loop()
+	if tree and tree.root.has_node("/root/LocalizationSystem"):
+		return tree.root.get_node("/root/LocalizationSystem")
+	return null
+
 # ---- 特技强化等级节点 ----
 const SKILL_UPGRADE_LEVELS := [3, 5, 7, 9]
 
@@ -160,12 +185,14 @@ static func recalc_stats(ch: DataModels.CharacterData, apply_relics: bool = true
 
 ## 应用 stat_buff 类型遗物的属性加成
 static func _apply_stat_buff_relics(ch: DataModels.CharacterData) -> void:
-	if not is_instance_valid(GameManager.board_data):
+	var gm = _get_gm()
+	if gm == null or not is_instance_valid(gm.board_data):
 		return
-	
-	var relics: Array = GameManager.relics
+
+	var relics: Array = gm.relics
 	for relic in relics:
-		var cfg: Dictionary = MechanicsDb.get_relic_effect(relic.id)
+		var mdb = _get_mdb()
+		var cfg: Dictionary = mdb.get_relic_effect(relic.id) if mdb else {}
 		if cfg.get("effect_type", "") != "stat_buff":
 			continue
 		
@@ -204,11 +231,12 @@ static func _apply_stat_buff_relics(ch: DataModels.CharacterData) -> void:
 
 ## 刷新所有角色的遗物加成 (获得/失去遗物时调用)
 static func refresh_all_characters_relics() -> void:
-	if not is_instance_valid(GameManager.board_data):
+	var gm = _get_gm()
+	if gm == null or not is_instance_valid(gm.board_data):
 		return
-	
-	var bd: BoardData = GameManager.board_data
-	
+
+	var bd: BoardData = gm.board_data
+
 	# 刷新棋盘上的角色
 	for i in range(BoardData.BOARD_SLOTS):
 		var ch: DataModels.CharacterData = bd.get_character_at_index(i)
@@ -231,11 +259,12 @@ static func print_stat_table(job: int) -> void:
 	if JobAdvanced.is_advanced_job(job):
 		job_name = JobAdvanced.get_advanced_job_name(job)
 	else:
+		var ls = _get_ls()
 		match job:
-			DataModels.Job.WARRIOR: job_name = LocalizationSystem.get_text("jobs.warrior")
-			DataModels.Job.MAGE: job_name = LocalizationSystem.get_text("jobs.mage")
-			DataModels.Job.PRIEST: job_name = LocalizationSystem.get_text("jobs.priest")
-			_: job_name = LocalizationSystem.get_text("jobs.unknown")
+			DataModels.Job.WARRIOR: job_name = ls.get_text("jobs.warrior") if ls else "战士"
+			DataModels.Job.MAGE: job_name = ls.get_text("jobs.mage") if ls else "法师"
+			DataModels.Job.PRIEST: job_name = ls.get_text("jobs.priest") if ls else "牧师"
+			_: job_name = ls.get_text("jobs.unknown") if ls else "未知"
 
 	print("=== %s 属性成长表 ===" % job_name)
 	print("等级 | 血量 | 攻击 | 防御 | 特技等级")

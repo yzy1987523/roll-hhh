@@ -7,6 +7,15 @@ class_name DataModels
 # 预加载依赖类
 const JA = preload("res://scripts/job_advanced.gd")
 
+# 运行时获取LocalizationSystem单例
+static func _get_localization_system():
+	if Engine.has_singleton("LocalizationSystem"):
+		return Engine.get_singleton("LocalizationSystem")
+	var tree = Engine.get_main_loop()
+	if tree and tree.root.has_node("/root/LocalizationSystem"):
+		return tree.root.get_node("/root/LocalizationSystem")
+	return null
+
 # ---- 职业常量 ----
 enum Job { WARRIOR = 0, MAGE = 1, PRIEST = 2 }
 
@@ -137,11 +146,14 @@ class CharacterData:
 		var adv_name: String = JA.get_advanced_job_name(job)
 		if adv_name != "":
 			return adv_name
+		var ls = DataModels._get_localization_system()
+		if not ls:
+			return "Job"
 		match job:
-			Job.WARRIOR: return LocalizationSystem.get_text("jobs.warrior")
-			Job.MAGE: return LocalizationSystem.get_text("jobs.mage")
-			Job.PRIEST: return LocalizationSystem.get_text("jobs.priest")
-			_: return LocalizationSystem.get_text("jobs.unknown")
+			Job.WARRIOR: return ls.get_text("jobs.warrior")
+			Job.MAGE: return ls.get_text("jobs.mage")
+			Job.PRIEST: return ls.get_text("jobs.priest")
+			_: return ls.get_text("jobs.unknown")
 
 	# 获取基础职业 (转职前的原始职业)
 	func get_base_job() -> int:
@@ -245,12 +257,14 @@ class ItemData:
 		item.id = d.get("id", 0)
 		item.type = d.get("type", 0)
 		# 根据类型重新获取本地化的 name 和 description
-		if item.type == ItemType.RELIC:
-			item.name = LocalizationSystem.get_text("relics." + str(item.id) + "_name")
-			item.description = LocalizationSystem.get_text("relics." + str(item.id) + "_desc")
-		else:
-			item.name = LocalizationSystem.get_text("items." + str(item.id) + "_name")
-			item.description = LocalizationSystem.get_text("items." + str(item.id) + "_desc")
+		var ls = DataModels._get_localization_system()
+		if ls:
+			if item.type == ItemType.RELIC:
+				item.name = ls.get_text("relics." + str(item.id) + "_name")
+				item.description = ls.get_text("relics." + str(item.id) + "_desc")
+			else:
+				item.name = ls.get_text("items." + str(item.id) + "_name")
+				item.description = ls.get_text("items." + str(item.id) + "_desc")
 		item.stackable = d.get("stackable", false)
 		item.stack_count = d.get("stack_count", 1)
 		item.price = d.get("price", 0)
@@ -268,6 +282,11 @@ class BoardItemData:
 	var next_composite: int = 0  # 合成后的物品ID (0=不可合成)
 	var count: int = 1      # 叠加数量
 
+	# 生成器配置 (从 ItemConfig 获取)
+	var max_count: int = 0    # 最大库存 (production 类型)
+	var recovery_time: float = 0.0  # 恢复1个库存所需时间 (秒)
+	var cooldown_time: float = 0.0   # 冷却时间 (秒)
+
 	# 是否可合成
 	func can_merge() -> bool:
 		return next_composite > 0
@@ -284,6 +303,9 @@ class BoardItemData:
 	func get_sprite_path() -> String:
 		if sprite.is_empty():
 			return ""
+		# UI图标使用特殊路径
+		if sprite.begins_with("UI/"):
+			return "res://art/sprites/%s.png" % sprite
 		return "res://art/sprites/items/%s.png" % sprite
 
 	# 是否可叠加
@@ -293,6 +315,10 @@ class BoardItemData:
 	# 叠加物品
 	func add_count(amount: int = 1) -> void:
 		count += amount
+
+	# 是否是生成器类型
+	func is_producer() -> bool:
+		return item_type == DataModels.BoardItemType.PRODUCTION or item_type == DataModels.BoardItemType.MAXPRODUCTION
 
 	# 从配置字典创建
 	static func from_config(cfg: Dictionary) -> BoardItemData:
@@ -304,6 +330,10 @@ class BoardItemData:
 		data.item_type = cfg.get("type", 0)
 		data.next_composite = cfg.get("next_composite", 0)
 		data.count = 1
+		# 生成器配置
+		data.max_count = cfg.get("maxCount", 0)
+		data.recovery_time = cfg.get("recovery_time", 0.0)
+		data.cooldown_time = cfg.get("cooldown_time", 0.0)
 		return data
 
 	# 复制物品
@@ -316,6 +346,9 @@ class BoardItemData:
 		data.item_type = item_type
 		data.next_composite = next_composite
 		data.count = count
+		data.max_count = max_count
+		data.recovery_time = recovery_time
+		data.cooldown_time = cooldown_time
 		return data
 
 	# 序列化为字典 (仅包含需要持久化的字段)

@@ -54,7 +54,32 @@ static func get_advanced_job_name(job: int) -> String:
 		return ""
 	var adv_info: Dictionary = ADVANCED_BASE[job]
 	var key: String = adv_info["name_key"]
-	return LocalizationSystem.get_text("jobs." + key)
+	# 运行时获取LocalizationSystem
+	var ls = static_get_localization_system()
+	if ls:
+		return ls.get_text("jobs." + key)
+	return key
+
+
+## 运行时获取LocalizationSystem单例
+static func static_get_localization_system():
+	if Engine.has_singleton("LocalizationSystem"):
+		return Engine.get_singleton("LocalizationSystem")
+	# fallback: 通过get_tree获取
+	var tree = Engine.get_main_loop()
+	if tree and tree.root.has_node("/root/LocalizationSystem"):
+		return tree.root.get_node("/root/LocalizationSystem")
+	return null
+
+
+## 运行时获取MechanicsDb单例
+static func static_get_mechanics_db():
+	if Engine.has_singleton("MechanicsDb"):
+		return Engine.get_singleton("MechanicsDb")
+	var tree = Engine.get_main_loop()
+	if tree and tree.root.has_node("/root/MechanicsDb"):
+		return tree.root.get_node("/root/MechanicsDb")
+	return null
 
 
 ## 计算转职职业属性
@@ -123,7 +148,8 @@ static func random_advance(ch: DM.CharacterData) -> bool:
 static func check_advance_on_spawn(ch: DM.CharacterData, has_relic_17: bool = false) -> bool:
 	var chance: float = 0.05
 	if has_relic_17:
-		var cfg: Dictionary = MechanicsDb.get_relic_effect(17)
+		var mdb = static_get_mechanics_db()
+		var cfg: Dictionary = mdb.get_relic_effect(17) if mdb else {}
 		var bonus: float = cfg.get("chance_bonus", 0.05)
 		chance += bonus
 	if randf() < chance:
