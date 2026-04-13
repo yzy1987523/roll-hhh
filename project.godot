@@ -25,6 +25,8 @@ TipManager="*uid://7snv7bmjgwlm"
 PopupSystem="*uid://3y0djhn7sumt"
 SoundSystem="*res://scripts/sound_system.gd"
 ItemManager="*res://scripts/item_manager.gd"
+ProducerManager="*res://scripts/producer_manager.gd"
+TaskManager="*res://scripts/task_manager.gd"
 
 [display]
 

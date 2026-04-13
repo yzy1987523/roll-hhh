@@ -27,8 +27,10 @@ func _ready() -> void:
 	var build_list_btn: Button = get_node(PATH_BUILD_LIST_BTN)
 	build_list_btn.pressed.connect(_on_build_list_pressed)
 	TaskManager.stars_changed.connect(_on_stars_changed)
+	TaskManager.task_progress_updated.connect(_on_task_progress_updated)
+	TaskManager.task_completed.connect(_on_task_completed)
 	GameManager.out_items_changed.connect(_on_out_items_changed)
-	_setup_task_display()
+	_update_task_display()
 	_update_build_list_btn()
 	# 初始化局外道具显示（默认添加背包）
 	_refresh_out_items()
@@ -140,11 +142,19 @@ func _on_item_icon_pressed(item_id: int) -> void:
 	out_item_clicked.emit(item_id)
 
 
-## 设置任务栏显示
-func _setup_task_display() -> void:
-	var current_task: Dictionary = TaskManager.get_current_task()
+func _on_task_progress_updated(_task_id: int, progress: float) -> void:
+	_update_task_display()
 
+
+func _on_task_completed(_task_id: int, _reward: Dictionary) -> void:
+	_update_task_display()
+
+
+## 更新任务栏显示
+func _update_task_display() -> void:
+	var current_task: Dictionary = TaskManager.get_current_task()
 	var task_panel: PanelContainer = get_node(PATH_TASK_PANEL)
+
 	if current_task.is_empty():
 		task_panel.visible = false
 		return
@@ -155,6 +165,7 @@ func _setup_task_display() -> void:
 	var need_items: Array = current_task.get("needItems", [])
 	var reward: Dictionary = current_task.get("reward", {})
 	var star_reward: int = reward.get("star", 0)
+	var progress: float = TaskManager.get_current_task_progress()
 
 	# 显示星星奖励
 	var task_star_label: Label = get_node(PATH_TASK_STAR_LABEL)
@@ -170,11 +181,14 @@ func _setup_task_display() -> void:
 		else:
 			task_item_icon.modulate = Color(0.5, 0.5, 0.5, 0.5)
 
-		# 进度显示
-		var require_count: int = need_items.size()
-		var task_count_label: Label = get_node(PATH_TASK_COUNT)
-		task_count_label.text = "0/%d" % require_count
+	# 进度显示
+	var require_count: int = need_items.size()
+	var current_count: int = int(progress * require_count)
+	var task_count_label: Label = get_node(PATH_TASK_COUNT)
+	task_count_label.text = "%d/%d" % [current_count, require_count]
 
-		var task_progress_bar: ProgressBar = get_node(PATH_TASK_PROGRESS)
-		task_progress_bar.max_value = require_count
-		task_progress_bar.value = 0
+	var task_progress_bar: ProgressBar = get_node(PATH_TASK_PROGRESS)
+	task_progress_bar.max_value = require_count
+	task_progress_bar.value = current_count
+
+

@@ -1,0 +1,77 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/task_item.gd" id="1_task_item"]
+
+[node name="TaskItem" type="PanelContainer"]
+custom_minimum_size = Vector2(0, 80)
+script = ExtResource("1_task_item")
+
+[node name="HBox" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="StatusIcon" type="TextureRect" parent="HBox"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+stretch_mode = 5
+
+[node name="InfoVBox" type="VBoxContainer" parent="HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="TaskName" type="Label" parent="HBox/InfoVBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.2, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 22
+text = "任务名称"
+vertical_alignment = 1
+
+[node name="TaskDesc" type="Label" parent="HBox/InfoVBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.4, 0.4, 0.4, 1)
+theme_override_font_sizes/font_size = 18
+text = "任务描述"
+vertical_alignment = 1
+
+[node name="RewardHBox" type="HBoxContainer" parent="HBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CoinIcon" type="TextureRect" parent="HBox/RewardHBox"]
+visible = false
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+
+[node name="CoinLabel" type="Label" parent="HBox/RewardHBox"]
+visible = false
+theme_override_colors/font_color = Color(0.8, 0.6, 0, 1)
+theme_override_font_sizes/font_size = 16
+text = "+10"
+
+[node name="StarIcon" type="TextureRect" parent="HBox/RewardHBox"]
+visible = false
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+
+[node name="StarLabel" type="Label" parent="HBox/RewardHBox"]
+visible = false
+theme_override_colors/font_color = Color(0.9, 0.8, 0.1, 1)
+theme_override_font_sizes/font_size = 16
+text = "+1"
+
+[node name="ExpLabel" type="Label" parent="HBox/RewardHBox"]
+visible = false
+theme_override_colors/font_color = Color(0.3, 0.6, 0.9, 1)
+theme_override_font_sizes/font_size = 16
+text = "+100exp"
+
+[node name="ProgressBar" type="ProgressBar" parent="HBox"]
+visible = false
+custom_minimum_size = Vector2(100, 16)
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+show_percentage = false

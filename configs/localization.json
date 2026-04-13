@@ -177,7 +177,10 @@
 				"spawn_mage": "Spawn:Mage",
 				"spawn_priest": "Spawn:Priest",
 				"spawn_warrior": "Spawn:Warrior",
-				"take_failed_board_full": "Take Failed: Board Full"
+				"take_failed_board_full": "Take Failed: Board Full",
+				"egg_not_hatchable": "Egg cannot be hatched yet",
+				"merge_hint": "Drag to a same item to merge",
+				"no_action": "No action available"
 			},
 			"items": {
 				"10_desc": "Random ally gains 1 level",
@@ -584,7 +587,10 @@
 				"spawn_mage": "生成:法师",
 				"spawn_priest": "生成:牧师",
 				"spawn_warrior": "生成:战士",
-				"take_failed_board_full": "取出失败: 棋盘已满"
+				"take_failed_board_full": "取出失败: 棋盘已满",
+				"egg_not_hatchable": "龙蛋暂不可孵化",
+				"merge_hint": "拖拽到相同物品处合成",
+				"no_action": "该物品无法执行动作"
 			},
 			"items": {
 				"10_desc": "随机1个角色升1级",

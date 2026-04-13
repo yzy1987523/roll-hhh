@@ -1,0 +1,161 @@
+[gd_scene format=3 uid="uid://bottom_hud_001"]
+
+[ext_resource type="Script" uid="uid://bottom_hud_script" path="res://scripts/bottom_hud.gd" id="1_bottom_hud"]
+[ext_resource type="Texture2D" uid="uid://d2wku35vuuwpc" path="res://art/sprites/UI/panels/panel.png" id="2_panel"]
+[ext_resource type="Texture2D" uid="uid://x0btk78hil8p" path="res://art/sprites/UI/items/smallItem/close.png" id="3_close"]
+
+[node name="BottomHUD" type="Control" unique_name_owner="BottomHUD"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_bottom_hud")
+
+[node name="HBox" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+
+[node name="ScrollContainer" type="ScrollContainer" parent="HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_scroll_mode = 2
+vertical_scroll_mode = 3
+
+[node name="ContentHBox" type="HBoxContainer" parent="HBox/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 16
+
+[node name="ZoneA" type="PanelContainer" parent="HBox/ScrollContainer/ContentHBox"]
+custom_minimum_size = Vector2(150, 120)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="PanelBg" type="NinePatchRect" parent="HBox/ScrollContainer/ContentHBox/ZoneA"]
+layout_mode = 2
+texture = ExtResource("2_panel")
+patch_margin_left = 20
+patch_margin_top = 20
+patch_margin_right = 20
+patch_margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="HBox/ScrollContainer/ContentHBox/ZoneA"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="HBox/ScrollContainer/ContentHBox/ZoneA/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.8, 0.6, 1)
+theme_override_font_sizes/font_size = 20
+text = "建造清单"
+horizontal_alignment = 1
+
+[node name="BuildListBtn" type="Button" parent="HBox/ScrollContainer/ContentHBox/ZoneA/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 100)
+text = "展开"
+
+[node name="ZoneB" type="PanelContainer" parent="HBox/ScrollContainer/ContentHBox"]
+custom_minimum_size = Vector2(200, 120)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="PanelBg" type="NinePatchRect" parent="HBox/ScrollContainer/ContentHBox/ZoneB"]
+layout_mode = 2
+texture = ExtResource("2_panel")
+patch_margin_left = 20
+patch_margin_top = 20
+patch_margin_right = 20
+patch_margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="HBox/ScrollContainer/ContentHBox/ZoneB"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="TitleLabel" type="Label" parent="HBox/ScrollContainer/ContentHBox/ZoneB/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.8, 0.6, 1)
+theme_override_font_sizes/font_size = 18
+text = "局外道具"
+horizontal_alignment = 1
+
+[node name="ItemsStack" type="VBoxContainer" parent="HBox/ScrollContainer/ContentHBox/ZoneB/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = -40
+
+[node name="ItemsCountLabel" type="Label" parent="HBox/ScrollContainer/ContentHBox/ZoneB"]
+offset_left = 160.0
+offset_top = 5.0
+offset_right = 200.0
+offset_bottom = 30.0
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "0"
+horizontal_alignment = 2
+
+[node name="ZoneC" type="PanelContainer" parent="HBox/ScrollContainer/ContentHBox"]
+custom_minimum_size = Vector2(280, 120)
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="PanelBg" type="NinePatchRect" parent="HBox/ScrollContainer/ContentHBox/ZoneC"]
+layout_mode = 2
+texture = ExtResource("2_panel")
+patch_margin_left = 20
+patch_margin_top = 20
+patch_margin_right = 20
+patch_margin_bottom = 20
+
+[node name="HBox" type="HBoxContainer" parent="HBox/ScrollContainer/ContentHBox/ZoneC"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="TaskItemIcon" type="TextureRect" parent="HBox/ScrollContainer/ContentHBox/ZoneC/HBox"]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+stretch_mode = 5
+expand_mode = 1
+
+[node name="VBox" type="VBoxContainer" parent="HBox/ScrollContainer/ContentHBox/ZoneC/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="TaskCountLabel" type="Label" parent="HBox/ScrollContainer/ContentHBox/ZoneC/HBox/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 22
+text = "0/1"
+vertical_alignment = 1
+
+[node name="TaskProgressBar" type="ProgressBar" parent="HBox/ScrollContainer/ContentHBox/ZoneC/HBox/VBox"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+max_value = 1.0
+step = 1.0
+show_percentage = false
+
+[node name="HBox" type="HBoxContainer" parent="HBox/ScrollContainer/ContentHBox/ZoneC/HBox"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 4
+
+[node name="TaskStarIcon" type="TextureRect" parent="HBox/ScrollContainer/ContentHBox/ZoneC/HBox"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+stretch_mode = 5
+
+[node name="TaskStarLabel" type="Label" parent="HBox/ScrollContainer/ContentHBox/ZoneC/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.8, 0.1, 1)
+theme_override_font_sizes/font_size = 18
+text = "+1"
+vertical_alignment = 1

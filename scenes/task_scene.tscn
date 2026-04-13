@@ -1,0 +1,108 @@
+[gd_scene format=3 uid="uid://bty8h26m3xgkq"]
+
+[ext_resource type="Script" uid="uid://ct8gk5xq7h3rw" path="res://scripts/task_scene.gd" id="1_task_scene"]
+[ext_resource type="Texture2D" uid="uid://d2wku35vuuwpc" path="res://art/sprites/UI/panels/panel.png" id="2_panel"]
+
+[node name="TaskScene" type="Control" unique_name_owner="TaskScene"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_task_scene")
+
+[node name="DarkOverlay" type="ColorRect" parent="."]
+z_index = 99
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.78431374)
+
+[node name="VBox" type="VBoxContainer" parent="."]
+z_index = 100
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -450.0
+offset_top = -550.0
+offset_right = 450.0
+offset_bottom = 550.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+
+[node name="TitleBar" type="HBoxContainer" parent="VBox"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="TitleLabel" type="Label" parent="VBox/TitleBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.11213394, 0.5435751, 0.6630175, 1)
+theme_override_font_sizes/font_size = 36
+text = "任  务"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="StarsLabel" type="Label" parent="VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.8, 0.1, 1)
+theme_override_font_sizes/font_size = 24
+text = "★ 0"
+horizontal_alignment = 1
+
+[node name="LevelLabel" type="Label" parent="VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.6, 0.9, 1)
+theme_override_font_sizes/font_size = 20
+text = "Lv.1"
+horizontal_alignment = 1
+
+[node name="ExpLabel" type="Label" parent="VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 18
+text = "经验: 0"
+horizontal_alignment = 1
+
+[node name="TabContainer" type="TabContainer" parent="VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/side_margin_left = 8
+theme_override_constants/side_margin_right = 8
+theme_override_constants/side_margin_top = 8
+theme_override_constants/side_margin_bottom = 8
+
+[node name="InTaskScroll" type="ScrollContainer" parent="VBox/TabContainer"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="InTaskVBox" type="VBoxContainer" parent="VBox/TabContainer/InTaskScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="OutTaskScroll" type="ScrollContainer" parent="VBox/TabContainer"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="OutTaskVBox" type="VBoxContainer" parent="VBox/TabContainer/OutTaskScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="CloseBtn" type="Button" parent="VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 50)
+text = "关闭"
+horizontal_alignment = 1
+vertical_alignment = 1

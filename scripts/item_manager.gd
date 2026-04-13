@@ -189,9 +189,23 @@ func is_producer(item_id: int) -> bool:
 	return item_type == "production" or item_type == "maxproduction"
 
 
+## 检查物品是否为背包
+func is_backpack(item_id: int) -> bool:
+	# 背包物品ID为99
+	return item_id == 99
+
+
 ## 生产物品
 ## 点击生成器后，根据概率随机产出物品
-func produce_item(item_id: int) -> DM.BoardItemData:
+## board_index: 棋盘索引，用于库存和冷却管理，-1表示不管理库存
+func produce_item(item_id: int, board_index: int = -1) -> DM.BoardItemData:
+	# 如果提供了 board_index，尝试消耗库存
+	if board_index >= 0 and ProducerManager.is_producer(board_index):
+		if not ProducerManager.can_produce(board_index):
+			print(">>> [ItemManager] 生产失败: 生成器正在冷却或库存为空 board=%d" % board_index)
+			return null
+		ProducerManager.consume_stock(board_index)
+
 	var produced_id: int = _config_loader.roll_production_item(item_id)
 	if produced_id == 0:
 		print(">>> [ItemManager] 生产失败: 找不到产出物品 item_id=%d" % item_id)
