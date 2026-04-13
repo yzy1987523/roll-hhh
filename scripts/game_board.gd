@@ -6,6 +6,10 @@ extends Control
 # ---- 资源预加载 ----
 const CELL_BG_TEXTURE := preload("res://art/sprites/UI/items/smallItem/cell_0.png")
 const CELL_SELECT_TEXTURE := preload("res://art/sprites/UI/items/smallItem/cell_1.png")
+# 锁定状态纹理（运行时加载）
+var CELL_LOCKED_EVEN_TEXTURE: Texture2D
+var CELL_LOCKED_ODD_TEXTURE: Texture2D
+var CELL_DUSTY_TEXTURE: Texture2D
 
 # 宿舍场景
 const DormScene = preload("res://scenes/dorm_scene.tscn")
@@ -76,6 +80,7 @@ var cell_panels: Array = []    # PanelContainer 格子容器
 var cell_sprites: Array = []   # TextureRect 角色精灵图
 var cell_select_frames: Array = []  # TextureRect 选中框（静态边框）
 var cell_highlight_effects: Array = []  # TextureRect 高亮效果（序列帧动画）
+var cell_state_overlays: Array = []  # TextureRect 状态叠加层（锁定/灰尘）
 
 # ---- 选中状态 (任务 2.3 拖拽) ----
 var selected_index: int = -1   # 当前选中的棋盘格索引, -1=无选中
@@ -148,10 +153,8 @@ func _ready() -> void:
 
 
 func _start_tutorial() -> void:
-	# 只有在第一回合且未完成教程时显示教程
-	if GameManager.current_round == 1 and not GameManager.tutorial_completed:
-		tutorial_instance = preload("res://scripts/tutorial_system.gd").new()
-		add_child(tutorial_instance)
+	# 教程已禁用
+	pass
 
 
 ## 加载选中效果序列帧
@@ -241,6 +244,11 @@ func _on_button_up(btn: BaseButton) -> void:
 # ---- 棋盘 UI 构建 ----
 
 func _setup_board_ui() -> void:
+	# 加载锁定状态纹理
+	CELL_LOCKED_EVEN_TEXTURE = load("res://art/sprites/UI/icon/cell5.png")
+	CELL_LOCKED_ODD_TEXTURE = load("res://art/sprites/UI/icon/cell6.png")
+	CELL_DUSTY_TEXTURE = load("res://art/sprites/UI/icon/cell7.png")
+
 	for child in grid_container.get_children():
 		child.queue_free()
 	cell_rects.clear()
@@ -280,8 +288,17 @@ func _setup_board_ui() -> void:
 		select_frame.z_index = 1  # 在格子底之上
 		cell.add_child(select_frame)
 		cell_select_frames.append(select_frame)
-		
-		# 高亮效果（序列帧动画，初始隐藏）
+
+		# 状态叠加层（锁定/灰尘纹理，初始隐藏）
+		var state_overlay := TextureRect.new()
+		state_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+		state_overlay.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		state_overlay.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		state_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		state_overlay.visible = false
+		state_overlay.z_index = 6  # 在物品精灵之上
+		cell.add_child(state_overlay)
+		cell_state_overlays.append(state_overlay)
 		var highlight_effect := TextureRect.new()
 		highlight_effect.set_anchors_preset(Control.PRESET_FULL_RECT)
 		highlight_effect.texture = null
@@ -398,11 +415,15 @@ func _refresh_dorm_panel() -> void:
 # ---- 棋盘格拖拽处理 (任务 2.3 拖拽/选中) ----
 
 func _on_cell_gui_input(event: InputEvent, cell_index: int) -> void:
+	# 检查格子状态 - LOCKED 状态不可交互
+	var bd: BoardData = GameManager.board_data
+	if not bd.can_interact(cell_index):
+		return
+
 	# 目标选择模式: 点击角色使用道具
 	if is_selecting_target and event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
 		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
-			var bd: BoardData = GameManager.board_data
 			var ch: DataModels.BoardItemData = bd.get_item_at_index(cell_index)
 			if ch != null:
 				_use_item_on_target(cell_index)
@@ -412,7 +433,6 @@ func _on_cell_gui_input(event: InputEvent, cell_index: int) -> void:
 				_end_target_selection()
 				return
 
-	var bd: BoardData = GameManager.board_data
 	var ch: DataModels.BoardItemData = bd.get_item_at_index(cell_index)
 
 	# 鼠标按下: 记录按下状态
@@ -463,7 +483,8 @@ func _on_cell_gui_input(event: InputEvent, cell_index: int) -> void:
 				if _press_cell_index >= 0:
 					var bd_check: BoardData = GameManager.board_data
 					var ch_check: DataModels.BoardItemData = bd_check.get_item_at_index(_press_cell_index)
-					if ch_check != null:
+					# DUSTY 状态不能拖拽
+					if ch_check != null and bd_check.get_grid_state(_press_cell_index) != BoardData.GridState.DUSTY:
 						_start_drag(_press_cell_index, _drag_start_pos)
 				_is_awaiting_drag = false
 		elif is_dragging:
@@ -709,6 +730,9 @@ func _merge_at(src_index: int, tgt_index: int) -> void:
 	var src_item: DataModels.BoardItemData = bd.get_item_at_index(src_index)
 	var tgt_item: DataModels.BoardItemData = bd.get_item_at_index(tgt_index)
 
+	# DUSTY 状态被合成时 → 切换为 OCCUPIED
+	bd.dust_to_occupied(tgt_index)
+
 	var merged: DataModels.BoardItemData = ItemManager.merge_items(src_item, tgt_item)
 	if merged == null:
 		print(">>> [GameBoard] 合成失败")
@@ -724,6 +748,12 @@ func _merge_at(src_index: int, tgt_index: int) -> void:
 	# 放置新物品到目标位置
 	var tgt_pos: Vector2i = BoardData.index_to_pos(tgt_index)
 	bd.place_item(merged, tgt_pos)
+
+	# 合成后目标位置变为 OCCUPIED
+	bd.set_grid_state(tgt_index, BoardData.GridState.OCCUPIED)
+
+	# 合成位置上下左右的 LOCKED 格子 → 切换为 DUSTY
+	bd.trigger_merge_unlock(tgt_index)
 
 	print(">>> [GameBoard] 合成完成: %s Lv.%d 于格 %d" % [merged.name, merged.level, tgt_index])
 
@@ -1139,15 +1169,22 @@ func _refresh_board_display() -> void:
 		var is_selected: bool = (i == selected_index)
 		cell_select_frames[i].visible = is_selected
 
+		# 更新状态叠加层（锁定/灰尘）
+		_update_cell_state_overlay(i)
+
 		# 如果格子正在移动动画中，跳过渲染
 		if i in moving_cells:
 			cell_sprites[i].visible = false
 			cell_labels[i].text = ""
 			continue
 
+		# 获取格子状态
+		var grid_state: int = bd.get_grid_state(i)
+
 		var ch: DataModels.BoardItemData = bd.get_item_at_index(i)
-		if ch != null:
+		if ch != null and grid_state != BoardData.GridState.LOCKED:
 			# 加载精灵图：使用BoardItemData的sprite路径
+			# LOCKED 状态不显示物品图片，DUSTY 仍显示图片但叠加 cell7
 			var sprite_path: String = ch.get_sprite_path()
 			var tex_exists: bool = ResourceLoader.exists(sprite_path)
 			var tex := load(sprite_path) if tex_exists else null
@@ -1166,6 +1203,26 @@ func _refresh_board_display() -> void:
 
 	# 更新高亮效果（拖拽时动态显示）
 	_update_merge_highlights()
+
+
+## 更新格子状态叠加层显示
+func _update_cell_state_overlay(index: int) -> void:
+	var bd: BoardData = GameManager.board_data
+	var state: int = bd.get_grid_state(index)
+	var overlay: TextureRect = cell_state_overlays[index]
+
+	if state == BoardData.GridState.LOCKED:
+		# 锁定状态：根据行列奇偶性交替使用 cell5/cell6
+		var pos: Vector2i = BoardData.index_to_pos(index)
+		overlay.texture = CELL_LOCKED_EVEN_TEXTURE if (pos.x + pos.y) % 2 == 0 else CELL_LOCKED_ODD_TEXTURE
+		overlay.visible = true
+	elif state == BoardData.GridState.DUSTY:
+		# 灰尘状态：使用 cell7
+		overlay.texture = CELL_DUSTY_TEXTURE
+		overlay.visible = true
+	else:
+		# EMPTY 或 OCCUPIED：隐藏叠加层
+		overlay.visible = false
 
 
 ## 更新可合成高亮效果（拖拽时显示）
@@ -2352,16 +2409,13 @@ func _refresh_game_board_texts() -> void:
 
 func _on_reset_tutorial_pressed() -> void:
 	SoundSystem.play_button_click()
-	GameManager.reset_tutorial()
-	TipManager.show_tip(LocalizationSystem.get_text("settings.reset_confirm"), 2.0)
+	TipManager.show_tip("教程已禁用", 2.0)
 
 
 func _on_clear_save_pressed() -> void:
 	SoundSystem.play_button_click()
-	# 清空存档（保留图鉴）
+	# 清空存档（保留图鉴）- clear_game_save 内部会从 MapConfig 重新初始化棋盘
 	SaveSystem.clear_game_save()
-	# 重置游戏状态
-	GameManager.reset_game()
 	# 刷新UI
 	_refresh_board_display()
 	_on_gold_changed(GameManager.gold)

@@ -51,7 +51,11 @@ func load_config() -> bool:
 	map = data.get("map", [])
 
 	_loaded = true
-	print(">>> [MapConfigLoader] 配置加载成功: %d行 x %d列" % [rows, cols])
+	print(">>> [MapConfigLoader] 配置加载成功: rows=%d, cols=%d, map.size()=%d" % [rows, cols, map.size()])
+	# 验证：打印第3行第5列的数据
+	if map.size() > 2 and (map[2] as Array).size() > 4:
+		var cell: Dictionary = map[2][4]
+		print(">>> [MapConfigLoader] map[2][4]=%s" % [cell])
 	return true
 
 
@@ -63,7 +67,8 @@ func get_grid_state(row: int, col: int) -> int:
 		return GridState.LOCKED
 	var row_data: Array = map[row] if row < map.size() else []
 	var cell: Dictionary = row_data[col] if col < row_data.size() else {}
-	return cell.get("state", GridState.LOCKED)
+	var state: int = cell.get("state", GridState.LOCKED)
+	return state
 
 
 ## 获取格子物品ID

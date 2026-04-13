@@ -144,10 +144,8 @@ func _setup_bullet_container() -> void:
 
 
 func _start_tutorial() -> void:
-	# 只有在第一回合且未完成教程时显示
-	if GameManager.current_round == 1 and not GameManager.tutorial_completed:
-		battle_tutorial_instance = preload("res://scripts/battle_tutorial_system.gd").new()
-		add_child(battle_tutorial_instance)
+	# 教程已禁用
+	pass
 
 
 # ---- 道具栏 & 遗物栏初始化 ----

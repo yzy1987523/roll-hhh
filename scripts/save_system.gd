@@ -42,6 +42,8 @@ func clear_game_save() -> void:
 	_remove_from_storage(SAVE_KEY)
 	save_encyclopedia()
 	print(">>> [SaveSystem] 游戏存档已清除 (图鉴保留)")
+	# 重新从 MapConfig 初始化棋盘
+	_init_board_from_map_config()
 
 
 ## 解锁图鉴条目
@@ -91,12 +93,17 @@ func init_board_from_config() -> void:
 
 ## 从 MapConfig 初始化棋盘布局
 func _init_board_from_map_config() -> void:
+	print(">>> [SaveSystem] _init_board_from_map_config 开始")
 	var map_loader := MCL.new()
 	if not map_loader.load_config():
 		print(">>> [SaveSystem] MapConfig加载失败")
 		return
 
+	print(">>> [SaveSystem] MapConfig加载成功，rows=%d, cols=%d" % [map_loader.rows, map_loader.cols])
 	GameManager.board_data.clear_board()
+
+	# 初始化所有格子状态（从 MapConfig）
+	GameManager.board_data.init_grid_states_from_config(map_loader)
 
 	var cells: Array = map_loader.get_initial_cells()
 	print(">>> [SaveSystem] 从MapConfig初始化 %d 个格子" % cells.size())
@@ -105,7 +112,7 @@ func _init_board_from_map_config() -> void:
 		var row: int = cell.get("row", 0)
 		var col: int = cell.get("col", 0)
 		var item_id: int = cell.get("item_id", 0)
-		var _state: int = cell.get("state", MCL.GridState.LOCKED)
+		var state: int = cell.get("state", MCL.GridState.LOCKED)
 
 		if item_id == 0:
 			continue
@@ -118,13 +125,14 @@ func _init_board_from_map_config() -> void:
 
 		# 复制物品数据(因为ItemManager的缓存是共享的)
 		var item: DataModels.BoardItemData = board_item.duplicate()
-		var pos := Vector2i(col, row)
+		# 交换坐标：col=lua_col(0-8)->row, row=lua_row(0-6)->col
+		var pos := Vector2i(row, col)
 
-		# 放置到棋盘
+		# 放置到棋盘（格子状态已在 init_grid_states_from_config 中设置）
 		GameManager.board_data.place_item(item, pos)
 
-		print(">>> [SaveSystem] 初始化格子 (%d,%d): item_id=%d, name=%s, level=%d, sprite=%s" % [
-			row, col, item_id, item.name, item.level, item.get_sprite_path()
+		print(">>> [SaveSystem] 初始化格子 (%d,%d): item_id=%d, name=%s, level=%d, state=%d" % [
+			row, col, item_id, item.name, item.level, state
 		])
 
 
@@ -182,6 +190,12 @@ func _build_save_data() -> Dictionary:
 			board_items.append(d)
 	data["board"] = board_items
 
+	# 棋盘格子状态
+	var grid_states: Array = []
+	for i in range(BD.BOARD_SLOTS):
+		grid_states.append(GameManager.board_data.get_grid_state(i))
+	data["grid_states"] = grid_states
+
 	# 宿舍物品
 	var dorm_items: Array = []
 	for item in GameManager.board_data.dormitory:
@@ -227,6 +241,17 @@ func _apply_save(data: Dictionary) -> void:
 		var idx: int = idata.get("board_index", -1)
 		if idx >= 0 and idx < BD.BOARD_SLOTS:
 			GameManager.board_data.board[idx] = item
+
+	# 恢复棋盘格子状态
+	var grid_states: Array = data.get("grid_states", [])
+	if grid_states.size() == BD.BOARD_SLOTS:
+		for i in range(BD.BOARD_SLOTS):
+			GameManager.board_data.set_grid_state(i, grid_states[i])
+		print(">>> [SaveSystem] 格子状态已从存档恢复")
+	else:
+		# 兼容：没有存档的旧存档，从 MapConfig 初始化
+		print(">>> [SaveSystem] 旧存档无格子状态，从MapConfig初始化")
+		_init_board_from_map_config()
 
 	# 恢复宿舍物品
 	GameManager.board_data.dormitory.clear()

@@ -13,10 +13,19 @@ const BOARD_SLOTS := 63  # 7x9
 
 # ---- 信号 (通过 GameManager 中转, 这里用回调) ----
 
+# ---- 格子状态枚举 ----
+enum GridState {
+	LOCKED = 1,    # 锁定（未解锁）
+	DUSTY = 2,     # 半锁定（可清理解锁）
+	OCCUPIED = 3,  # 已被物品占用
+	EMPTY = 4,     # 空置（已解锁）
+}
+
 # ---- 数据存储 ----
 var board: Array = []           # 长度63, 每个元素为 BoardItemData 或 null (物品)
 var dormitory: Array = []       # 宿舍, 动态长度, 存储 BoardItemData
 var marked_for_removal: Array = []  # 标记移出的物品索引列表
+var _grid_states: Array = []    # 格子状态数组, 长度63
 
 # ---- 宿舍容量 ----
 const DORM_CAPACITY := 16  # 4x4 宿舍容量
@@ -32,6 +41,10 @@ func clear_board() -> void:
 	board.resize(BOARD_SLOTS)
 	for i in range(BOARD_SLOTS):
 		board[i] = null
+	_grid_states.clear()
+	_grid_states.resize(BOARD_SLOTS)
+	for i in range(BOARD_SLOTS):
+		_grid_states[i] = GridState.LOCKED
 	dormitory.clear()
 	print(">>> [BoardData] 棋盘和宿舍已清空")
 
@@ -291,3 +304,94 @@ func can_merge_items(pos_a: Vector2i, pos_b: Vector2i) -> bool:
 		return false
 	# 相同合成链、相同ID可合成
 	return item_a.id == item_b.id and item_a.can_merge()
+
+
+# ---- 格子状态管理 ----
+
+## 获取格子状态
+func get_grid_state(index: int) -> int:
+	if index < 0 or index >= BOARD_SLOTS:
+		return GridState.LOCKED
+	return _grid_states[index]
+
+
+## 设置格子状态
+func set_grid_state(index: int, state: int) -> void:
+	if index < 0 or index >= BOARD_SLOTS:
+		return
+	_grid_states[index] = state
+
+
+## 获取格子状态的二维坐标版本
+func get_grid_state_at(pos: Vector2i) -> int:
+	if not is_valid_pos(pos):
+		return GridState.LOCKED
+	return get_grid_state(pos_to_index(pos))
+
+
+## 设置格子状态的二维坐标版本
+func set_grid_state_at(pos: Vector2i, state: int) -> void:
+	if not is_valid_pos(pos):
+		return
+	set_grid_state(pos_to_index(pos), state)
+
+
+## 检查格子是否可以交互（可点击、可拖拽）
+func can_interact(index: int) -> bool:
+	var state: int = get_grid_state(index)
+	# LOCKED 不可交互，DUSTY 可点击（但不能拖拽），EMPTY/OCCUPIED 完全可交互
+	return state == GridState.EMPTY or state == GridState.OCCUPIED or state == GridState.DUSTY
+
+
+## 获取相邻格子的索引（上下左右）
+func get_adjacent_indices(index: int) -> Array:
+	var pos: Vector2i = index_to_pos(index)
+	var adjacents: Array = []
+	# 上
+	if pos.y > 0:
+		adjacents.append(pos_to_index(Vector2i(pos.x, pos.y - 1)))
+	# 下
+	if pos.y < GRID_ROWS - 1:
+		adjacents.append(pos_to_index(Vector2i(pos.x, pos.y + 1)))
+	# 左
+	if pos.x > 0:
+		adjacents.append(pos_to_index(Vector2i(pos.x - 1, pos.y)))
+	# 右
+	if pos.x < GRID_COLS - 1:
+		adjacents.append(pos_to_index(Vector2i(pos.x + 1, pos.y)))
+	return adjacents
+
+
+## 触发合成时，锁定格子变灰尘状态
+## 合成位置周围的 LOCKED 格子切换为 DUSTY
+func trigger_merge_unlock(merge_index: int) -> void:
+	var adjacents: Array = get_adjacent_indices(merge_index)
+	for adj_idx in adjacents:
+		if get_grid_state(adj_idx) == GridState.LOCKED:
+			set_grid_state(adj_idx, GridState.DUSTY)
+
+
+## 灰尘状态被合成时切换为 OCCUPIED
+func dust_to_occupied(index: int) -> void:
+	if get_grid_state(index) == GridState.DUSTY:
+		set_grid_state(index, GridState.OCCUPIED)
+
+
+## 初始化格子状态（从 MapConfig 加载）
+## MapConfig: rows=7(9列Lua行数), cols=9(每行的Lua列数)
+## map[lua_row][lua_col] = Lua第(lua_row+1)行第(lua_col+1)列
+## pos_to_index(x, y) 中 x=col(0-6), y=row(0-8)
+## x=lua_row(0-6), y=lua_col(0-8)
+func init_grid_states_from_config(config: MapConfigLoader) -> void:
+	print(">>> [BoardData] init_grid_states_from_config: config.rows=%d, config.cols=%d" % [config.rows, config.cols])
+	var state_counts := {1: 0, 2: 0, 3: 0, 4: 0}  # 统计各状态数量
+	for lua_row in range(config.rows):  # Lua 行范围 0-6
+		for lua_col in range(config.cols):  # Lua 列范围 0-8
+			# lua_row -> x(col), lua_col -> y(row)
+			var index: int = pos_to_index(Vector2i(lua_row, lua_col))
+			var state: int = config.get_grid_state(lua_row, lua_col)
+			set_grid_state(index, state)
+			state_counts[state] += 1
+			if state == 2 or state == 3:  # DUSTY or OCCUPIED
+				print(">>> [BoardData] Lua[%d][%d] -> index=%d, state=%d (OCCUPIED=%d, DUSTY=%d)" % [lua_row, lua_col, index, state, BoardData.GridState.OCCUPIED, BoardData.GridState.DUSTY])
+	print(">>> [BoardData] 状态统计: LOCKED=%d, DUSTY=%d, OCCUPIED=%d, EMPTY=%d" % [state_counts[1], state_counts[2], state_counts[3], state_counts[4]])
