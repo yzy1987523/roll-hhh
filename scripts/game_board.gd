@@ -15,8 +15,7 @@ var SELECT_FRAMES: Array[Texture2D] = []
 
 # ---- 节点引用 ----
 @onready var gold_label: Label = $MainLayout/TopBar/GoldContainer/GoldLabel
-@onready var energy_label: Label = $MainLayout/BottomBarContainer/BottomBar/SpawnRow/EnergyContainer/EnergyLabel
-@onready var round_label: Label = $MainLayout/TopBar/RoundContainer/RoundLabel
+@onready var energy_label: Label = $MainLayout/TopBar/EnergyContainer/EnergyLabel
 # ---- 节点引用 ----
 @onready var settings_button: Button = $MainLayout/TopBar/SettingsButton
 @onready var relic_panel: PanelContainer = $MainLayout/RelicBar/RelicPanel
@@ -56,7 +55,8 @@ var SELECT_FRAMES: Array[Texture2D] = []
 @onready var close_settings_button: TextureButton = $SettingsPanel/SettingsMargin/SettingsVBox/TitleBarMargin/TitleBar/CloseButton
 
 # ---- 常量 ----
-const GRID_SIZE := 6
+const GRID_COLS := 7
+const GRID_ROWS := 9
 const CELL_SIZE := 144
 const CHAR_SIZE := 140
 
@@ -250,9 +250,9 @@ func _setup_board_ui() -> void:
 	cell_select_frames.clear()
 	cell_highlight_effects.clear()
 
-	grid_container.columns = GRID_SIZE
+	grid_container.columns = GRID_COLS
 
-	for i in range(GRID_SIZE * GRID_SIZE):
+	for i in range(GRID_COLS * GRID_ROWS):
 		var cell := Control.new()
 		cell.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
 		cell.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -263,7 +263,7 @@ func _setup_board_ui() -> void:
 		bg.texture = CELL_BG_TEXTURE
 		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
 		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		bg.modulate = Color(0.5, 0.5, 0.5, 0.9) if (i / GRID_SIZE + i % GRID_SIZE) % 2 == 0 else Color(0.8, 0.8, 0.8, 0.7)
+		bg.modulate = Color(0.5, 0.5, 0.5, 0.9) if (i / GRID_COLS + i % GRID_COLS) % 2 == 0 else Color(0.8, 0.8, 0.8, 0.7)
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		bg.z_index = 0  # 最底层
 		cell.add_child(bg)
@@ -332,7 +332,7 @@ func _setup_board_ui() -> void:
 		cell_sprites.append(sprite)
 
 	_refresh_board_display()
-	print(">>> [GameBoard] %dx%d 棋盘格已生成" % [GRID_SIZE, GRID_SIZE])
+	print(">>> [GameBoard] %dx%d 棋盘格已生成" % [GRID_COLS, GRID_ROWS])
 
 
 # ---- 角色详情面板 ----
@@ -353,32 +353,15 @@ func _setup_settings_panel() -> void:
 func _update_character_detail_panel() -> void:
 	if selected_index >= 0:
 		var bd: BoardData = GameManager.board_data
-		var ch: DataModels.CharacterData = bd.get_character_at_index(selected_index)
+		var ch: DataModels.BoardItemData = bd.get_item_at_index(selected_index)
 		if ch != null:
 			# 显示角色信息
-			name_label.text = ch.get_job_name()
-			detail_label.text = LocalizationSystem.get_text("game_board.character_stats", {
-				"level": ch.level,
-				"hp": ch.hp,
-				"max_hp": ch.max_hp,
-				"atk": ch.attack,
-				"def": ch.defense
-			})
-			# 显示特技信息
-			if ch.skill_id > 0:
-				var skill_name: String = LocalizationSystem.get_text("skill.%d_name" % ch.skill_id, {})
-				var skill_desc: String = LocalizationSystem.get_text("skill.%d_desc" % ch.skill_id, {})
-				var skill_lv_text: String = ""
-				if ch.skill_level > 0:
-					skill_lv_text = " (Lv.%d)" % ch.skill_level
-				hint_label.text = "【%s】%s%s" % [skill_name, skill_desc, skill_lv_text]
-			else:
-				hint_label.text = ""
-			var energy := GameManager.calc_sacrifice_energy(ch.level)
-			sacrifice_label.text = "%d" % energy
-			# 性能优化：使用透明度而非visible，避免HBoxContainer重布局
-			sacrifice_button.modulate.a = 1.0
-			sacrifice_button.mouse_filter = Control.MOUSE_FILTER_STOP
+			name_label.text = ch.name
+			detail_label.text = "Lv.%d" % ch.level
+			hint_label.text = ""
+			sacrifice_label.text = ""
+			sacrifice_button.modulate.a = 0.0
+			sacrifice_button.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			return
 	
 	# 无选中或角色已不存在
@@ -420,7 +403,7 @@ func _on_cell_gui_input(event: InputEvent, cell_index: int) -> void:
 		var mb: InputEventMouseButton = event
 		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
 			var bd: BoardData = GameManager.board_data
-			var ch: DataModels.CharacterData = bd.get_character_at_index(cell_index)
+			var ch: DataModels.BoardItemData = bd.get_item_at_index(cell_index)
 			if ch != null:
 				_use_item_on_target(cell_index)
 				return
@@ -430,7 +413,7 @@ func _on_cell_gui_input(event: InputEvent, cell_index: int) -> void:
 				return
 
 	var bd: BoardData = GameManager.board_data
-	var ch: DataModels.CharacterData = bd.get_character_at_index(cell_index)
+	var ch: DataModels.BoardItemData = bd.get_item_at_index(cell_index)
 
 	# 鼠标按下: 记录按下状态
 	if event is InputEventMouseButton:
@@ -453,8 +436,13 @@ func _on_cell_gui_input(event: InputEvent, cell_index: int) -> void:
 				elif _is_awaiting_drag and _press_cell_index == cell_index:
 					# 没有拖拽超过阈值，且在同一个格子抬起 → 执行选中/点击效果
 					if ch != null:
-						# 有角色 → 显示详情（已选中）
-						_update_character_detail_panel()
+						# 检查是否为生成器物品
+						if ItemManager.is_producer(ch.id):
+							# 生成器物品 → 点击触发生产
+							_try_produce_item(cell_index)
+						else:
+							# 普通物品 → 显示详情（已选中）
+							_update_character_detail_panel()
 					else:
 						# 空格子 → 取消选中
 						if selected_index >= 0:
@@ -474,7 +462,7 @@ func _on_cell_gui_input(event: InputEvent, cell_index: int) -> void:
 				# 超过阈值，开始拖拽
 				if _press_cell_index >= 0:
 					var bd_check: BoardData = GameManager.board_data
-					var ch_check: DataModels.CharacterData = bd_check.get_character_at_index(_press_cell_index)
+					var ch_check: DataModels.BoardItemData = bd_check.get_item_at_index(_press_cell_index)
 					if ch_check != null:
 						_start_drag(_press_cell_index, _drag_start_pos)
 				_is_awaiting_drag = false
@@ -499,8 +487,8 @@ func _set_selected(cell_index: int) -> void:
 
 func _handle_cell_action(target_index: int) -> void:
 	var bd: BoardData = GameManager.board_data
-	var source_ch: DataModels.CharacterData = bd.get_character_at_index(selected_index)
-	var target_ch: DataModels.CharacterData = bd.get_character_at_index(target_index)
+	var source_ch: DataModels.BoardItemData = bd.get_item_at_index(selected_index)
+	var target_ch: DataModels.BoardItemData = bd.get_item_at_index(target_index)
 
 	if source_ch == null:
 		selected_index = -1
@@ -516,7 +504,7 @@ func _handle_cell_action(target_index: int) -> void:
 		_refresh_board_display()
 		_update_character_detail_panel()
 		_try_advance_tutorial(2)
-	elif target_ch.job == source_ch.job and target_ch.level == source_ch.level:
+	elif target_ch.get_merge_chain() == source_ch.get_merge_chain() and target_ch.level == source_ch.level:
 		# 同职业同等级: 合成 (任务 2.4)
 		_merge_at(selected_index, target_index)
 		# 合成后清空拖拽状态，防止高亮动画重新显示
@@ -546,7 +534,7 @@ func _play_swap_animation(src_index: int, tgt_index: int) -> void:
 
 	# 获取被交换角色的数据（动画前先获取）
 	var bd: BoardData = GameManager.board_data
-	var tgt_ch: DataModels.CharacterData = bd.get_character_at_index(tgt_index)
+	var tgt_ch: DataModels.BoardItemData = bd.get_item_at_index(tgt_index)
 
 	# 数据层交换
 	_do_swap_or_move(src_index, tgt_index)
@@ -585,16 +573,15 @@ func _play_swap_animation(src_index: int, tgt_index: int) -> void:
 
 
 ## 创建飞行动画精灵的辅助函数
-func _create_flying_sprite(ch: DataModels.CharacterData) -> TextureRect:
+func _create_flying_sprite(ch: DataModels.BoardItemData) -> TextureRect:
 	var anim_sprite := TextureRect.new()
 	anim_sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
 	anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	anim_sprite.z_index = 10  # 动画层级（低于弹窗）
 
-	var sprite_folder: String = ch.get_sprite_folder()
-	var sprite_name: String = ch.get_sprite_path(1, 1)
-	var sprite_path: String = "res://art/sprites/chars/" + sprite_folder + "/" + sprite_name + ".png"
+	# 使用BoardItemData的sprite路径
+	var sprite_path: String = ch.get_sprite_path()
 	if ResourceLoader.exists(sprite_path):
 		anim_sprite.texture = load(sprite_path)
 
@@ -612,7 +599,7 @@ func _find_nearest_empty_cell(exclude_index: int) -> int:
 	for i in range(BoardData.BOARD_SLOTS):
 		if i == exclude_index:
 			continue
-		if bd.get_character_at_index(i) == null:
+		if bd.get_item_at_index(i) == null:
 			var dist: float = (BoardData.index_to_pos(i) - tgt_pos).length()
 			if dist < nearest_dist:
 				nearest_dist = dist
@@ -630,7 +617,7 @@ func _play_displace_to_empty_animation(src_index: int, tgt_index: int, empty_ind
 
 	# 获取被挤开角色的数据（动画前先获取）
 	var bd: BoardData = GameManager.board_data
-	var displaced_ch: DataModels.CharacterData = bd.get_character_at_index(tgt_index)
+	var displaced_ch: DataModels.BoardItemData = bd.get_item_at_index(tgt_index)
 
 	# 数据层: src -> tgt, tgt -> empty
 	_do_swap_and_displace(src_index, tgt_index, empty_index)
@@ -673,8 +660,8 @@ func _play_displace_to_empty_animation(src_index: int, tgt_index: int, empty_ind
 ## 执行交换并移动到空格（数据层）
 func _do_swap_and_displace(src_index: int, tgt_index: int, empty_index: int) -> void:
 	var bd: BoardData = GameManager.board_data
-	var src_ch: DataModels.CharacterData = bd.get_character_at_index(src_index)
-	var tgt_ch: DataModels.CharacterData = bd.get_character_at_index(tgt_index)
+	var src_ch: DataModels.BoardItemData = bd.get_item_at_index(src_index)
+	var tgt_ch: DataModels.BoardItemData = bd.get_item_at_index(tgt_index)
 
 	if src_ch == null or tgt_ch == null:
 		return
@@ -682,11 +669,11 @@ func _do_swap_and_displace(src_index: int, tgt_index: int, empty_index: int) -> 
 	# tgt角色移动到empty
 	var tgt_pos: Vector2i = BoardData.index_to_pos(tgt_index)
 	var empty_pos: Vector2i = BoardData.index_to_pos(empty_index)
-	bd.swap_positions(tgt_pos, empty_pos)
+	bd.swap_items(tgt_pos, empty_pos)
 
 	# src角色移动到tgt
 	var src_pos: Vector2i = BoardData.index_to_pos(src_index)
-	bd.swap_positions(src_pos, tgt_pos)
+	bd.swap_items(src_pos, tgt_pos)
 
 	print(">>> [GameBoard] 置换: 格%d→格%d, 格%d→格%d(空格)" % [tgt_index, empty_index, src_index, tgt_index])
 
@@ -694,24 +681,24 @@ func _do_swap_and_displace(src_index: int, tgt_index: int, empty_index: int) -> 
 ## 执行实际的交换或移动（数据层）
 func _do_swap_or_move(src_index: int, tgt_index: int) -> void:
 	var bd: BoardData = GameManager.board_data
-	var source_ch: DataModels.CharacterData = bd.get_character_at_index(src_index)
+	var source_ch: DataModels.BoardItemData = bd.get_item_at_index(src_index)
 
 	if source_ch == null:
 		return
 
-	var target_ch: DataModels.CharacterData = bd.get_character_at_index(tgt_index)
+	var target_ch: DataModels.BoardItemData = bd.get_item_at_index(tgt_index)
 
 	if target_ch == null:
 		# 移动
 		var src_pos: Vector2i = BoardData.index_to_pos(src_index)
 		var tgt_pos: Vector2i = BoardData.index_to_pos(tgt_index)
-		bd.swap_positions(src_pos, tgt_pos)
-		print(">>> [GameBoard] 移动 %s 从格 %d 到格 %d" % [source_ch.get_job_name(), src_index, tgt_index])
+		bd.swap_items(src_pos, tgt_pos)
+		print(">>> [GameBoard] 移动 %s 从格 %d 到格 %d" % [source_ch.name, src_index, tgt_index])
 	else:
 		# 交换
 		var src_pos: Vector2i = BoardData.index_to_pos(src_index)
 		var tgt_pos: Vector2i = BoardData.index_to_pos(tgt_index)
-		bd.swap_positions(src_pos, tgt_pos)
+		bd.swap_items(src_pos, tgt_pos)
 		print(">>> [GameBoard] 交换 格%d ↔ 格%d" % [src_index, tgt_index])
 
 
@@ -719,10 +706,10 @@ func _do_swap_or_move(src_index: int, tgt_index: int) -> void:
 
 func _merge_at(src_index: int, tgt_index: int) -> void:
 	var bd: BoardData = GameManager.board_data
-	var src_ch: DataModels.CharacterData = bd.get_character_at_index(src_index)
-	var tgt_ch: DataModels.CharacterData = bd.get_character_at_index(tgt_index)
+	var src_item: DataModels.BoardItemData = bd.get_item_at_index(src_index)
+	var tgt_item: DataModels.BoardItemData = bd.get_item_at_index(tgt_index)
 
-	var merged: DataModels.CharacterData = CharacterFactory.merge_characters(src_ch, tgt_ch)
+	var merged: DataModels.BoardItemData = ItemManager.merge_items(src_item, tgt_item)
 	if merged == null:
 		print(">>> [GameBoard] 合成失败")
 		return
@@ -730,20 +717,15 @@ func _merge_at(src_index: int, tgt_index: int) -> void:
 	# 播放合成音效
 	SoundSystem.play_merge()
 
-	# 移除两个原角色
-	bd.remove_character(BoardData.index_to_pos(src_index))
-	bd.remove_character(BoardData.index_to_pos(tgt_index))
+	# 移除两个原物品
+	bd.remove_item(BoardData.index_to_pos(src_index))
+	bd.remove_item(BoardData.index_to_pos(tgt_index))
 
-	# 放置新角色到目标位置
+	# 放置新物品到目标位置
 	var tgt_pos: Vector2i = BoardData.index_to_pos(tgt_index)
-	bd.place_character(merged, tgt_pos)
+	bd.place_item(merged, tgt_pos)
 
-	print(">>> [GameBoard] 合成完成: %s Lv.%d 于格 %d" % [merged.get_job_name(), merged.level, tgt_index])
-	if is_instance_valid(get_node_or_null("/root/SaveSystem")):
-		SaveSystem.unlock_encyclopedia(merged.job, merged.level)
-
-	# 发出合成信号
-	GameManager.character_merged.emit(merged.level)
+	print(">>> [GameBoard] 合成完成: %s Lv.%d 于格 %d" % [merged.name, merged.level, tgt_index])
 
 	# 刷新棋盘显示
 	_refresh_board_display()
@@ -806,12 +788,107 @@ func _play_land_animation(cell_index: int) -> void:
 		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 
 
+# ---- 生成器生产 (任务 2.X) ----
+
+func _try_produce_item(cell_index: int) -> void:
+	var bd: BoardData = GameManager.board_data
+	var item: DataModels.BoardItemData = bd.get_item_at_index(cell_index)
+	if item == null:
+		return
+
+	# 检查能量是否足够
+	if not GameManager.spend_energy(1):
+		print(">>> [GameBoard] 生产失败: 能量不足")
+		TipManager.show_tip(LocalizationSystem.get_text("game_board.energy_insufficient"))
+		return
+
+	# 尝试生产物品
+	var produced: DataModels.BoardItemData = ItemManager.produce_item(item.id)
+	if produced == null:
+		# 生产失败，返还能量
+		GameManager.restore_energy(1)
+		print(">>> [GameBoard] 生产失败: 无法产出物品")
+		return
+
+	# 找到空位放置
+	var empty_pos: Vector2i = Vector2i(-1, -1)
+	for i in range(BoardData.BOARD_SLOTS):
+		if bd.get_item_at_index(i) == null:
+			empty_pos = BoardData.index_to_pos(i)
+			break
+
+	if empty_pos == Vector2i(-1, -1):
+		# 棋盘已满，返还能量
+		GameManager.restore_energy(1)
+		print(">>> [GameBoard] 生产失败: 棋盘已满")
+		TipManager.show_tip(LocalizationSystem.get_text("game_board.board_full"))
+		return
+
+	# 放置到空位
+	var placed: bool = bd.place_item(produced, empty_pos)
+	if not placed:
+		GameManager.restore_energy(1)
+		print(">>> [GameBoard] 生产失败: 无法放置物品")
+		return
+
+	# 播放生产成功音效
+	SoundSystem.play_merge()
+
+	# 获取目标格子中心位置
+	var target_cell: Control = cell_panels[BoardData.pos_to_index(empty_pos)]
+	var start_pos: Vector2 = cell_panels[cell_index].global_position + Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
+	var end_pos: Vector2 = target_cell.global_position + Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
+
+	print(">>> [GameBoard] 生产成功: %s Lv.%d 于 (%d,%d)" % [produced.name, produced.level, empty_pos.x, empty_pos.y])
+
+	# 播放产出动画
+	_play_produce_animation(produced, start_pos, end_pos, BoardData.pos_to_index(empty_pos))
+
+
+func _play_produce_animation(produced: DataModels.BoardItemData, start_pos: Vector2, end_pos: Vector2, target_index: int) -> void:
+	# 标记目标格子为移动中（动画完成前不显示）
+	moving_cells.append(target_index)
+	_refresh_board_display()
+
+	# 创建飞入动画精灵
+	var anim_sprite := TextureRect.new()
+	anim_sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
+	anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	anim_sprite.z_index = 10
+
+	var sprite_path: String = produced.get_sprite_path()
+	if ResourceLoader.exists(sprite_path):
+		anim_sprite.texture = load(sprite_path)
+
+	add_child(anim_sprite)
+	anim_sprite.global_position = start_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
+	anim_sprite.scale = Vector2(0.5, 0.5)
+	anim_sprite.modulate = Color(1.5, 1.5, 0.5, 1.0)  # 金黄色发光效果
+
+	# 动画：从生成器位置飞到空位
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(anim_sprite, "global_position", end_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2), 0.3)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(anim_sprite, "scale", Vector2(1.0, 1.0), 0.3)\
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(anim_sprite, "modulate", Color.WHITE, 0.3)
+
+	tween.finished.connect(func():
+		anim_sprite.queue_free()
+		moving_cells.erase(target_index)
+		_refresh_board_display()
+		_play_land_animation(target_index)
+	)
+
+
 # ---- 献祭 (任务 2.5) ----
 
 func _sacrifice_character(cell_index: int) -> void:
 	var bd: BoardData = GameManager.board_data
 	var pos: Vector2i = BoardData.index_to_pos(cell_index)
-	var ch: DataModels.CharacterData = bd.get_character_at(pos)
+	var ch: DataModels.BoardItemData = bd.get_item_at(pos)
 	if ch == null:
 		return
 
@@ -823,7 +900,7 @@ func _sacrifice_character(cell_index: int) -> void:
 		var bonus_ratio: float = cfg.get("bonus_ratio", 0.2)
 		refund = int(refund * (1.0 + bonus_ratio))
 	
-	bd.remove_character(pos)
+	bd.remove_item(pos)
 	GameManager.restore_energy(refund)
 	
 	# 遗物: 献祭金币 (ID 22) - 献祭时获得金币
@@ -832,7 +909,7 @@ func _sacrifice_character(cell_index: int) -> void:
 		var gold_bonus: int = cfg22.get("gold_per_sacrifice", 1)
 		GameManager.add_gold(gold_bonus)
 
-	print(">>> [GameBoard] 献祭 %s Lv.%d, 返还能量 %d" % [ch.get_job_name(), ch.level, refund])
+	print(">>> [GameBoard] 献祭 %s Lv.%d, 返还能量 %d" % [ch.name, ch.level, refund])
 	selected_index = -1
 	_refresh_board_display()
 	_update_character_detail_panel()
@@ -869,7 +946,7 @@ func _start_drag(cell_index: int, mouse_pos: Vector2) -> void:
 
 func _create_drag_preview(cell_index: int, with_outline: bool = false) -> Control:
 	var bd: BoardData = GameManager.board_data
-	var ch: DataModels.CharacterData = bd.get_character_at_index(cell_index)
+	var ch: DataModels.BoardItemData = bd.get_item_at_index(cell_index)
 
 	# 根节点只用于定位，不显示背景
 	var preview := Control.new()
@@ -878,10 +955,8 @@ func _create_drag_preview(cell_index: int, with_outline: bool = false) -> Contro
 	preview.z_index = 50  # 拖拽层级（低于弹窗遮罩）
 	preview.z_as_relative = false  # 使用全局z_index
 
-	# 精灵图
-	var sprite_folder: String = ch.get_sprite_folder()
-	var sprite_name: String = ch.get_sprite_path(1, 1)
-	var sprite_path: String = "res://art/sprites/chars/" + sprite_folder + "/" + sprite_name + ".png"
+	# 精灵图：使用BoardItemData的sprite路径
+	var sprite_path: String = ch.get_sprite_path()
 	var tex := load(sprite_path) if ResourceLoader.exists(sprite_path) else null
 	if tex:
 		var sprite := TextureRect.new()
@@ -922,14 +997,14 @@ func _update_drag_preview(mouse_pos: Vector2) -> void:
 	var is_over_mergeable: bool = false
 	if hover_index >= 0 and hover_index != drag_index:
 		var bd: BoardData = GameManager.board_data
-		var target_ch: DataModels.CharacterData = bd.get_character_at_index(hover_index)
-		var sel_ch: DataModels.CharacterData = bd.get_character_at_index(drag_index)
+		var target_ch: DataModels.BoardItemData = bd.get_item_at_index(hover_index)
+		var sel_ch: DataModels.BoardItemData = bd.get_item_at_index(drag_index)
 
 		if target_ch == null:
 			# 移动到空格子
 			# cell_rects[hover_index].color = COLOR_SELECTED
 			pass
-		elif target_ch.job == sel_ch.job and target_ch.level == sel_ch.level:
+		elif target_ch.get_merge_chain() == sel_ch.get_merge_chain() and target_ch.level == sel_ch.level:
 			# 可合成
 			# cell_rects[hover_index].color = COLOR_MERGE_HINT
 			is_over_mergeable = true
@@ -952,13 +1027,13 @@ func _get_hovered_cell_index(mouse_pos: Vector2) -> int:
 		return -1
 
 	var local_pos := mouse_pos - grid_rect.position
-	var col := int(local_pos.x / (grid_rect.size.x / GRID_SIZE))
-	var row := int(local_pos.y / (grid_rect.size.y / GRID_SIZE))
+	var col := int(local_pos.x / (grid_rect.size.x / GRID_COLS))
+	var row := int(local_pos.y / (grid_rect.size.y / GRID_ROWS))
 
-	if row < 0 or row >= GRID_SIZE or col < 0 or col >= GRID_SIZE:
+	if row < 0 or row >= GRID_ROWS or col < 0 or col >= GRID_COLS:
 		return -1
 
-	return row * GRID_SIZE + col
+	return row * GRID_COLS + col
 
 
 func _is_near_dorm_button(mouse_pos: Vector2) -> bool:
@@ -1070,28 +1145,21 @@ func _refresh_board_display() -> void:
 			cell_labels[i].text = ""
 			continue
 
-		var ch: DataModels.CharacterData = bd.get_character_at_index(i)
+		var ch: DataModels.BoardItemData = bd.get_item_at_index(i)
 		if ch != null:
-			# 角色格子：背景保持空格子颜色
-			# 屏蔽颜色变化: cell_rects[i].color = empty_color
-
-			# 加载角色精灵图
-			var sprite_folder: String = ch.get_sprite_folder()
-			var sprite_name: String = ch.get_sprite_path(1, 1)  # 待机动画第1帧
-			var sprite_path: String = "res://art/sprites/chars/" + sprite_folder + "/" + sprite_name + ".png"
+			# 加载精灵图：使用BoardItemData的sprite路径
+			var sprite_path: String = ch.get_sprite_path()
 			var tex_exists: bool = ResourceLoader.exists(sprite_path)
 			var tex := load(sprite_path) if tex_exists else null
 			cell_sprites[i].texture = tex
 			cell_sprites[i].visible = (tex != null)
 			if tex == null:
-				print(">>> [Debug] 精灵图加载失败: %s (职业=%d, 等级=%d, 文件存在=%s)" % [sprite_path, ch.job, ch.level, tex_exists])
+				print(">>> [Debug] 精灵图加载失败: %s" % sprite_path)
 
-			cell_labels[i].text = "%s\nLv.%d\n%d/%d" % [
-				ch.get_job_name(), ch.level, ch.hp, ch.max_hp
-			]
+			# 显示物品名称和等级
+			var display_name: String = ch.name if not ch.name.is_empty() else "物品"
+			cell_labels[i].text = "%s\nLv.%d" % [display_name, ch.level]
 		else:
-			# 屏蔽所有格子颜色变化
-			# cell_rects[i].color = empty_color
 			cell_labels[i].text = ""
 			cell_sprites[i].texture = null
 			cell_sprites[i].visible = false
@@ -1132,18 +1200,19 @@ func _update_merge_highlights() -> void:
 func _find_merge_targets(drag_source_index: int) -> void:
 	merge_targets.clear()
 	var bd: BoardData = GameManager.board_data
-	var source_ch: DataModels.CharacterData = bd.get_character_at_index(drag_source_index)
+	var source_ch: DataModels.BoardItemData = bd.get_item_at_index(drag_source_index)
 
 	if source_ch == null:
 		return
 
-	# 遍历所有格子，找到相同职业、相同等级的角色
+	# 遍历所有格子，找到相同合成链、相同等级的角色
 	for i in range(BoardData.BOARD_SLOTS):
 		if i == drag_source_index:
 			continue
 
-		var target_ch: DataModels.CharacterData = bd.get_character_at_index(i)
-		if target_ch != null and target_ch.job == source_ch.job and target_ch.level == source_ch.level:
+		var target_ch: DataModels.BoardItemData = bd.get_item_at_index(i)
+		# 检查 merge_chain (物品链ID) 和 level 都相同才能合成
+		if target_ch != null and target_ch.get_merge_chain() == source_ch.get_merge_chain() and target_ch.level == source_ch.level:
 			merge_targets.append(i)
 
 	print(">>> [Debug] 可合成目标格子: ", merge_targets)
@@ -1155,15 +1224,15 @@ func _find_merge_candidates() -> Array:
 	var candidates: Array = []
 
 	for i in range(BoardData.BOARD_SLOTS):
-		var ch: DataModels.CharacterData = bd.get_character_at_index(i)
+		var ch: DataModels.BoardItemData = bd.get_item_at_index(i)
 		if ch == null:
 			continue
 
-		# 检查相邻格子是否有相同角色
+		# 检查相邻格子是否有相同合成链、相同等级的角色
 		var neighbors := _get_neighbors(i)
 		for neighbor_index in neighbors:
-			var neighbor_ch: DataModels.CharacterData = bd.get_character_at_index(neighbor_index)
-			if neighbor_ch != null and neighbor_ch.job == ch.job and neighbor_ch.level == ch.level:
+			var neighbor_ch: DataModels.BoardItemData = bd.get_item_at_index(neighbor_index)
+			if neighbor_ch != null and neighbor_ch.get_merge_chain() == ch.get_merge_chain() and neighbor_ch.level == ch.level:
 				# 找到可合成的格子
 				if not candidates.has(i):
 					candidates.append(i)
@@ -1184,13 +1253,13 @@ func _get_neighbors(index: int) -> Array:
 	if y > 0:
 		neighbors.append(BoardData.pos_to_index(Vector2i(x, y - 1)))
 	# 下
-	if y < BoardData.GRID_SIZE - 1:
+	if y < BoardData.GRID_ROWS - 1:
 		neighbors.append(BoardData.pos_to_index(Vector2i(x, y + 1)))
 	# 左
 	if x > 0:
 		neighbors.append(BoardData.pos_to_index(Vector2i(x - 1, y)))
 	# 右
-	if x < BoardData.GRID_SIZE - 1:
+	if x < BoardData.GRID_COLS - 1:
 		neighbors.append(BoardData.pos_to_index(Vector2i(x + 1, y)))
 
 	return neighbors
@@ -1247,7 +1316,6 @@ func _get_job_color(job: int) -> Color:
 func _update_resource_labels() -> void:
 	gold_label.text = LocalizationSystem.get_text("game_board.gold", {"value": GameManager.gold})
 	energy_label.text = LocalizationSystem.get_text("game_board.energy", {"current": GameManager.energy, "max": GameManager.max_energy})
-	round_label.text = LocalizationSystem.get_text("game_board.round", {"value": GameManager.current_round})
 
 
 func _on_gold_changed(new_gold: int) -> void:
@@ -1258,8 +1326,8 @@ func _on_energy_changed(new_energy: int) -> void:
 	energy_label.text = LocalizationSystem.get_text("game_board.energy", {"current": new_energy, "max": GameManager.max_energy})
 
 
-func _on_round_changed(new_round: int) -> void:
-	round_label.text = LocalizationSystem.get_text("game_board.round", {"value": new_round})
+func _on_round_changed(_new_round: int) -> void:
+	pass  # 回合数已隐藏
 
 
 func _on_items_changed() -> void:
@@ -1270,12 +1338,9 @@ func _on_items_changed() -> void:
 # ---- 角色生成 (任务 2.2) ----
 
 func _on_spawn_pressed(job: int) -> void:
-	# 移除动画锁：角色已在数据中占位，不会冲突
-	# 之前的限制是为了防止重复生成，现在通过棋盘数据自动管理
-	
 	# 播放按钮点击音效
 	SoundSystem.play_button_click()
-	
+
 	# 检查棋盘是否已满
 	if GameManager.board_data.is_board_full():
 		print(">>> [GameBoard] 生成失败: 棋盘已满")
@@ -1287,33 +1352,46 @@ func _on_spawn_pressed(job: int) -> void:
 		TipManager.show_tip(LocalizationSystem.get_text("game_board.energy_insufficient"))
 		return
 
-	var level: int = randi_range(1, 3)
+	# 根据职业获取物品链 (0=战士, 1=法师, 2=牧师)
+	# 战士链: 1,2,3 → chain_id 前缀 1,2,3
+	# 法师链: 4,5 → chain_id 前缀 4,5
+	# 牧师链: 6,7 → chain_id 前缀 6,7
 
-	# 遗物: 经验药水(ID18) 10%概率直升2级
-	if ItemDatabase.has_relic(18, GameManager.relics) and randf() < 0.1:
-		level = mini(level + 1, 3)
-		print(">>> [GameBoard] 遗物[经验药水]触发, 等级+1")
+	# 获取该职业链的所有可合成物品
+	var candidates: Array = []
+	match job:
+		0:  # 战士
+			candidates = ItemManager.get_items_by_chain(1) + ItemManager.get_items_by_chain(2) + ItemManager.get_items_by_chain(3)
+		1:  # 法师
+			candidates = ItemManager.get_items_by_chain(4) + ItemManager.get_items_by_chain(5)
+		2:  # 牧师
+			candidates = ItemManager.get_items_by_chain(6) + ItemManager.get_items_by_chain(7)
+		_:
+			candidates = ItemManager.get_items_by_chain(1)
 
-	# 遗物: 稀有召唤符(ID20) 5%概率直接3级
-	if ItemDatabase.has_relic(20, GameManager.relics) and randf() < 0.05:
-		level = 3
-		print(">>> [GameBoard] 遗物[稀有召唤符]触发, 直接3级")
+	if candidates.is_empty():
+		# 尝试获取随机物品
+		candidates = ItemManager.all_items
 
-	var ch: DataModels.CharacterData = CharacterFactory.create_character(job, level)
+	# 过滤出可合成的物品
+	var mergeable: Array = []
+	for c in candidates:
+		if c.can_merge():
+			mergeable.append(c)
 
-	# 转职概率检查 (5% + 转职令牌遗物+5%)
-	var has_relic_17: bool = ItemDatabase.has_relic(17, GameManager.relics)
-	JobAdvanced.check_advance_on_spawn(ch, has_relic_17)
+	var item: DataModels.BoardItemData
+	if not mergeable.is_empty():
+		item = mergeable[randi_range(0, mergeable.size() - 1)].duplicate()
+	else:
+		item = candidates[randi_range(0, candidates.size() - 1)].duplicate()
 
-	var pos: Vector2i = GameManager.board_data.place_character_first_empty(ch)
+	var pos: Vector2i = GameManager.board_data.place_item_first_empty(item)
 	if pos == Vector2i(-1, -1):
 		GameManager.restore_energy(1)
 		print(">>> [GameBoard] 生成失败: 无法放置")
 		return
 
-	print(">>> [GameBoard] 生成 %s Lv.%d 于 (%d, %d)" % [ch.get_job_name(), ch.level, pos.x, pos.y])
-	if is_instance_valid(get_node_or_null("/root/SaveSystem")):
-		SaveSystem.unlock_encyclopedia(ch.job, ch.level)
+	print(">>> [GameBoard] 生成 %s Lv.%d 于 (%d, %d)" % [item.name, item.level, pos.x, pos.y])
 
 	# 获取生成按钮位置和目标格子位置
 	var spawn_btn: BaseButton
@@ -1324,19 +1402,19 @@ func _on_spawn_pressed(job: int) -> void:
 		_: spawn_btn = spawn_warrior
 
 	var start_pos: Vector2 = spawn_btn.global_position + Vector2(spawn_btn.size.x / 2, spawn_btn.size.y / 2)
-	var target_index: int = pos.y * GRID_SIZE + pos.x
+	var target_index: int = pos.y * GRID_COLS + pos.x
 	var target_cell: Control = cell_panels[target_index]
 	var end_pos: Vector2 = target_cell.global_position + Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
 
 	# 播放生成动画
-	_play_spawn_animation(ch, start_pos, end_pos, target_index)
+	_play_spawn_animation(item, start_pos, end_pos, target_index)
 
 	# Tutorial: advance after spawn (step 0 = first spawn, step 1 = second spawn/merge)
 	_try_advance_tutorial(0)
 
 
 ## 生成动画：从按钮位置飞到目标格子
-func _play_spawn_animation(ch: DataModels.CharacterData, start_pos: Vector2, end_pos: Vector2, target_index: int) -> void:
+func _play_spawn_animation(ch: DataModels.BoardItemData, start_pos: Vector2, end_pos: Vector2, target_index: int) -> void:
 	# 标记目标格子为移动中（动画完成前不显示）
 	moving_cells.append(target_index)
 
@@ -1351,9 +1429,7 @@ func _play_spawn_animation(ch: DataModels.CharacterData, start_pos: Vector2, end
 	anim_sprite.z_index = 10  # 动画层级（低于弹窗）
 
 	# 加载精灵图
-	var sprite_folder: String = ch.get_sprite_folder()
-	var sprite_name: String = ch.get_sprite_path(1, 1)
-	var sprite_path: String = "res://art/sprites/chars/" + sprite_folder + "/" + sprite_name + ".png"
+	var sprite_path: String = ch.get_sprite_path()
 	if ResourceLoader.exists(sprite_path):
 		anim_sprite.texture = load(sprite_path)
 
@@ -1398,11 +1474,11 @@ func _on_dorm_take_pressed(dorm_index: int) -> void:
 		print(">>> [GameBoard] 取出失败: 棋盘已满")
 		TipManager.show_tip(LocalizationSystem.get_text("game_board.board_full"))
 		return
-	var ch: DataModels.CharacterData = GameManager.board_data.take_from_dormitory(dorm_index)
-	if ch == null:
+	var item: DataModels.BoardItemData = GameManager.board_data.take_from_dormitory(dorm_index)
+	if item == null:
 		return
-	var pos: Vector2i = GameManager.board_data.place_character_first_empty(ch)
-	print(">>> [GameBoard] 从宿舍取出 %s Lv.%d 到 (%d,%d)" % [ch.get_job_name(), ch.level, pos.x, pos.y])
+	var pos: Vector2i = GameManager.board_data.place_item_first_empty(item)
+	print(">>> [GameBoard] 从宿舍取出 %s Lv.%d 到 (%d,%d)" % [item.name, item.level, pos.x, pos.y])
 	_refresh_dorm_panel()
 	_refresh_board_display()
 
@@ -1461,7 +1537,7 @@ func _play_dorm_to_board_animation(moved_data: Array, start_pos: Vector2) -> voi
 	
 	# 为每个角色播放从宿舍飞到棋盘的动画
 	for data in moved_data:
-		var ch: DataModels.CharacterData = data["char"]
+		var ch: DataModels.BoardItemData = data["char"]
 		var board_idx: int = data["board_index"]
 		
 		if board_idx < 0 or board_idx >= cell_panels.size():
@@ -1478,12 +1554,10 @@ func _play_dorm_to_board_animation(moved_data: Array, start_pos: Vector2) -> voi
 		anim_sprite.z_index = 15  # 宿舍动画层级（低于弹窗）
 		
 		# 加载精灵图
-		var sprite_folder: String = ch.get_sprite_folder()
-		var sprite_name: String = ch.get_sprite_path(1, 1)
-		var sprite_path: String = "res://art/sprites/chars/" + sprite_folder + "/" + sprite_name + ".png"
+		var sprite_path: String = ch.get_sprite_path()
 		if ResourceLoader.exists(sprite_path):
 			anim_sprite.texture = load(sprite_path)
-		
+
 		add_child(anim_sprite)
 		anim_sprite.global_position = start_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
 		anim_sprite.scale = Vector2(0.8, 0.8)
@@ -1508,12 +1582,12 @@ func _drag_to_dorm() -> void:
 	if drag_index < 0:
 		return
 	var bd: BoardData = GameManager.board_data
-	var ch: DataModels.CharacterData = bd.get_character_at_index(drag_index)
+	var ch: DataModels.BoardItemData = bd.get_item_at_index(drag_index)
 	if ch == null:
 		return
 	var pos: Vector2i = BoardData.index_to_pos(drag_index)
 	bd.board_to_dormitory(pos)
-	print(">>> [GameBoard] 拖拽存入宿舍: %s Lv.%d" % [ch.get_job_name(), ch.level])
+	print(">>> [GameBoard] 拖拽存入宿舍: %s Lv.%d" % [ch.name, ch.level])
 	
 	# 重置拖拽状态，确保高亮被隐藏
 	is_dragging = false
@@ -1670,11 +1744,11 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_D:
 		if selected_index >= 0:
 			var bd: BoardData = GameManager.board_data
-			var ch: DataModels.CharacterData = bd.get_character_at_index(selected_index)
+			var ch: DataModels.BoardItemData = bd.get_item_at_index(selected_index)
 			if ch != null:
 				var pos: Vector2i = BoardData.index_to_pos(selected_index)
 				bd.board_to_dormitory(pos)
-				print(">>> [GameBoard] 存入宿舍: %s Lv.%d" % [ch.get_job_name(), ch.level])
+				print(">>> [GameBoard] 存入宿舍: %s Lv.%d" % [ch.name, ch.level])
 				selected_index = -1
 				_refresh_board_display()
 				_update_character_detail_panel()
@@ -1973,7 +2047,7 @@ func _play_item_effect_highlight(cell_index: int) -> void:
 			cell_sprites[i].modulate = Color.WHITE
 		# 重置背景颜色为原始颜色（根据格子位置计算）
 		if cell_rects[i] and is_instance_valid(cell_rects[i]):
-			var is_even: bool = (i / GRID_SIZE + i % GRID_SIZE) % 2 == 0
+			var is_even: bool = (i / GRID_COLS + i % GRID_COLS) % 2 == 0
 			cell_rects[i].modulate = Color(0.5, 0.5, 0.5, 0.9) if is_even else Color(0.8, 0.8, 0.8, 0.7)
 	
 	if cell_index < 0 or cell_index >= cell_sprites.size():
@@ -2001,7 +2075,7 @@ func _play_item_effect_highlight(cell_index: int) -> void:
 	if bg and is_instance_valid(bg):
 		var bg_tween := create_tween()
 		# 计算背景的正常颜色
-		var is_even: bool = (cell_index / GRID_SIZE + cell_index % GRID_SIZE) % 2 == 0
+		var is_even: bool = (cell_index / GRID_COLS + cell_index % GRID_COLS) % 2 == 0
 		var normal_bg_color: Color = Color(0.5, 0.5, 0.5, 0.9) if is_even else Color(0.8, 0.8, 0.8, 0.7)
 		bg_tween.set_parallel(false)
 		bg_tween.tween_property(bg, "modulate", Color(1.5, 0.2, 0.2, 1.0), 0.25)
