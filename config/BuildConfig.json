@@ -1,0 +1,14 @@
+{
+    "builds": [
+        { "id": 1,  "name": "建造化石架",     "furnitureId": 3010101, "starCost": 2,  "expReward": 10,  "itemReward": [],       "unlockLevel": 1,  "nextBuildId": 2  },
+        { "id": 2,  "name": "建造工具台",     "furnitureId": 3020101, "starCost": 3,  "expReward": 20,  "itemReward": [],       "unlockLevel": 1,  "nextBuildId": 3  },
+        { "id": 3,  "name": "建造设备柜",     "furnitureId": 3030101, "starCost": 4,  "expReward": 30,  "itemReward": [],       "unlockLevel": 2,  "nextBuildId": 4  },
+        { "id": 4,  "name": "建造化石修复台", "furnitureId": 3040101, "starCost": 5,  "expReward": 50,  "itemReward": [2010104], "unlockLevel": 3,  "nextBuildId": 5  },
+        { "id": 5,  "name": "建造高级化石架", "furnitureId": 3010102, "starCost": 6,  "expReward": 80,  "itemReward": [],       "unlockLevel": 4,  "nextBuildId": 6  },
+        { "id": 6,  "name": "建造高级工具台", "furnitureId": 3020102, "starCost": 7,  "expReward": 100, "itemReward": [2020104], "unlockLevel": 5,  "nextBuildId": 7  },
+        { "id": 7,  "name": "建造孵化器",     "furnitureId": 3050101, "starCost": 8,  "expReward": 150, "itemReward": [],       "unlockLevel": 6,  "nextBuildId": 8  },
+        { "id": 8,  "name": "建造恐龙研究台", "furnitureId": 3060101, "starCost": 9,  "expReward": 200, "itemReward": [2030105], "unlockLevel": 7,  "nextBuildId": 9  },
+        { "id": 9,  "name": "建造珍品展厅",   "furnitureId": 3070101, "starCost": 10, "expReward": 300, "itemReward": [],       "unlockLevel": 8,  "nextBuildId": 10 },
+        { "id": 10, "name": "建造传说熔炉",   "furnitureId": 3080101, "starCost": 11, "expReward": 500, "itemReward": [1012501], "unlockLevel": 10, "nextBuildId": -1 }
+    ]
+}

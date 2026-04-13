@@ -85,8 +85,10 @@ var board_data: BoardData = BoardData.new()
 # ---- 背包数据 ----
 var items: Array = []         # 道具背包 Array of ItemData
 var relics: Array = []        # 遗物栏 Array of ItemData
+var out_items: Array[int] = [99]  # 局外道具，默认包含背包
 signal items_changed()
 signal relics_changed()
+signal out_items_changed()
 
 
 ## 添加道具到背包
@@ -109,6 +111,27 @@ func remove_item(index: int) -> void:
 		items.remove_at(index)
 		items_changed.emit()
 		print(">>> [GameManager] 移除道具: %s" % item.name)
+
+
+## 添加局外道具
+func add_out_item(item_id: int) -> void:
+	out_items.append(item_id)
+	out_items_changed.emit()
+	print(">>> [GameManager] 添加局外道具: %d" % item_id)
+
+
+## 移除局外道具
+func remove_out_item(item_id: int) -> void:
+	var idx: int = out_items.find(item_id)
+	if idx >= 0:
+		out_items.remove_at(idx)
+		out_items_changed.emit()
+		print(">>> [GameManager] 移除局外道具: %d" % item_id)
+
+
+## 获取局外道具列表
+func get_out_items() -> Array[int]:
+	return out_items
 
 
 ## 添加遗物

@@ -166,6 +166,7 @@
         {"id": 2070105, "name": "琥珀5", "level": 5, "sprite": "amber05", "type": "production", "next_composite": 2070106, "maxCount": 20, "recovery_time": 60, "cooldown_time": 120, "production_items": [1070101, 1070102, 1070201, 1070202], "production_random": [0.5, 0.4, 0.08, 0.02], "content": "琥珀5"},
         {"id": 2070106, "name": "琥珀6", "level": 6, "sprite": "amber06", "type": "production", "next_composite": 2070107, "maxCount": 20, "recovery_time": 60, "cooldown_time": 120, "production_items": [1070101, 1070102, 1070201, 1070202], "production_random": [0.4, 0.5, 0.05, 0.05], "content": "琥珀6"},
         {"id": 2070107, "name": "琥珀7", "level": 7, "sprite": "amber07", "type": "production", "next_composite": 8070108, "maxCount": 20, "recovery_time": 60, "cooldown_time": 120, "production_items": [1070101, 1070102, 1070103, 1070201, 1070202], "production_random": [0.2, 0.4, 0.3, 0.05, 0.05], "content": "琥珀7"},
-        {"id": 8070108, "name": "琥珀8", "level": 8, "sprite": "amber08", "type": "maxproduction", "maxCount": 20, "recovery_time": 60, "cooldown_time": 120, "production_items": [1070101, 1070102, 1070103, 1070201, 1070202, 9070203], "production_random": [0.2, 0.3, 0.4, 0.04, 0.04, 0.02], "content": "琥珀8"}
+        {"id": 8070108, "name": "琥珀8", "level": 8, "sprite": "amber08", "type": "maxproduction", "maxCount": 20, "recovery_time": 60, "cooldown_time": 120, "production_items": [1070101, 1070102, 1070103, 1070201, 1070202, 9070203], "production_random": [0.2, 0.3, 0.4, 0.04, 0.04, 0.02], "content": "琥珀8"},
+        {"id": 99, "name": "背包", "level": 1, "sprite": "bag", "type": "consumable", "content": "背包"}
     ]
 }
