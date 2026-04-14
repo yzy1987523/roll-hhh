@@ -195,6 +195,50 @@ func is_backpack(item_id: int) -> bool:
 	return item_id == 99
 
 
+## 检查物品是否为金币堆
+func is_coinpile(item_id: int) -> bool:
+	var cfg: Dictionary = _config_loader.get_item(item_id)
+	if cfg.is_empty():
+		return false
+	var item_type: String = cfg.get("type", "")
+	return item_type == "coinpile"
+
+
+## 获取金币堆的金币价值
+## f(n) = round(2.5^(n-1))，n为等级1-6
+func get_coinpile_value(level: int) -> int:
+	if level < 1:
+		return 0
+	return int(roundf(pow(2.5, level - 1)))
+
+
+## 获取物品出售价格
+## 普通物品: 2^(level-1)
+func get_sell_price(_item_id: int, level: int) -> int:
+	if level < 1:
+		return 0
+	return int(pow(2, level - 1))
+
+
+## 检查物品是否可出售（普通物品可出售，生成器/背包/金币堆/体力球不可）
+func is_sellable(item_id: int) -> bool:
+	# 生成器、背包、金币堆、体力球不可出售
+	if is_producer(item_id):
+		return false
+	if is_backpack(item_id):
+		return false
+	if is_coinpile(item_id):
+		return false
+	# 检查是否为体力相关物品
+	var cfg: Dictionary = _config_loader.get_item(item_id)
+	if cfg.is_empty():
+		return false
+	var item_type: String = cfg.get("type", "")
+	if item_type == "energy" or item_type == "energybox":
+		return false
+	return true
+
+
 ## 生产物品
 ## 点击生成器后，根据概率随机产出物品
 ## board_index: 棋盘索引，用于库存和冷却管理，-1表示不管理库存

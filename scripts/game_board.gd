@@ -6,6 +6,9 @@ extends Control
 # ---- 资源预加载 ----
 const CELL_BG_TEXTURE := preload("res://art/sprites/UI/items/smallItem/cell_0.png")
 const CELL_SELECT_TEXTURE := preload("res://art/sprites/UI/items/smallItem/cell_1.png")
+# 金币图标（用于出售按钮）
+const JINBI_ICON := preload("res://art/sprites/UI/icon/jinbi.png")
+const ENERGY_ICON := preload("res://art/sprites/UI/items/smallItem/engery.png")
 # 锁定状态纹理（运行时加载）
 var CELL_LOCKED_EVEN_TEXTURE: Texture2D
 var CELL_LOCKED_ODD_TEXTURE: Texture2D
@@ -24,9 +27,23 @@ var PRODUCER_FRAMES: Array[Texture2D] = []
 var _producer_fx_frame: int = 0
 var _producer_fx_accum: float = 0.0  # 时间累加器
 
+# 飘字系统：跟踪上次资源值用于计算变化量
+var _last_gold: int = 0
+var _last_energy: int = 0
+var _last_diamond: int = 0
+
+# 能量恢复计时器：每2分钟恢复1点能量
+const ENERGY_RECOVERY_INTERVAL := 120.0  # 2分钟
+var _energy_recovery_time: float = 0.0  # 距离下次恢复的计时
+
 # ---- 节点引用 ----
-@onready var gold_label: Label = $MainLayout/TopBar/GoldContainer/GoldLabel
-@onready var energy_label: Label = $MainLayout/TopBar/EnergyContainer/EnergyLabel
+@onready var gold_label: Label = $MainLayout/TopBar/GoldContainer/GoldRow/GoldLabel
+@onready var gold_buy_btn: Button = $MainLayout/TopBar/GoldContainer/GoldBuyBtn
+@onready var energy_label: Label = $MainLayout/TopBar/EnergyContainer/EnergyRow/EnergyLabel
+@onready var energy_buy_btn: Button = $MainLayout/TopBar/EnergyContainer/EnergyBuyBtn
+@onready var energy_timer: Label = $MainLayout/TopBar/EnergyContainer/EnergyTimer
+@onready var diamond_label: Label = $MainLayout/TopBar/DiamondContainer/DiamondRow/DiamondLabel
+@onready var diamond_buy_btn: Button = $MainLayout/TopBar/DiamondContainer/DiamondBuyBtn
 # ---- 节点引用 ----
 @onready var settings_button: Button = $MainLayout/TopBar/SettingsButton
 @onready var relic_panel: PanelContainer = $MainLayout/RelicBar/RelicPanel
@@ -53,6 +70,7 @@ var _producer_fx_accum: float = 0.0  # 时间累加器
 @onready var detail_label: Label = $MainLayout/DetailActionBar/DetailPanel/MainHBox/LeftContent/DetailLabel
 @onready var hint_label: Label = $MainLayout/DetailActionBar/DetailPanel/MainHBox/LeftContent/HintLabel
 @onready var sacrifice_button: TextureButton = $MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton
+@onready var sacrifice_icon: TextureRect = $MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton/VBoxContainer/HBoxContainer/EnergyIcon
 @onready var sacrifice_label: Label = $MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton/VBoxContainer/HBoxContainer/Label
 
 # ---- 设置面板节点 ----
@@ -89,6 +107,7 @@ var cell_select_frames: Array = []  # TextureRect 选中框（静态边框）
 var cell_highlight_effects: Array = []  # TextureRect 高亮效果（序列帧动画）
 var cell_state_overlays: Array = []  # TextureRect 状态叠加层（锁定/灰尘）
 var cell_producer_fx: Array = []  # TextureRect 生成器特效 fx02（作为物品sprite的子级）
+var cell_task_icons: Array = []  # TextureRect 任务物品图标（左下角标记）
 
 # ---- 背包面板 ----
 var _backpack_scene_instance: Control = null  # 背包场景实例
@@ -146,6 +165,10 @@ var tutorial_instance: Control = null
 
 func _ready() -> void:
 	print(">>> [GameBoard] _ready 开始")
+	# 初始化资源跟踪变量
+	_last_gold = GameManager.gold
+	_last_energy = GameManager.energy
+	_last_diamond = GameManager.diamond
 	# 播放备战阶段BGM
 	print(">>> [GameBoard] Calling SoundSystem.play_bgm(SoundSystem.BGM_PREPARE)")
 	SoundSystem.play_bgm(SoundSystem.BGM_PREPARE)
@@ -170,6 +193,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_process_producer_fx_animation(delta)
+	_process_energy_recovery(delta)
 
 
 func _start_tutorial() -> void:
@@ -185,9 +209,9 @@ func _load_select_frames() -> void:
 		if ResourceLoader.exists(frame_path):
 			var tex := load(frame_path) as Texture2D
 			SELECT_FRAMES.append(tex)
-			if i == 0:
-				print(">>> [Debug] 加载选中效果序列帧: %s" % frame_path)
-	print(">>> [Debug] 加载了 %d 帧选中效果" % SELECT_FRAMES.size())
+			# if i == 0:
+			# 	print(">>> [Debug] 加载选中效果序列帧: %s" % frame_path)
+	# print(">>> [Debug] 加载了 %d 帧选中效果" % SELECT_FRAMES.size())
 
 
 ## 加载生成器特效序列帧 (fx02)
@@ -195,13 +219,13 @@ func _load_producer_fx() -> void:
 	PRODUCER_FRAMES.clear()
 	for i in range(16):
 		var frame_path := "res://art/effects/fx02/FX1_%02d.png" % i
-		print(">>> [Debug] 检查 FX2 路径: %s exists=%s" % [frame_path, ResourceLoader.exists(frame_path)])
+		# print(">>> [Debug] 检查 FX2 路径: %s exists=%s" % [frame_path, ResourceLoader.exists(frame_path)])
 		if ResourceLoader.exists(frame_path):
 			var tex := load(frame_path) as Texture2D
 			PRODUCER_FRAMES.append(tex)
-			if i == 0:
-				print(">>> [Debug] 加载生成器特效序列帧: %s" % frame_path)
-	print(">>> [Debug] 加载了 %d 帧生成器特效" % PRODUCER_FRAMES.size())
+			# if i == 0:
+			# 	print(">>> [Debug] 加载生成器特效序列帧: %s" % frame_path)
+	# print(">>> [Debug] 加载了 %d 帧生成器特效" % PRODUCER_FRAMES.size())
 
 
 # ---- 信号连接 ----
@@ -218,13 +242,21 @@ func _connect_signals() -> void:
 	encyclopedia_button.pressed.connect(_on_encyclopedia_pressed)
 	bottom_hud_container.build_list_pressed.connect(_on_build_list_pressed)
 	bottom_hud_container.out_item_clicked.connect(_on_out_item_clicked)
+	bottom_hud_container.submit_requested.connect(_on_submit_requested)
 	GameManager.gold_changed.connect(_on_gold_changed)
 	GameManager.energy_changed.connect(_on_energy_changed)
+	GameManager.diamond_changed.connect(_on_diamond_changed)
 	GameManager.round_changed.connect(_on_round_changed)
 	GameManager.relics_changed.connect(_on_relics_changed)
 	GameManager.items_changed.connect(_on_items_changed)
+	GameManager.board_items_changed.connect(_on_board_items_changed)
+	TaskManager.task_items_updated.connect(_on_task_items_updated)
 	relic_prev_button.pressed.connect(_on_relic_prev_pressed)
 	relic_next_button.pressed.connect(_on_relic_next_pressed)
+	# 资源购买按钮信号
+	energy_buy_btn.pressed.connect(_on_energy_buy_pressed)
+	gold_buy_btn.pressed.connect(_on_gold_buy_pressed)
+	diamond_buy_btn.pressed.connect(_on_diamond_buy_pressed)
 	# 设置面板信号
 	language_button.pressed.connect(_on_language_toggled)
 	reset_tutorial_button.pressed.connect(_on_reset_tutorial_pressed)
@@ -265,6 +297,66 @@ func _on_producer_registered(board_index: int, _state: ProducerManager.ProducerS
 
 func _on_producer_unregistered(board_index: int) -> void:
 	_hide_producer_fx(board_index)
+
+
+## 能量购买按钮点击
+func _on_energy_buy_pressed() -> void:
+	SoundSystem.play_button_click()
+	var cost: int = GameManager.get_energy_purchase_cost()
+	var content: String = "花费 %d 钻石购买 100 能量\n（下次购买将花费 %d 钻石）" % [cost, cost * 2]
+	PopupSystem.show(
+		"购买体力",
+		content,
+		"",
+		"购买",
+		"取消",
+		func(): _do_energy_purchase(cost)
+	)
+
+
+func _do_energy_purchase(_cost: int) -> void:
+	if GameManager.purchase_energy():
+		_show_float_text(energy_label, 100, true)
+	else:
+		PopupSystem.show("购买失败", "钻石不足或体力已满", "", "确定")
+
+
+## 金币购买按钮点击（看广告）
+func _on_gold_buy_pressed() -> void:
+	SoundSystem.play_button_click()
+	PopupSystem.show(
+		"获得金币",
+		"观看广告可获得 10000 金币",
+		"",
+		"观看广告",
+		"取消",
+		_do_gold_purchase
+	)
+
+
+func _do_gold_purchase() -> void:
+	# 模拟广告奖励：直接发放金币
+	GameManager.add_gold(10000)
+	_show_float_text(gold_label, 10000, true)
+
+
+## 钻石购买按钮点击（看广告）
+func _on_diamond_buy_pressed() -> void:
+	SoundSystem.play_button_click()
+	PopupSystem.show(
+		"获得钻石",
+		"观看广告可获得 1000 钻石",
+		"",
+		"观看广告",
+		"取消",
+		_do_diamond_purchase
+	)
+
+
+func _do_diamond_purchase() -> void:
+	# 模拟广告奖励：直接发放钻石
+	GameManager.add_diamond(1000)
+	_show_float_text(diamond_label, 1000, true)
 
 
 ## 更新生成器特效可见性
@@ -341,6 +433,32 @@ func _process_producer_fx_animation(delta: float) -> void:
 		for i in range(BoardData.BOARD_SLOTS):
 			if cell_producer_fx.size() > i and is_instance_valid(cell_producer_fx[i]) and cell_producer_fx[i].visible:
 				cell_producer_fx[i].texture = frame_tex
+
+
+## 能量恢复计时：每2分钟恢复1点能量，不足100时显示倒计时
+func _process_energy_recovery(delta: float) -> void:
+	if GameManager.energy >= GameManager.max_energy:
+		# 能量已满，隐藏倒计时
+		energy_timer.visible = false
+		_energy_recovery_time = 0.0
+		return
+
+	# 开始计时
+	_energy_recovery_time += delta
+	var remaining: float = ENERGY_RECOVERY_INTERVAL - _energy_recovery_time
+	if remaining <= 0:
+		# 恢复1点能量
+		GameManager.restore_energy(1)
+		_energy_recovery_time = 0.0
+		remaining = ENERGY_RECOVERY_INTERVAL
+
+	# 显示倒计时
+	energy_timer.visible = true
+	var total_seconds: int = int(remaining)
+	@warning_ignore("integer_division")
+	var minutes: int = total_seconds / 60
+	var seconds: int = total_seconds % 60
+	energy_timer.text = "%d:%02d" % [minutes, seconds]
 
 
 ## 为所有TextureButton添加hover和press视觉反馈
@@ -484,6 +602,28 @@ func _setup_board_ui() -> void:
 		sprite.add_child(producer_fx)
 		cell_producer_fx.append(producer_fx)
 
+		# 任务物品图标（左下角标记，作为物品精灵的子级）
+		var task_icon := TextureRect.new()
+		task_icon.name = "TaskIcon"
+		task_icon.texture = preload("res://art/sprites/UI/icon/p1_2.png")
+		task_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		task_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		task_icon.custom_minimum_size = Vector2(36, 36)
+		task_icon.anchor_left = 0.0
+		task_icon.anchor_top = 1.0
+		task_icon.anchor_right = 0.0
+		task_icon.anchor_bottom = 1.0
+		task_icon.offset_left = 2.0
+		task_icon.offset_top = -38.0
+		task_icon.offset_right = 38.0
+		task_icon.offset_bottom = -2.0
+		task_icon.pivot_offset = Vector2(18, 18)
+		task_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		task_icon.visible = false
+		task_icon.z_index = 15  # 在物品精灵之上
+		sprite.add_child(task_icon)
+		cell_task_icons.append(task_icon)
+
 		# 点击事件
 		cell.gui_input.connect(_on_cell_gui_input.bind(i))
 
@@ -519,11 +659,31 @@ func _update_character_detail_panel() -> void:
 			name_label.text = ch.name
 			detail_label.text = "Lv.%d" % ch.level
 			hint_label.text = ""
-			sacrifice_label.text = ""
-			sacrifice_button.modulate.a = 0.0
-			sacrifice_button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+			# 根据物品类型决定是否显示出售按钮
+			if ItemManager.is_sellable(ch.id):
+				# 普通物品：显示出售按钮
+				sacrifice_button.modulate.a = 1.0
+				sacrifice_button.mouse_filter = Control.MOUSE_FILTER_STOP
+				# 更新出售价格: 2^(level-1)
+				var sell_price: int = ItemManager.get_sell_price(ch.id, ch.level)
+				sacrifice_label.text = str(sell_price)
+				# 更新按钮文字为"出售" + 金币图标
+				var vbox = sacrifice_button.get_node_or_null("VBoxContainer")
+				if vbox:
+					var label2 = vbox.get_node_or_null("Label2")
+					if label2:
+						label2.text = "出售"
+				# 更换为金币图标
+				sacrifice_icon.texture = JINBI_ICON
+			else:
+				# 非普通物品（生成器/背包/金币堆/体力球）：隐藏出售按钮
+				sacrifice_button.modulate.a = 0.0
+				sacrifice_button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				# 恢复为能量图标
+				sacrifice_icon.texture = ENERGY_ICON
 			return
-	
+
 	# 无选中或角色已不存在
 	name_label.text = ""
 	detail_label.text = LocalizationSystem.get_text("game_board.click_to_view_detail", {})
@@ -536,7 +696,7 @@ func _update_character_detail_panel() -> void:
 func _on_sacrifice_button_pressed() -> void:
 	if selected_index >= 0:
 		SoundSystem.play_button_click()
-		_sacrifice_character(selected_index)
+		_sell_selected_item(selected_index)
 
 
 # ---- 宿舍面板 ----
@@ -602,6 +762,9 @@ func _on_cell_gui_input(event: InputEvent, cell_index: int) -> void:
 								_try_produce_item(cell_index)
 							elif ItemManager.is_backpack(ch.id):
 								_open_backpack_ui()
+							elif ItemManager.is_coinpile(ch.id):
+								# 金币堆：移动到金币栏，增加金币
+								_collect_coinpile(cell_index)
 							else:
 								_update_character_detail_panel()
 						else:
@@ -908,6 +1071,7 @@ func _merge_at(src_index: int, tgt_index: int) -> void:
 	# 放置新物品到目标位置
 	var tgt_pos: Vector2i = BoardData.index_to_pos(tgt_index)
 	bd.place_item(merged, tgt_pos)
+	GameManager.board_items_changed.emit()
 
 	# 合成后目标位置变为 OCCUPIED
 	bd.set_grid_state(tgt_index, BoardData.GridState.OCCUPIED)
@@ -922,6 +1086,113 @@ func _merge_at(src_index: int, tgt_index: int) -> void:
 
 	# 播放合成动画: 0.8 -> 1.1 -> 1.0
 	_play_merge_animation(tgt_index)
+
+	# 合成后有概率生成金币：概率 = merged.level * 10%，上限100%
+	_try_spawn_coin_on_merge(merged, tgt_index)
+
+
+## 合成后概率生成金币
+## 概率 = merged.level * 10%，金币从合成处弹出，飞向最近空格
+func _try_spawn_coin_on_merge(merged: DataModels.BoardItemData, merge_index: int) -> void:
+	var bd: BoardData = GameManager.board_data
+
+	# 找最近空格（排除合成位置）
+	var empty_index: int = _find_nearest_empty_cell(merge_index)
+	if empty_index < 0:
+		return  # 没有空格
+
+	# 计算概率：Lv.1=10%, Lv.6=60%, Lv.10=100%
+	var probability: float = clampf(merged.level * 0.1, 0.0, 1.0)
+	if randf() > probability:
+		return  # 概率未命中
+
+	# 总是生成1级金币堆
+	var coin_level: int = 1
+	# 金币堆ID: 3020101-3020106 对应等级1-6
+	var coin_id: int = 3020100 + coin_level
+	var coin_item: DataModels.BoardItemData = ItemManager.get_item(coin_id)
+	if coin_item == null:
+		return
+
+	# 创建飞行动画：从合成位置飞到空格
+	var start_cell: Control = cell_panels[merge_index]
+	var end_cell: Control = cell_panels[empty_index]
+	var start_world: Vector2 = start_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+	var end_world: Vector2 = end_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+
+	var anim_sprite := _create_flying_sprite(coin_item)
+	anim_sprite.global_position = start_cell.global_position
+	add_child(anim_sprite)
+
+	# 动画：弹出+飞向目标
+	var tween := create_tween()
+	tween.set_parallel(true)
+	# 弹出效果：先向上偏移再飞向目标
+	var pop_offset := Vector2(0, -CELL_SIZE * 0.5)
+	tween.tween_property(anim_sprite, "global_position", start_world + pop_offset, 0.15)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.chain().tween_property(anim_sprite, "global_position", end_world, 0.3)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.chain().tween_interval(0.1)  # 短暂停顿
+
+	tween.finished.connect(func():
+		anim_sprite.queue_free()
+		# 放置金币到空格
+		var empty_pos: Vector2i = BoardData.index_to_pos(empty_index)
+		bd.place_item(coin_item.duplicate(), empty_pos)
+		bd.set_grid_state(empty_index, BoardData.GridState.OCCUPIED)
+		GameManager.board_items_changed.emit()
+		_refresh_board_display()
+	, CONNECT_ONE_SHOT)
+
+
+## 收集金币堆：移动到金币栏，增加金币
+func _collect_coinpile(cell_index: int) -> void:
+	var bd: BoardData = GameManager.board_data
+	var coin_item: DataModels.BoardItemData = bd.get_item_at_index(cell_index)
+	if coin_item == null:
+		return
+
+	# 计算金币价值 f(n) = round(2.5^(n-1))
+	var coin_value: int = ItemManager.get_coinpile_value(coin_item.level)
+
+	# 获取终点（金币栏位置）
+	var coin_bar_pos: Vector2 = _get_coin_bar_position()
+
+	# 创建飞行动画：从当前位置飞到金币栏
+	var start_cell: Control = cell_panels[cell_index]
+
+	var anim_sprite := _create_flying_sprite(coin_item)
+	anim_sprite.global_position = start_cell.global_position
+	add_child(anim_sprite)
+
+	# 先播放飞向金币栏的动画
+	var tween := create_tween()
+	tween.tween_property(anim_sprite, "global_position", coin_bar_pos, 0.3)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+	tween.finished.connect(func():
+		anim_sprite.queue_free()
+		# 从棋盘移除金币
+		bd.remove_item(BoardData.index_to_pos(cell_index))
+		GameManager.board_items_changed.emit()
+		# 增加金币
+		GameManager.add_gold(coin_value)
+		_refresh_board_display()
+		# 取消选中
+		selected_index = -1
+		_update_character_detail_panel()
+	, CONNECT_ONE_SHOT)
+
+
+## 获取金币栏位置（用于飞行动画终点）
+func _get_coin_bar_position() -> Vector2:
+	# 返回金币Label的中心位置
+	if gold_label != null:
+		var gpos: Vector2 = gold_label.global_position
+		var gsize: Vector2 = gold_label.size
+		return gpos + Vector2(gsize.x / 2.0, gsize.y / 2.0)
+	return Vector2(200, 100)
 
 
 func _play_merge_animation(cell_index: int) -> void:
@@ -1021,6 +1292,7 @@ func _try_produce_item(cell_index: int) -> void:
 		print(">>> [GameBoard] 生产失败: 无法放置物品")
 		return
 
+	GameManager.board_items_changed.emit()
 	# 播放生产成功音效
 	SoundSystem.play_merge()
 
@@ -1094,6 +1366,7 @@ func _sacrifice_character(cell_index: int) -> void:
 		refund = int(refund * (1.0 + bonus_ratio))
 	
 	bd.remove_item(pos)
+	GameManager.board_items_changed.emit()
 	GameManager.restore_energy(refund)
 	
 	# 遗物: 献祭金币 (ID 22) - 献祭时获得金币
@@ -1108,6 +1381,35 @@ func _sacrifice_character(cell_index: int) -> void:
 	_update_character_detail_panel()
 	# Tutorial: advance after sacrifice (step 3 = details/sacrifice/encyclopedia)
 	_try_advance_tutorial(3)
+
+
+## 出售选中的物品，获得金币
+func _sell_selected_item(cell_index: int) -> void:
+	var bd: BoardData = GameManager.board_data
+	var pos: Vector2i = BoardData.index_to_pos(cell_index)
+	var ch: DataModels.BoardItemData = bd.get_item_at(pos)
+	if ch == null:
+		return
+
+	# 检查是否可出售
+	if not ItemManager.is_sellable(ch.id):
+		print(">>> [GameBoard] 该物品不可出售: %s" % ch.name)
+		return
+
+	# 计算出售价格: 2^(level-1)
+	var sell_price: int = ItemManager.get_sell_price(ch.id, ch.level)
+
+	# 获得金币
+	GameManager.add_gold(sell_price)
+
+	# 从棋盘移除物品
+	bd.remove_item(pos)
+	GameManager.board_items_changed.emit()
+
+	print(">>> [GameBoard] 出售 %s Lv.%d, 获得金币 %d" % [ch.name, ch.level, sell_price])
+	selected_index = -1
+	_refresh_board_display()
+	_update_character_detail_panel()
 
 
 # ---- 拖拽系统 (任务 2.3) ----
@@ -1468,6 +1770,9 @@ func _refresh_board_display() -> void:
 	# 更新高亮效果（拖拽时动态显示）
 	_update_merge_highlights()
 
+	# 更新任务物品图标
+	_update_task_icons()
+
 
 ## 更新格子状态叠加层显示
 func _update_cell_state_overlay(index: int) -> void:
@@ -1487,6 +1792,58 @@ func _update_cell_state_overlay(index: int) -> void:
 	else:
 		# EMPTY 或 OCCUPIED：隐藏叠加层
 		overlay.visible = false
+
+
+## 更新任务物品图标显示
+func _update_task_icons() -> void:
+	var task_info: Dictionary = TaskManager.get_task_items_info()
+	var board_items: Array = task_info.get("board", [])
+
+	# 获取任务栏位置（用于计算距离）
+	var task_panel_path := "MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC"
+	var task_panel: Control = get_node_or_null(task_panel_path)
+	var task_bar_pos: Vector2 = task_panel.get_global_position() + Vector2(task_panel.size.x / 2, task_panel.size.y / 2) if task_panel else Vector2.ZERO
+
+	# 获取任务需求数量
+	var current_task: Dictionary = TaskManager.get_current_task()
+	var need_items: Array = current_task.get("needItems", []) if not current_task.is_empty() else []
+	# 统计每个物品ID的需求数量
+	var need_counts: Dictionary = {}
+	for need_id in need_items:
+		var id_int: int = int(need_id)
+		need_counts[id_int] = need_counts.get(id_int, 0) + 1
+
+	# 按距离排序并选择每个ID最近的物品
+	var selected_indices: Array = []
+	for need_id in need_counts.keys():
+		var need_count: int = need_counts[need_id]
+		# 找出所有匹配该ID的物品
+		var matching_items: Array = []
+		for item_data in board_items:
+			if int(item_data["id"]) == need_id:
+				matching_items.append(item_data)
+
+		# 按距离排序（近的在前）
+		matching_items.sort_custom(func(a, b):
+			var pos_a: Vector2i = a["pos"]
+			var pos_b: Vector2i = b["pos"]
+			var cell_a: Control = cell_panels[pos_a.y * GRID_COLS + pos_a.x] if pos_a.y * GRID_COLS + pos_a.x < cell_panels.size() else null
+			var cell_b: Control = cell_panels[pos_b.y * GRID_COLS + pos_b.x] if pos_b.y * GRID_COLS + pos_b.x < cell_panels.size() else null
+			if cell_a == null or cell_b == null:
+				return false
+			var dist_a: float = cell_a.global_position.distance_to(task_bar_pos)
+			var dist_b: float = cell_b.global_position.distance_to(task_bar_pos)
+			return dist_a < dist_b
+		)
+
+		# 只选择最近的need_count个
+		for i in range(mini(need_count, matching_items.size())):
+			selected_indices.append(matching_items[i]["index"])
+
+	# 更新每个格子的任务图标可见性
+	for i in range(BoardData.BOARD_SLOTS):
+		if i < cell_task_icons.size() and is_instance_valid(cell_task_icons[i]):
+			cell_task_icons[i].visible = selected_indices.has(i)
 
 
 ## 更新可合成高亮效果（拖拽时显示）
@@ -1643,14 +2000,75 @@ func _get_job_color(job: int) -> Color:
 func _update_resource_labels() -> void:
 	gold_label.text = LocalizationSystem.get_text("game_board.gold", {"value": GameManager.gold})
 	energy_label.text = LocalizationSystem.get_text("game_board.energy", {"current": GameManager.energy, "max": GameManager.max_energy})
+	diamond_label.text = LocalizationSystem.get_text("game_board.diamond", {"value": GameManager.diamond})
+
+
+## 飘字系统：显示资源增减动画
+## is_increase: true=增加（向上飘，绿色），false=减少（向下飘，红色）
+func _show_float_text(label_node: Label, amount: int, is_increase: bool) -> void:
+	var float_label := Label.new()
+	float_label.text = "%+d" % amount if is_increase else "%d" % amount
+	float_label.z_index = 100  # 确保在最上层
+
+	# 设置飘字样式
+	var font_color: Color = Color(0.2, 1.0, 0.2, 1.0) if is_increase else Color(1.0, 0.2, 0.2, 1.0)
+	float_label.add_theme_color_override("font_color", font_color)
+	float_label.add_theme_font_size_override("font_size", 28)
+
+	# 设置位置：紧贴目标label（先设为相同位置，等添加后再获取正确的global_position）
+	float_label.position = label_node.position
+	float_label.size = Vector2(100, 40)
+
+	# 添加到场景（必须在获取global_position之前）
+	add_child(float_label)
+
+	# 现在可以获取正确的global_position
+	var start_pos: Vector2 = float_label.global_position
+	var end_offset: Vector2 = Vector2(0, -40) if is_increase else Vector2(0, 40)
+
+	# 创建飘字动画
+	var tween := create_tween()
+	if is_increase:
+		# 增加：向上飘并渐隐
+		tween.set_parallel(true)
+		tween.tween_property(float_label, "global_position", start_pos + end_offset, 0.8)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(float_label, "modulate:a", 0.0, 0.8)
+	else:
+		# 减少：从上方来并渐隐
+		tween.set_parallel(true)
+		float_label.global_position = start_pos + Vector2(0, -20)
+		tween.tween_property(float_label, "global_position", start_pos + Vector2(0, 20), 0.6)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(float_label, "modulate:a", 0.0, 0.6)
+
+	tween.finished.connect(func():
+		float_label.queue_free()
+	, CONNECT_ONE_SHOT)
 
 
 func _on_gold_changed(new_gold: int) -> void:
+	var old_gold: int = _last_gold
+	_last_gold = new_gold
 	gold_label.text = LocalizationSystem.get_text("game_board.gold", {"value": new_gold})
+	if new_gold != old_gold:
+		_show_float_text(gold_label, new_gold - old_gold, new_gold > old_gold)
 
 
 func _on_energy_changed(new_energy: int) -> void:
+	var old_energy: int = _last_energy
+	_last_energy = new_energy
 	energy_label.text = LocalizationSystem.get_text("game_board.energy", {"current": new_energy, "max": GameManager.max_energy})
+	if new_energy != old_energy:
+		_show_float_text(energy_label, new_energy - old_energy, new_energy > old_energy)
+
+
+func _on_diamond_changed(new_diamond: int) -> void:
+	var old_diamond: int = _last_diamond
+	_last_diamond = new_diamond
+	diamond_label.text = LocalizationSystem.get_text("game_board.diamond", {"value": new_diamond})
+	if new_diamond != old_diamond:
+		_show_float_text(diamond_label, new_diamond - old_diamond, new_diamond > old_diamond)
 
 
 func _on_round_changed(_new_round: int) -> void:
@@ -1660,6 +2078,16 @@ func _on_round_changed(_new_round: int) -> void:
 func _on_items_changed() -> void:
 	_refresh_item_slots()
 	print(">>> [GameBoard] 道具改变，刷新道具栏，当前道具数量: %d" % GameManager.items.size())
+
+
+func _on_board_items_changed() -> void:
+	_refresh_board_display()
+	print(">>> [GameBoard] 棋盘物品改变，刷新棋盘显示")
+
+
+func _on_task_items_updated(_task_items_info: Dictionary) -> void:
+	_update_task_icons()
+	print(">>> [GameBoard] 任务物品更新，刷新任务图标显示")
 
 
 # ---- 角色生成 (任务 2.2) ----
@@ -1719,6 +2147,7 @@ func _on_spawn_pressed(job: int) -> void:
 		return
 
 	print(">>> [GameBoard] 生成 %s Lv.%d 于 (%d, %d)" % [item.name, item.level, pos.x, pos.y])
+	GameManager.board_items_changed.emit()
 
 	# 获取生成按钮位置和目标格子位置
 	var spawn_btn: BaseButton
@@ -1806,6 +2235,7 @@ func _on_dorm_take_pressed(dorm_index: int) -> void:
 		return
 	var pos: Vector2i = GameManager.board_data.place_item_first_empty(item)
 	print(">>> [GameBoard] 从宿舍取出 %s Lv.%d 到 (%d,%d)" % [item.name, item.level, pos.x, pos.y])
+	GameManager.board_items_changed.emit()
 	_refresh_dorm_panel()
 	_refresh_board_display()
 	# 每次棋子操作后自动存档
@@ -2361,9 +2791,108 @@ func _on_out_item_clicked(item_id: int) -> void:
 		anim_sprite.queue_free()
 		# 放置物品到棋盘
 		GameManager.board_data.place_item(item, target_pos)
+		GameManager.board_items_changed.emit()
 		_refresh_board_display()
 		_play_land_animation(target_index)
 	)
+
+
+## 处理提交请求：物品飞向任务栏后完成任务
+func _on_submit_requested() -> void:
+	print(">>> [GameBoard] 收到提交请求")
+	# 获取任务物品信息
+	var task_info: Dictionary = TaskManager.get_task_items_info()
+	var all_board_items: Array = task_info.get("board", [])
+	var backpack_items: Array = task_info.get("backpack", [])
+
+	# 只选择显示图标的物品（最近的物品）
+	var board_items: Array = []
+	for item_data in all_board_items:
+		var idx: int = item_data["index"]
+		if idx < cell_task_icons.size() and is_instance_valid(cell_task_icons[idx]) and cell_task_icons[idx].visible:
+			board_items.append(item_data)
+
+	# 如果没有物品，直接完成
+	if board_items.is_empty() and backpack_items.is_empty():
+		_finish_task_submission()
+		return
+
+	# 获取任务栏位置（飞行动画终点）
+	var task_panel_path := "MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC"
+	var task_panel: Control = get_node(task_panel_path)
+	var target_pos: Vector2 = task_panel.get_global_position() + Vector2(task_panel.size.x / 2, task_panel.size.y / 2)
+
+	# 记录需要移除的物品数量（用数组包装以便lambda修改）
+	var total_items: int = board_items.size() + backpack_items.size()
+	var completed := [0]  # [completed_count]
+
+	# 如果没有物品需要动画，直接完成
+	if total_items == 0:
+		_finish_task_submission()
+		return
+
+	# 棋盘物品飞行动画
+	for item_data in board_items:
+		var board_index: int = item_data["index"]
+		var cell_panel: Control = cell_panels[board_index]
+		var start_pos: Vector2 = cell_panel.get_global_position() + Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
+
+		# 创建飞行动画精灵
+		var anim_sprite := TextureRect.new()
+		anim_sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
+		anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		anim_sprite.global_position = start_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
+		anim_sprite.z_index = 10
+		var sprite_path: String = item_data.get("sprite_path", "")
+		if not sprite_path.is_empty() and ResourceLoader.exists(sprite_path):
+			anim_sprite.texture = load(sprite_path)
+		get_tree().root.add_child(anim_sprite)
+
+		# 隐藏原物品
+		if board_index < cell_sprites.size():
+			cell_sprites[board_index].visible = false
+		if board_index < cell_task_icons.size():
+			cell_task_icons[board_index].visible = false
+
+		# 播放飞行动画
+		var tween := create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(anim_sprite, "global_position", target_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2), 0.4)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(anim_sprite, "scale", Vector2(0.5, 0.5), 0.4)\
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tween.finished.connect(func():
+			anim_sprite.queue_free()
+			completed[0] += 1
+			if completed[0] >= total_items:
+				_finish_task_submission()
+		)
+
+	# 如果没有棋盘物品但有背包物品，直接完成
+	if board_items.is_empty() and not backpack_items.is_empty():
+		_finish_task_submission()
+
+
+## 完成提交：实际移除物品并刷新
+func _finish_task_submission() -> void:
+	print(">>> [GameBoard] 执行任务完成")
+	# 获取当前任务的物品需求
+	var current_task: Dictionary = TaskManager.get_current_task()
+	if current_task.is_empty():
+		return
+	var need_items: Array = current_task.get("needItems", [])
+	# 提交任务
+	var submitted: Array[int] = []
+	for item_id in need_items:
+		submitted.append(int(item_id))
+	var success: bool = TaskManager.try_complete_task(submitted)
+	if success:
+		print(">>> [GameBoard] 任务提交成功")
+	else:
+		print(">>> [GameBoard] 任务提交失败")
+	# 刷新棋盘显示（会刷新任务图标）
+	_refresh_board_display()
 
 
 func _on_shop_pressed() -> void:

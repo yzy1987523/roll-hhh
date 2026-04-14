@@ -14,6 +14,7 @@ var _initialized: bool = false
 signal phase_changed(new_phase: String)
 signal gold_changed(new_gold: int)
 signal energy_changed(new_energy: int)
+signal diamond_changed(new_diamond: int)
 signal round_changed(new_round: int)
 @warning_ignore("unused_signal")
 signal character_merged(merged_level: int)  # 角色合成信号
@@ -25,7 +26,7 @@ const PHASE_SHOP := "shop"
 const PHASE_GAME_OVER := "game_over"
 
 # ---- 默认数值 ----
-const DEFAULT_MAX_ENERGY := 36
+const DEFAULT_MAX_ENERGY := 100
 const DEFAULT_GOLD := 200
 const DEFAULT_ROUND := 1
 const MAX_BATTLE_TURNS := 999
@@ -40,11 +41,16 @@ var phase: String = PHASE_PREPARE
 var gold: int = DEFAULT_GOLD
 var energy: int = DEFAULT_MAX_ENERGY
 var max_energy: int = DEFAULT_MAX_ENERGY
+var diamond: int = 100  # 钻石数量
 var battle_turn: int = 0
 var current_round: int = DEFAULT_ROUND
 var cycle_count: int = 0  # 完整循环次数 (每9轮+1)
 var shop_last_refresh_round: int = -1  # 商店上次刷新的回合数
 var shop_items_data: Array = []  # 商店商品数据 [{"id": int, "is_relic": bool, "sold": bool}, ...]
+
+# ---- 能量购买 ----
+var _energy_purchase_cost: int = 5  # 当前购买能量花费的钻石
+var _last_energy_reset_day: int = 0  # 上次重置能量购买费用的日期（天数）
 
 # ---- 教程状态 ----
 var tutorial_completed: bool = true  # 新手教程是否已完成 (已屏蔽)
@@ -91,6 +97,7 @@ signal items_changed()
 signal relics_changed()
 signal out_items_changed()
 signal backpack_items_changed()
+signal board_items_changed()  # 棋盘物品变化信号（放置/移除物品时）
 
 
 ## 添加道具到背包
@@ -283,6 +290,41 @@ func reset_energy() -> void:
 	energy_changed.emit(energy)
 
 
+## 检查并重置能量购买费用（每天零点重置）
+func check_energy_purchase_cost_reset() -> void:
+	var today: int = int(Time.get_unix_time_from_system() / 86400.0)  # 天数
+	if today > _last_energy_reset_day:
+		_energy_purchase_cost = 5
+		_last_energy_reset_day = today
+		print(">>> [GameManager] 能量购买费用已重置为 5 钻石")
+
+
+## 获取当前能量购买费用
+func get_energy_purchase_cost() -> int:
+	check_energy_purchase_cost_reset()
+	return _energy_purchase_cost
+
+
+## 购买能量（花费钻石）
+## 返回是否购买成功
+func purchase_energy() -> bool:
+	check_energy_purchase_cost_reset()
+	if diamond < _energy_purchase_cost:
+		print(">>> [GameManager] 钻石不足，无法购买能量: 需要 %d, 当前 %d" % [_energy_purchase_cost, diamond])
+		return false
+	if energy >= max_energy:
+		print(">>> [GameManager] 能量已满，无法购买")
+		return false
+	if not spend_diamond(_energy_purchase_cost):
+		return false
+	var cost_paid: int = _energy_purchase_cost
+	restore_energy(100)
+	# 花费翻倍
+	_energy_purchase_cost *= 2
+	print(">>> [GameManager] 购买能量成功，花费 %d 钻石，下次购买花费 %d" % [cost_paid, _energy_purchase_cost])
+	return true
+
+
 ## 消耗金币, 成功返回 true
 func spend_gold(amount: int) -> bool:
 	if amount <= 0:
@@ -295,13 +337,34 @@ func spend_gold(amount: int) -> bool:
 	return true
 
 
-## 获得金币
+## 增加金币（收集金币堆时调用）
 func add_gold(amount: int) -> void:
 	if amount <= 0:
 		return
 	gold += amount
 	gold_changed.emit(gold)
 	print(">>> [GameManager] 获得金币 %d, 当前: %d" % [amount, gold])
+
+
+## 消耗钻石，成功返回true
+func spend_diamond(amount: int) -> bool:
+	if amount <= 0:
+		return false
+	if diamond < amount:
+		print(">>> [GameManager] 钻石不足: 需要 %d, 当前 %d" % [amount, diamond])
+		return false
+	diamond -= amount
+	diamond_changed.emit(diamond)
+	return true
+
+
+## 增加钻石
+func add_diamond(amount: int) -> void:
+	if amount <= 0:
+		return
+	diamond += amount
+	diamond_changed.emit(diamond)
+	print(">>> [GameManager] 获得钻石 %d, 当前: %d" % [amount, diamond])
 
 
 # ---- 献祭能量计算 ----
