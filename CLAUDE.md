@@ -116,12 +116,32 @@ test_*.gd     # Test scripts (development only)
 
 ### Node References
 
-```gdscript
-# Correct: full path defined in scene
-@onready var btn: Button = $VBoxContainer/StartButton
+**禁止使用硬编码路径查找节点**，改用 `find_child()` 按名称查找：
 
-# Wrong: missing intermediate node
-@onready var btn: Button = $StartButton
+```gdscript
+# Wrong: hardcoded path breaks when node structure changes
+const PATH_SUBMIT_BTN := "ScrollContainer/ContentHBox/ZoneC/TaskHBox/SubmitBtnContainer"
+var btn = get_node(PATH_SUBMIT_BTN)
+
+# Correct: use find_child to find by name
+var btn = find_child("SubmitBtnContainer", true, false)
+if btn == null:
+    btn = find_child("SubmitBtnContainer", true, true)  # recursive search
+```
+
+**为什么**: 硬编码路径在场景结构变化时容易出错，且难以调试。`find_child()` 按名称查找，节点位置改变时仍能找到。
+
+### 动态添加的节点
+
+```gdscript
+# 动态实例化的按钮
+func _init_button() -> void:
+    var container = find_child("MyContainer", true, false)
+    if container == null:
+        print("警告: MyContainer 节点不存在")
+        return
+    var btn = preload("res://scenes/my_button.tscn").instantiate()
+    container.add_child(btn)
 ```
 
 ### Integer Division Warning
@@ -316,4 +336,22 @@ func show(...) -> void:
 sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 # 或使用 CenterContainer 包裹
+```
+
+### 按钮点击动效
+
+**规则**: 所有可点击按钮必须添加点击动效：先放大到 1.1 倍，再缩回到 1 倍，总用时 0.3 秒。
+
+```gdscript
+func _on_button_pressed() -> void:
+    var tween := create_tween()
+    tween.set_parallel(true)
+    tween.tween_property(btn, "scale", Vector2(1.1, 1.1), 0.15)
+    tween.tween_property(btn, "scale", Vector2(1.0, 1.0), 0.15).set_delay(0.15)
+    tween.finished.connect(_on_button_animation_complete)
+
+
+func _on_button_animation_complete() -> void:
+    # 执行实际点击逻辑
+    pass
 ```

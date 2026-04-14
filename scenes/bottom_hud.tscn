@@ -159,3 +159,8 @@ theme_override_colors/font_color = Color(0.9, 0.8, 0.1, 1)
 theme_override_font_sizes/font_size = 18
 text = "+1"
 vertical_alignment = 1
+
+[node name="SubmitBtnContainer" type="Control" parent="HBox/ScrollContainer/ContentHBox/ZoneC"]
+visible = false
+layout_mode = 2
+custom_minimum_size = Vector2(120, 60)

@@ -16,6 +16,8 @@ signal achievement_completed(task_id: int, reward_exp: int)
 signal task_progress_updated(current_task_id: int, progress: float)
 ## 成就进度更新信号
 signal achievement_progress_updated(task_id: int, progress: float)
+## 任务物品信息更新信号（用于刷新任务物品图标显示）
+signal task_items_updated(task_items_info: Dictionary)
 
 # ---- 局内任务配置加载器 ----
 var _task_loader: TaskConfigLoader = TaskConfigLoader.new()
@@ -90,7 +92,19 @@ func save_completed_build_ids(ids: Array) -> void:
 
 func _ready() -> void:
 	_load_configs()
+	advance_task_chain()  # 初始化任务链
+	# 监听背包物品变化，刷新任务进度显示
+	GameManager.backpack_items_changed.connect(_on_backpack_items_changed)
+	# 监听棋盘物品变化，刷新任务进度显示
+	GameManager.board_items_changed.connect(_on_backpack_items_changed)
 	print(">>> [TaskManager] 任务系统管理器已加载")
+
+
+func _on_backpack_items_changed() -> void:
+	# 背包物品变化时，刷新任务进度显示和物品图标
+	if _current_task_id > 0:
+		task_progress_updated.emit(_current_task_id, get_current_task_progress())
+		task_items_updated.emit(get_task_items_info())
 
 
 func _load_configs() -> void:
@@ -130,7 +144,7 @@ func _load_out_task_config() -> void:
 			_out_tasks_by_id[id] = task
 
 	_out_tasks_loaded = true
-	print(">>> [TaskManager] 局外任务配置加载成功: %d个成就" % _out_tasks.size())
+	# print(">>> [TaskManager] 局外任务配置加载成功: %d个成就" % _out_tasks.size())
 
 
 # ==========================================
@@ -150,11 +164,56 @@ func get_current_task() -> Dictionary:
 
 
 ## 获取当前任务的完成进度 (0.0 - 1.0)
-## 局内任务是全或无的，达标返回1.0，否则返回0.0
+## 根据棋盘和背包中的物品计算实际进度
 func get_current_task_progress() -> float:
 	if _current_task_id <= 0:
 		return 0.0
-	return 1.0
+	var task: Dictionary = get_current_task()
+	if task.is_empty():
+		return 0.0
+
+	var need_items: Array = task.get("needItems", [])
+	if need_items.is_empty():
+		return 1.0
+
+	# 统计需求
+	var need_counts: Dictionary = {}
+	for need_id in need_items:
+		var id_int: int = int(need_id)
+		need_counts[id_int] = need_counts.get(id_int, 0) + 1
+
+	# 统计可用数量
+	var board_data: BoardData = GameManager.board_data
+	var backpack: Array = GameManager.get_backpack_items()
+	var available_counts: Dictionary = {}
+
+	# 遍历棋盘（跳过LOCKED和DUSTY）
+	for i in range(BoardData.BOARD_SLOTS):
+		var state: int = board_data.get_grid_state(i)
+		if state == BoardData.GridState.LOCKED or state == BoardData.GridState.DUSTY:
+			continue
+		var item: DataModels.BoardItemData = board_data.get_item_at_index(i)
+		if item == null:
+			continue
+		var id_int: int = int(item.id)
+		available_counts[id_int] = available_counts.get(id_int, 0) + 1
+
+	# 遍历背包
+	for item in backpack:
+		if item == null:
+			continue
+		var id_int: int = int(item.id)
+		available_counts[id_int] = available_counts.get(id_int, 0) + 1
+
+	# 计算满足的需求数量
+	var satisfied_count: int = 0
+	var total_need: int = need_items.size()
+	for need_id in need_counts.keys():
+		var have: int = available_counts.get(need_id, 0)
+		var need: int = need_counts[need_id]
+		satisfied_count += mini(have, need)
+
+	return clampf(float(satisfied_count) / float(total_need), 0.0, 1.0)
 
 
 ## 检查物品是否满足当前任务需求
@@ -169,6 +228,70 @@ func check_task_item(item_id: int) -> int:
 	if item_id in need_items:
 		return 1
 	return 0
+
+
+## 获取当前任务的物品需求ID列表
+func get_current_task_need_ids() -> Array[int]:
+	var task: Dictionary = get_current_task()
+	if task.is_empty():
+		return []
+	var need_items: Array = task.get("needItems", [])
+	var result: Array[int] = []
+	for need_id in need_items:
+		result.append(int(need_id))
+	return result
+
+
+## 获取所有可提交的任务物品信息（棋盘+背包）
+## 返回 {"board": [{index, id, pos}, ...], "backpack": [{index, id}, ...]}
+## 跳过LOCKED和DUSTY状态的格子
+func get_task_items_info() -> Dictionary:
+	var result := {"board": [], "backpack": []}
+	if _current_task_id <= 0:
+		return result
+
+	var task: Dictionary = get_current_task()
+	if task.is_empty():
+		return result
+
+	var need_items: Array = task.get("needItems", [])
+	if need_items.is_empty():
+		return result
+
+	# 统计需求
+	var need_counts: Dictionary = {}
+	for need_id in need_items:
+		var id_int: int = int(need_id)
+		need_counts[id_int] = need_counts.get(id_int, 0) + 1
+
+	var board_data: BoardData = GameManager.board_data
+	var backpack: Array = GameManager.get_backpack_items()
+
+	# 遍历棋盘，收集可用物品（跳过LOCKED和DUSTY）
+	for i in range(BoardData.BOARD_SLOTS):
+		var state: int = board_data.get_grid_state(i)
+		if state == BoardData.GridState.LOCKED or state == BoardData.GridState.DUSTY:
+			continue
+		var item: DataModels.BoardItemData = board_data.get_item_at_index(i)
+		if item == null:
+			continue
+		var id_int: int = int(item.id)
+		if need_counts.get(id_int, 0) > 0:
+			var pos: Vector2i = BoardData.index_to_pos(i)
+			result["board"].append({"index": i, "id": id_int, "pos": pos, "sprite_path": item.get_sprite_path()})
+			need_counts[id_int] -= 1
+
+	# 遍历背包，收集可用物品
+	for i in range(backpack.size()):
+		var item: DataModels.BoardItemData = backpack[i]
+		if item == null:
+			continue
+		var id_int: int = int(item.id)
+		if need_counts.get(id_int, 0) > 0:
+			result["backpack"].append({"index": i, "id": id_int, "sprite_path": item.get_sprite_path()})
+			need_counts[id_int] -= 1
+
+	return result
 
 
 ## 尝试完成当前局内任务 (物品提交时调用)
@@ -191,8 +314,80 @@ func try_complete_task(submitted_item_ids: Array[int]) -> bool:
 	if not satisfied:
 		return false
 
-	# 完成任务
+	# 消耗物品并完成任务
+	var consumed: bool = _consume_task_items(need_items)
+	if not consumed:
+		return false
+
 	_complete_task(task)
+	return true
+
+
+## 检查并消耗任务物品
+## 从棋盘和背包中查找所需物品，跳过LOCKED和DUSTY状态的格子
+## 消耗成功后从棋盘/背包中移除对应物品
+## 返回是否成功消耗所有物品
+func _consume_task_items(need_items: Array) -> bool:
+	var board_data: BoardData = GameManager.board_data
+	var backpack: Array = GameManager.get_backpack_items()
+
+	# 统计需求
+	var need_counts: Dictionary = {}
+	for need_id in need_items:
+		var id_int: int = int(need_id)
+		need_counts[id_int] = need_counts.get(id_int, 0) + 1
+
+	# 追踪需要从各来源移除的数量
+	var board_to_remove: Array = []  # [{index, id}, ...]
+	var backpack_to_remove: Array = []  # [index, ...]
+
+	# 遍历棋盘，收集可用物品（跳过LOCKED和DUSTY）
+	for i in range(BoardData.BOARD_SLOTS):
+		var state: int = board_data.get_grid_state(i)
+		if state == BoardData.GridState.LOCKED or state == BoardData.GridState.DUSTY:
+			continue
+		var item: DataModels.BoardItemData = board_data.get_item_at_index(i)
+		if item == null:
+			continue
+		var id_int: int = int(item.id)
+		if need_counts.get(id_int, 0) > 0:
+			board_to_remove.append({"index": i, "id": id_int})
+			need_counts[id_int] -= 1
+
+	# 遍历背包，收集可用物品
+	for i in range(backpack.size()):
+		var item: DataModels.BoardItemData = backpack[i]
+		if item == null:
+			continue
+		var id_int: int = int(item.id)
+		if need_counts.get(id_int, 0) > 0:
+			backpack_to_remove.append(i)
+			need_counts[id_int] -= 1
+
+	# 检查是否满足所有需求
+	for count in need_counts.values():
+		if count > 0:
+			print(">>> [TaskManager] 物品不足，无法提交任务")
+			return false
+
+	# 执行移除
+	# 先移除棋盘物品（按索引降序，避免移除后索引变化）
+	board_to_remove.sort_custom(func(a, b): return a["index"] > b["index"])
+	for remove_data in board_to_remove:
+		var pos: Vector2i = BoardData.index_to_pos(remove_data["index"])
+		board_data.remove_item(pos)
+		print(">>> [TaskManager] 消耗棋盘物品: index=%d, id=%d" % [remove_data["index"], remove_data["id"]])
+	# 移除完成后通知UI刷新
+	if not board_to_remove.is_empty():
+		GameManager.board_items_changed.emit()
+
+	# 再移除背包物品（按索引降序）
+	backpack_to_remove.sort()
+	backpack_to_remove.reverse()
+	for remove_idx in backpack_to_remove:
+		GameManager.remove_from_backpack(remove_idx)
+		print(">>> [TaskManager] 消耗背包物品: index=%d" % remove_idx)
+
 	return true
 
 
@@ -232,6 +427,7 @@ func _complete_task(task: Dictionary) -> void:
 	])
 
 	task_completed.emit(task_id, reward)
+	task_items_updated.emit(get_task_items_info())
 
 
 ## 设置当前局内任务 (用于存档恢复或GM)
@@ -243,19 +439,25 @@ func set_current_task(task_id: int) -> void:
 func advance_task_chain() -> void:
 	# 跳过已完成的任务，找到下一个未完成的
 	var all_tasks: Array = _task_loader.get_all_tasks()
+	print(">>> [TaskManager] advance_task_chain: 共%d个任务, player_level=%d, completed=%s" % [all_tasks.size(), player_level, _completed_task_ids])
 	for task in all_tasks:
 		var tid: int = task.get("id", 0)
 		if tid <= 0:
 			continue
 		if tid in _completed_task_ids:
+			print(">>> [TaskManager] 跳过已完成任务: id=%d" % tid)
 			continue
 		var unlock_level: int = task.get("unlockLevel", 1)
 		if unlock_level > player_level:
+			print(">>> [TaskManager] 跳过等级不足任务: id=%d, unlockLevel=%d > playerLevel=%d" % [tid, unlock_level, player_level])
 			continue
 		_current_task_id = tid
 		print(">>> [TaskManager] 局内任务推进: id=%d, name=%s" % [tid, task.get("name", "")])
+		task_items_updated.emit(get_task_items_info())
 		return
 	_current_task_id = 0
+	print(">>> [TaskManager] 没有可接取的任务")
+	task_items_updated.emit(get_task_items_info())
 
 
 ## 获取所有局内任务
@@ -397,6 +599,7 @@ func add_exp(amount: int) -> void:
 
 func _check_level_up() -> void:
 	# 简单的等级计算: 每100exp升一级
+	@warning_ignore("integer_division")
 	var new_level: int = 1 + (exp / 100)
 	if new_level > player_level:
 		player_level = new_level

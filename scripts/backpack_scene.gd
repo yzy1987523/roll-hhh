@@ -33,6 +33,9 @@ func _ready():
 	if backdrop:
 		backdrop.gui_input.connect(_on_backdrop_input)
 
+	# 连接任务物品更新信号
+	TaskManager.task_items_updated.connect(_on_task_items_updated)
+
 	# 设置层级
 	backdrop.z_index = 100
 	backdrop.z_as_relative = false
@@ -59,13 +62,19 @@ func refresh(backpack_items: Array) -> void:
 		return a["original_index"] < b["original_index"]
 	)
 
+	# 获取任务物品信息
+	var task_info: Dictionary = TaskManager.get_task_items_info()
+	var backpack_task_indices: Array = []
+	for item_data in task_info.get("backpack", []):
+		backpack_task_indices.append(item_data["index"])
+
 	# 创建格子 (4x4 = 16 slots)
 	for i in range(16):
-		var cell := _create_cell(i, sorted_items, backpack_items)
+		var cell := _create_cell(i, sorted_items, backpack_items, backpack_task_indices)
 		grid_container.add_child(cell)
 
 
-func _create_cell(index: int, sorted_items: Array, backpack_items: Array) -> Control:
+func _create_cell(index: int, sorted_items: Array, backpack_items: Array, backpack_task_indices: Array) -> Control:
 	var container := PanelContainer.new()
 	container.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
 	container.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -123,6 +132,27 @@ func _create_cell(index: int, sorted_items: Array, backpack_items: Array) -> Con
 			overlay.visible = true
 			sprite.modulate = Color(0.5, 0.5, 0.5, 1.0)  # 灰色表示已标记
 
+		# 任务物品图标（左下角标记）
+		if backpack_task_indices.has(original_index):
+			var task_icon := TextureRect.new()
+			task_icon.name = "TaskIcon"
+			task_icon.texture = preload("res://art/sprites/UI/icon/p1_2.png")
+			task_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			task_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			task_icon.custom_minimum_size = Vector2(36, 36)
+			task_icon.anchor_left = 0.0
+			task_icon.anchor_top = 1.0
+			task_icon.anchor_right = 0.0
+			task_icon.anchor_bottom = 1.0
+			task_icon.offset_left = 2.0
+			task_icon.offset_top = -38.0
+			task_icon.offset_right = 38.0
+			task_icon.offset_bottom = -2.0
+			task_icon.pivot_offset = Vector2(18, 18)
+			task_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			task_icon.z_index = 15
+			container.add_child(task_icon)
+
 		# 连接点击信号
 		container.gui_input.connect(_on_cell_gui_input.bind(original_index, item))
 	else:
@@ -147,6 +177,12 @@ func _on_cell_gui_input(event: InputEvent, original_index: int, item: DataModels
 				# 未选中，标记为即将移出
 				_marked_indices.append(original_index)
 			refresh(GameManager.backpack_items)
+
+
+## 任务物品更新时刷新显示
+func _on_task_items_updated(_task_items_info: Dictionary) -> void:
+	if visible:
+		refresh(GameManager.backpack_items)
 
 
 func _on_close_pressed() -> void:
