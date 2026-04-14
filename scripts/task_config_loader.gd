@@ -43,7 +43,7 @@ func load_config() -> bool:
 			_tasks_by_id[id] = task
 
 	_loaded = true
-	print(">>> [TaskConfigLoader] 局内任务配置加载成功: %d个任务" % tasks.size())
+	# print(">>> [TaskConfigLoader] 局内任务配置加载成功: %d个任务" % tasks.size())
 	return true
 
 

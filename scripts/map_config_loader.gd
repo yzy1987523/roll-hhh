@@ -51,11 +51,11 @@ func load_config() -> bool:
 	map = data.get("map", [])
 
 	_loaded = true
-	print(">>> [MapConfigLoader] 配置加载成功: rows=%d, cols=%d, map.size()=%d" % [rows, cols, map.size()])
+	# print(">>> [MapConfigLoader] 配置加载成功: rows=%d, cols=%d, map.size()=%d" % [rows, cols, map.size()])
 	# 验证：打印第3行第5列的数据
-	if map.size() > 2 and (map[2] as Array).size() > 4:
-		var cell: Dictionary = map[2][4]
-		print(">>> [MapConfigLoader] map[2][4]=%s" % [cell])
+	# if map.size() > 2 and (map[2] as Array).size() > 4:
+	# 	var cell: Dictionary = map[2][4]
+	# 	print(">>> [MapConfigLoader] map[2][4]=%s" % [cell])
 	return true
 
 

@@ -45,7 +45,7 @@ func load_config() -> bool:
 			_items_by_id[id] = item
 
 	_loaded = true
-	print(">>> [ItemConfigLoader] 配置加载成功: %d 个物品" % items.size())
+	# print(">>> [ItemConfigLoader] 配置加载成功: %d 个物品" % items.size())
 	return true
 
 

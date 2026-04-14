@@ -43,7 +43,7 @@ func load_config() -> bool:
 			_builds_by_id[id] = build
 
 	_loaded = true
-	print(">>> [BuildConfigLoader] 建造配置加载成功: %d个建造" % builds.size())
+	# print(">>> [BuildConfigLoader] 建造配置加载成功: %d个建造" % builds.size())
 	return true
 
 
