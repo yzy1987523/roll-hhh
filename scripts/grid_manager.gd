@@ -58,27 +58,53 @@ func _ready():
 	# 加载建造配置
 	_load_build_config()
 
-	# 初始化父节点
-	furniture_root = Node2D.new()
-	furniture_root.name = "FurnitureRoot"
-	add_child(furniture_root)
-
-	wall_root = Node2D.new()
-	wall_root.name = "WallRoot"
-	add_child(wall_root)
-
-	# 初始化格子占用
+	# 初始化格子占用（必须最先初始化）
 	grid_occupied = []
 	for y in range(map_height):
 		var row = []
 		for x in range(map_width):
 			row.append(false)
 		grid_occupied.append(row)
+	print(">>> [GridManager] grid_occupied 初始化完成: %d x %d" % [map_height, map_width])
 
-	# 生成地图
-	init_preview()
-	generate_isometric_grid()
-	generate_room_walls()
+	# 检查场景中是否已有静态地板/墙体（.tscn中手动添加的）
+	var existing_floor_root = find_child("FloorRoot", true, false)
+	var existing_wall_root = find_child("WallRoot", true, false)
+
+	print(">>> [GridManager] _ready: existing_floor_root=%s, existing_wall_root=%s" % [existing_floor_root, existing_wall_root])
+
+	if existing_floor_root != null and existing_wall_root != null:
+		# 静态模式：使用场景中已有的地板和墙体
+		floor_list = []
+		for child in existing_floor_root.get_children():
+			floor_list.append(child)
+		wall_root = existing_wall_root
+		print(">>> [GridManager] 使用静态地板和墙体（共 %d 地板，%d 墙体）" % [floor_list.size(), wall_root.get_child_count()])
+	else:
+		# 动态模式：创建地板和墙体
+		furniture_root = Node2D.new()
+		furniture_root.name = "FurnitureRoot"
+		add_child(furniture_root)
+
+		wall_root = Node2D.new()
+		wall_root.name = "WallRoot"
+		add_child(wall_root)
+
+		# 生成地图
+		init_preview()
+		generate_isometric_grid()
+		generate_room_walls()
+		print(">>> [GridManager] 动态生成地板和墙体")
+
+	# 初始化家具父节点（始终需要）
+	furniture_root = find_child("FurnitureRoot", true, false)
+	if furniture_root == null:
+		furniture_root = Node2D.new()
+		furniture_root.name = "FurnitureRoot"
+		add_child(furniture_root)
+
+	# 静态墙体边界锁定
+	set_map_border_limit()
 
 	# 创建UI
 	_create_build_panel()
@@ -460,81 +486,111 @@ func init_preview():
 	preview_tile.modulate = Color(1, 1, 1, 0.6)
 	add_child(preview_tile)
 
-# ================================= 墙体生成（沿菱形边缘）=================================
+# ================================= 墙体生成（Polygon2D方案：边缘与地面平行）=================================
 func generate_room_walls():
 	var half_w = cell_size.x / 2
 	var half_h = cell_size.y / 2
 
-	# 绘制右侧墙体 - 沿每个地板格子的右边缘
-	# 右边缘：从顶点(0, -half_h)到右点(half_w, 0)
-	# 墙体厚度方向：垂直于边缘，斜率为-dy/dx = -half_h/half_w = -H/W
+	# 1. 后墙（地图最上沿 gy=0 整排的上边缘）
+	# 地板菱形的上边缘：从顶点(0, -half_h)到左点(-half_w, 0)
+	# 边缘方向向量：(−half_w, half_h)，即左下方向
 	for gx in range(map_width):
-		for gy in range(map_height):
-			var center = grid_to_world(gx, gy)
+		var center = grid_to_world(gx, 0)
 
-			# 右边缘的起点和终点
-			var edge_start = center + Vector2(0, -half_h)      # 顶点
-			var edge_end = center + Vector2(half_w, 0)          # 右点
+		# 上边缘起点（格子顶点）和终点（左点）
+		var edge_start = center + Vector2(0, -half_h)      # 顶点
+		var edge_end = center + Vector2(-half_w, 0)         # 左点
 
-			# 边缘向量
-			var edge_vec = edge_end - edge_start
+		# 边缘向量和法向量（垂直于边缘，朝外）
+		var edge_vec = edge_end - edge_start  # (−half_w, half_h)
+		var normal = Vector2(-edge_vec.y, edge_vec.x).normalized()  # (half_h, half_w)/√(hw²+hh²)
 
-			# 边缘的法向量（垂直于边缘）
-			var normal = Vector2(-edge_vec.y, edge_vec.x).normalized()
+		# 墙体多边形（4个顶点）：内边缘2点 + 外边缘2点
+		var wall_polygon = [
+			edge_start,                    # 内起点
+			edge_end,                       # 内终点
+			edge_end + normal * wall_thickness,    # 外终点
+			edge_start + normal * wall_thickness    # 外起点
+		]
 
-			# 墙体的四个顶点
-			var wall_polygon = [
-				edge_start + normal * wall_thickness,
-				edge_end + normal * wall_thickness,
-				edge_end - normal * wall_thickness,
-				edge_start - normal * wall_thickness
-			]
+		var wall = Polygon2D.new()
+		wall.name = "BackWall_%d" % gx
+		wall.polygon = PackedVector2Array(wall_polygon)
+		wall.color = wall_color_back
+		wall.z_index = 1000
+		wall_root.add_child(wall)
 
-			var right_wall = Polygon2D.new()
-			right_wall.name = "RightWall_%d_%d" % [gx, gy]
-			right_wall.polygon = PackedVector2Array(wall_polygon)
-			right_wall.color = wall_color_side
-			right_wall.z_index = 1000
-			wall_root.add_child(right_wall)
+	# 2. 左侧墙（地图最左列 gx=0 的左边缘）
+	# 地板菱形的左边缘：从左点(-half_w, 0)到顶点(0, half_h)
+	# 边缘方向向量：(half_w, half_h)，即右下方向
+	for gy in range(map_height):
+		var center = grid_to_world(0, gy)
 
-	# 绘制顶部墙体 - 沿每个地板格子的上边缘
-	# 上边缘：从顶点(0, -half_h)到左点(-half_w, 0)
-	for gx in range(map_width):
-		for gy in range(map_height):
-			var center = grid_to_world(gx, gy)
+		# 左边缘起点（左点）和终点（顶点）
+		var edge_start = center + Vector2(-half_w, 0)     # 左点
+		var edge_end = center + Vector2(0, half_h)         # 顶点
 
-			# 上边缘的起点和终点
-			var edge_start = center + Vector2(0, -half_h)      # 顶点
-			var edge_end = center + Vector2(-half_w, 0)         # 左点
+		# 边缘向量和法向量（垂直于边缘，朝外）
+		var edge_vec = edge_end - edge_start  # (half_w, half_h)
+		var normal = Vector2(-edge_vec.y, edge_vec.x).normalized()  # (−half_h, half_w)/√(...)
 
-			# 边缘向量
-			var edge_vec = edge_end - edge_start
+		# 墙体多边形
+		var wall_polygon = [
+			edge_start,
+			edge_end,
+			edge_end + normal * wall_thickness,
+			edge_start + normal * wall_thickness
+		]
 
-			# 边缘的法向量
-			var normal = Vector2(-edge_vec.y, edge_vec.x).normalized()
+		var wall = Polygon2D.new()
+		wall.name = "LeftWall_%d" % gy
+		wall.polygon = PackedVector2Array(wall_polygon)
+		wall.color = wall_color_side
+		wall.z_index = 999
+		wall_root.add_child(wall)
 
-			# 墙体的四个顶点
-			var wall_polygon = [
-				edge_start + normal * wall_thickness,
-				edge_end + normal * wall_thickness,
-				edge_end - normal * wall_thickness,
-				edge_start - normal * wall_thickness
-			]
+	# 3. 右侧墙（地图最右列 gx=map_width-1 的右边缘）
+	# 地板菱形的右边缘：从顶点(0, -half_h)到右点(half_w, 0)
+	# 边缘方向向量：(half_w, half_h)，即右下方向
+	for gy in range(map_height):
+		var center = grid_to_world(map_width - 1, gy)
 
-			var top_wall = Polygon2D.new()
-			top_wall.name = "TopWall_%d_%d" % [gx, gy]
-			top_wall.polygon = PackedVector2Array(wall_polygon)
-			top_wall.color = wall_color_back
-			top_wall.z_index = 1001
-			wall_root.add_child(top_wall)
+		# 右边缘起点（顶点）和终点（右点）
+		var edge_start = center + Vector2(0, -half_h)     # 顶点
+		var edge_end = center + Vector2(half_w, 0)           # 右点
+
+		# 边缘向量和法向量（垂直于边缘，朝外）
+		var edge_vec = edge_end - edge_start  # (half_w, half_h)
+		var normal = Vector2(-edge_vec.y, edge_vec.x).normalized()  # (−half_h, half_w)/√(...)
+
+		# 墙体多边形
+		var wall_polygon = [
+			edge_start,
+			edge_end,
+			edge_end + normal * wall_thickness,
+			edge_start + normal * wall_thickness
+		]
+
+		var wall = Polygon2D.new()
+		wall.name = "RightWall_%d" % gy
+		wall.polygon = PackedVector2Array(wall_polygon)
+		wall.color = wall_color_side
+		wall.z_index = 999
+		wall_root.add_child(wall)
 
 	set_map_border_limit()
 
 func set_map_border_limit():
+	print(">>> [GridManager] set_map_border_limit: map_width=%d, map_height=%d, grid_occupied.size=%d" % [map_width, map_height, grid_occupied.size()])
+	# 后墙行（gy=0）全部锁定
 	for x in range(map_width):
-		grid_occupied[0][x] = true
+		if grid_occupied.size() > 0 and grid_occupied[0].size() > x:
+			grid_occupied[0][x] = true
+	# 左右侧墙列（gx=0、gx=map_width-1）全部锁定
 	for y in range(map_height):
-		grid_occupied[y][0] = true
+		if grid_occupied.size() > y:
+			grid_occupied[y][0] = true
+			grid_occupied[y][map_width - 1] = true
 
 # ================================= 每帧更新 =================================
 func _process(_delta):
