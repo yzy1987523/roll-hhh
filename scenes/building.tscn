@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://building_scene"]
+
+[ext_resource type="Script" uid="uid://grid_manager_script" path="res://scripts/grid_manager.gd" id="1_grid_manager"]
+
+[node name="RoomRoot" type="Node2D" unique_id=1234567890]
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1234567891]
+position = Vector2(0, 0)
+current = true
+zoom = Vector2(1, 1)
+
+[node name="GridManager" type="Node2D" parent="." unique_id=1234567892]
+script = ExtResource("1_grid_manager")
+cell_size = Vector2(128, 64)
+map_width = 10
+map_height = 8
+floor_color = Color(0.28, 0.24, 0.20, 1)
+highlight_color = Color(0.3, 1.0, 0.3, 0.4)
+occupy_color = Color(0.9, 0.3, 0.3, 0.5)
+wall_thickness = 32
+wall_color_back = Color(0.6, 0.55, 0.5, 1)
+wall_color_side = Color(0.5, 0.45, 0.4, 1)
+can_delete = true
+delete_key = 4194308
+is_edit_mode = false
+edit_mode_key = 4098
