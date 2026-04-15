@@ -311,8 +311,6 @@ class BoardItemData:
 			path = "res://art/sprites/%s.png" % sprite
 		else:
 			path = "res://art/sprites/items/%s.png" % sprite
-		print(">>> [BoardItemData.get_sprite_path] id=%s, name=%s, sprite=%s -> path=%s, exists=%s" % [
-			id, name, sprite, path, ResourceLoader.exists(path)])
 		return path
 
 	# 是否可叠加

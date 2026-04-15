@@ -1,7 +1,22 @@
-[gd_scene format=3 uid="uid://board_item"]
+[gd_scene format=3 uid="uid://d3t0clelextyu"]
 
-[node name="BoardItem" type="TextureRect"]
-custom_minimum_size = Vector2(129, 129)
-layout_mode = 2
-stretch_mode = 0
-expand_mode = 0
+[node name="BoardItem" type="Control" unique_id=925450031]
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Sprite" type="TextureRect" parent="." unique_id=1317827681]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(64.5, 64.5)
+stretch_mode = 5

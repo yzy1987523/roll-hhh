@@ -18,13 +18,11 @@ var all_items: Array = []  # Array of BoardItemData
 
 func _ready() -> void:
 	_load_items()
-	print(">>> [ItemManager] 物品管理器已初始化")
 
 
 ## 加载所有物品配置
 func _load_items() -> void:
 	if not _config_loader.load_config():
-		print(">>> [ItemManager] 物品配置加载失败")
 		return
 
 	all_items.clear()
@@ -39,7 +37,6 @@ func _load_items() -> void:
 		all_items.append(board_item)
 		_item_cache[id] = board_item
 
-	print(">>> [ItemManager] 已加载 %d 个物品配置" % all_items.size())
 
 
 ## 根据ID获取BoardItemData
@@ -50,12 +47,10 @@ func get_item(item_id: int) -> DM.BoardItemData:
 	# 尝试从配置加载器获取
 	var cfg: Dictionary = _config_loader.get_item(item_id)
 	if not cfg.is_empty():
-		print(">>> [ItemManager.get_item] item_id=%s, cfg=%s" % [item_id, cfg])
 		var board_item: DM.BoardItemData = DM.BoardItemData.from_config(cfg)
 		_item_cache[item_id] = board_item
 		return board_item
 
-	print(">>> [ItemManager.get_item] item_id=%s 未找到配置" % item_id)
 	return null
 
 
@@ -159,27 +154,22 @@ func get_random_mergeable_item(max_level: int = 9) -> DM.BoardItemData:
 func merge_items(item_a: DM.BoardItemData, item_b: DM.BoardItemData) -> DM.BoardItemData:
 	# 检查是否可以合成
 	if not item_a.can_merge() or not item_b.can_merge():
-		print(">>> [ItemManager] 合成失败: 物品不可合成")
 		return null
 	if item_a.id != item_b.id:
-		print(">>> [ItemManager] 合成失败: 物品ID不同 (%d vs %d)" % [item_a.id, item_b.id])
 		return null
 
 	# 获取合成后的物品ID
 	var next_id: int = item_a.get_next_item_id()
 	if next_id == 0:
-		print(">>> [ItemManager] 合成失败: 没有可合成的物品")
 		return null
 
 	# 获取合成后的物品数据
 	var merged_item: DM.BoardItemData = get_item(next_id)
 	if merged_item == null:
-		print(">>> [ItemManager] 合成失败: 找不到合成后的物品 ID=%d" % next_id)
 		return null
 
 	# 复制一份用于棋盘存储
 	var result: DM.BoardItemData = merged_item.duplicate()
-	print(">>> [ItemManager] 合成成功: %d + %d → %d (Lv.%d)" % [item_a.id, item_b.id, next_id, result.level])
 	return result
 
 
@@ -249,20 +239,16 @@ func produce_item(item_id: int, board_index: int = -1) -> DM.BoardItemData:
 	# 如果提供了 board_index，尝试消耗库存
 	if board_index >= 0 and ProducerManager.is_producer(board_index):
 		if not ProducerManager.can_produce(board_index):
-			print(">>> [ItemManager] 生产失败: 生成器正在冷却或库存为空 board=%d" % board_index)
 			return null
 		ProducerManager.consume_stock(board_index)
 
 	var produced_id: int = _config_loader.roll_production_item(item_id)
 	if produced_id == 0:
-		print(">>> [ItemManager] 生产失败: 找不到产出物品 item_id=%d" % item_id)
 		return null
 
 	var produced: DM.BoardItemData = get_item(produced_id)
 	if produced == null:
-		print(">>> [ItemManager] 生产失败: 找不到产出物品配置 id=%d" % produced_id)
 		return null
 
 	var result: DM.BoardItemData = produced.duplicate()
-	print(">>> [ItemManager] 生产成功: %d → %d (%s Lv.%d)" % [item_id, produced_id, result.name, result.level])
 	return result

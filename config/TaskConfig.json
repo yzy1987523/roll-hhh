@@ -2,14 +2,14 @@
     "tasks": [
         {
             "id": 1,
-            "name": "收集蜗牛2040101",
-            "content": "收集1级蜗牛1个",
+            "name": "收集起钉器",
+            "content": "收集1级工具1个",
             "type": "composite",
             "needItems": [
-                2040101
+                1020101
             ],
             "recycle": [
-                2040101
+                1020101
             ],
             "reward": {
                 "items": [],
@@ -21,349 +21,7 @@
         },
         {
             "id": 2,
-            "name": "收集化石2010105",
-            "content": "收集5级化石1个",
-            "type": "composite",
-            "needItems": [
-                2010105
-            ],
-            "recycle": [
-                2010105
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 2
-            },
-            "nextTaskId": 3,
-            "unlockLevel": 2
-        },
-        {
-            "id": 3,
-            "name": "收集花盆4050102",
-            "content": "收集2级花盆1个",
-            "type": "composite",
-            "needItems": [
-                4050102
-            ],
-            "recycle": [
-                4050102
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 1
-            },
-            "nextTaskId": 4,
-            "unlockLevel": 1
-        },
-        {
-            "id": 4,
-            "name": "收集工具1020109",
-            "content": "收集9级工具1个",
-            "type": "composite",
-            "needItems": [
-                1020109
-            ],
-            "recycle": [
-                1020109
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 4
-            },
-            "nextTaskId": 5,
-            "unlockLevel": 3
-        },
-        {
-            "id": 5,
-            "name": "收集工具1020201",
-            "content": "收集1级工具1个",
-            "type": "composite",
-            "needItems": [
-                1020201
-            ],
-            "recycle": [
-                1020201
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 1
-            },
-            "nextTaskId": 6,
-            "unlockLevel": 1
-        },
-        {
-            "id": 6,
-            "name": "收集化石2010102",
-            "content": "收集2级化石1个",
-            "type": "composite",
-            "needItems": [
-                2010102
-            ],
-            "recycle": [
-                2010102
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 1
-            },
-            "nextTaskId": 7,
-            "unlockLevel": 1
-        },
-        {
-            "id": 7,
-            "name": "收集花盆4050103",
-            "content": "收集3级花盆1个",
-            "type": "composite",
-            "needItems": [
-                4050103
-            ],
-            "recycle": [
-                4050103
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 1
-            },
-            "nextTaskId": 8,
-            "unlockLevel": 1
-        },
-        {
-            "id": 8,
-            "name": "收集花盆4050106",
-            "content": "收集6级花盆1个",
-            "type": "composite",
-            "needItems": [
-                4050106
-            ],
-            "recycle": [
-                4050106
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 2
-            },
-            "nextTaskId": 9,
-            "unlockLevel": 2
-        },
-        {
-            "id": 9,
-            "name": "收集化石3010103",
-            "content": "收集3级化石1个",
-            "type": "composite",
-            "needItems": [
-                3010103
-            ],
-            "recycle": [
-                3010103
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 1
-            },
-            "nextTaskId": 10,
-            "unlockLevel": 1
-        },
-        {
-            "id": 10,
-            "name": "收集化石2010101",
-            "content": "收集1级化石1个",
-            "type": "composite",
-            "needItems": [
-                2010101
-            ],
-            "recycle": [
-                2010101
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 1
-            },
-            "nextTaskId": 11,
-            "unlockLevel": 1
-        },
-        {
-            "id": 11,
-            "name": "收集工具1020107",
-            "content": "收集7级工具1个",
-            "type": "composite",
-            "needItems": [
-                1020107
-            ],
-            "recycle": [
-                1020107
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 3
-            },
-            "nextTaskId": 12,
-            "unlockLevel": 3
-        },
-        {
-            "id": 12,
-            "name": "收集化石3010101",
-            "content": "收集1级化石1个",
-            "type": "composite",
-            "needItems": [
-                3010101
-            ],
-            "recycle": [
-                3010101
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 1
-            },
-            "nextTaskId": 13,
-            "unlockLevel": 1
-        },
-        {
-            "id": 13,
-            "name": "收集工具3020104",
-            "content": "收集4级工具1个",
-            "type": "composite",
-            "needItems": [
-                3020104
-            ],
-            "recycle": [
-                3020104
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 2
-            },
-            "nextTaskId": 14,
-            "unlockLevel": 2
-        },
-        {
-            "id": 14,
-            "name": "收集蜗牛4040101",
-            "content": "收集1级蜗牛1个",
-            "type": "composite",
-            "needItems": [
-                4040101
-            ],
-            "recycle": [
-                4040101
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 1
-            },
-            "nextTaskId": 15,
-            "unlockLevel": 1
-        },
-        {
-            "id": 15,
-            "name": "收集花种2030204",
-            "content": "收集4级花种1个",
-            "type": "composite",
-            "needItems": [
-                2030204
-            ],
-            "recycle": [
-                2030204
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 2
-            },
-            "nextTaskId": 16,
-            "unlockLevel": 2
-        },
-        {
-            "id": 16,
-            "name": "收集杂物99",
-            "content": "收集99级杂物1个",
-            "type": "composite",
-            "needItems": [
-                99
-            ],
-            "recycle": [
-                99
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 4
-            },
-            "nextTaskId": 17,
-            "unlockLevel": 10
-        },
-        {
-            "id": 17,
-            "name": "收集工具1020101",
-            "content": "收集1级工具1个",
-            "type": "composite",
-            "needItems": [
-                1020101
-            ],
-            "recycle": [
-                1020101
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 1
-            },
-            "nextTaskId": 18,
-            "unlockLevel": 1
-        },
-        {
-            "id": 18,
-            "name": "收集化石2010103",
-            "content": "收集3级化石1个",
-            "type": "composite",
-            "needItems": [
-                2010103
-            ],
-            "recycle": [
-                2010103
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 1
-            },
-            "nextTaskId": 19,
-            "unlockLevel": 1
-        },
-        {
-            "id": 19,
-            "name": "收集蜗牛4040103",
-            "content": "收集3级蜗牛1个",
-            "type": "composite",
-            "needItems": [
-                4040103
-            ],
-            "recycle": [
-                4040103
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 1
-            },
-            "nextTaskId": 20,
-            "unlockLevel": 1
-        },
-        {
-            "id": 20,
-            "name": "收集工具1020102",
+            "name": "收集扁口螺丝刀",
             "content": "收集2级工具1个",
             "type": "composite",
             "needItems": [
@@ -377,31 +35,373 @@
                 "coin": 0,
                 "star": 1
             },
-            "nextTaskId": 21,
+            "nextTaskId": 3,
             "unlockLevel": 1
         },
         {
-            "id": 21,
-            "name": "收集花种2030203",
-            "content": "收集3级花种1个",
+            "id": 3,
+            "name": "收集外六角扳手",
+            "content": "收集3级工具1个",
             "type": "composite",
             "needItems": [
-                2030203
+                1020103
             ],
             "recycle": [
-                2030203
+                1020103
             ],
             "reward": {
                 "items": [],
                 "coin": 0,
                 "star": 1
             },
-            "nextTaskId": 22,
+            "nextTaskId": 4,
             "unlockLevel": 1
         },
         {
+            "id": 4,
+            "name": "收集钳子",
+            "content": "收集4级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020104
+            ],
+            "recycle": [
+                1020104
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 2
+            },
+            "nextTaskId": 5,
+            "unlockLevel": 2
+        },
+        {
+            "id": 5,
+            "name": "收集扳手",
+            "content": "收集5级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020105
+            ],
+            "recycle": [
+                1020105
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 2
+            },
+            "nextTaskId": 6,
+            "unlockLevel": 2
+        },
+        {
+            "id": 6,
+            "name": "收集钢剪",
+            "content": "收集6级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020106
+            ],
+            "recycle": [
+                1020106
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 2
+            },
+            "nextTaskId": 7,
+            "unlockLevel": 2
+        },
+        {
+            "id": 7,
+            "name": "收集管钳",
+            "content": "收集7级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020107
+            ],
+            "recycle": [
+                1020107
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 3
+            },
+            "nextTaskId": 8,
+            "unlockLevel": 3
+        },
+        {
+            "id": 8,
+            "name": "收集钢锯",
+            "content": "收集8级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020108
+            ],
+            "recycle": [
+                1020108
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 3
+            },
+            "nextTaskId": 9,
+            "unlockLevel": 3
+        },
+        {
+            "id": 9,
+            "name": "收集电锯",
+            "content": "收集9级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020109
+            ],
+            "recycle": [
+                1020109
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 4
+            },
+            "nextTaskId": 10,
+            "unlockLevel": 3
+        },
+        {
+            "id": 10,
+            "name": "收集电钻",
+            "content": "收集10级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020110
+            ],
+            "recycle": [
+                1020110
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 4
+            },
+            "nextTaskId": 11,
+            "unlockLevel": 4
+        },
+        {
+            "id": 11,
+            "name": "收集打磨器",
+            "content": "收集11级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020111
+            ],
+            "recycle": [
+                1020111
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 4
+            },
+            "nextTaskId": 12,
+            "unlockLevel": 4
+        },
+        {
+            "id": 12,
+            "name": "收集单只手套",
+            "content": "收集1级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020201
+            ],
+            "recycle": [
+                1020201
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 1
+            },
+            "nextTaskId": 13,
+            "unlockLevel": 1
+        },
+        {
+            "id": 13,
+            "name": "收集一双手套",
+            "content": "收集2级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020202
+            ],
+            "recycle": [
+                1020202
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 1
+            },
+            "nextTaskId": 14,
+            "unlockLevel": 1
+        },
+        {
+            "id": 14,
+            "name": "收集手套",
+            "content": "收集3级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020203
+            ],
+            "recycle": [
+                1020203
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 1
+            },
+            "nextTaskId": 15,
+            "unlockLevel": 1
+        },
+        {
+            "id": 15,
+            "name": "收集起钉器",
+            "content": "收集1级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020101
+            ],
+            "recycle": [
+                1020101
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 1
+            },
+            "nextTaskId": 16,
+            "unlockLevel": 1
+        },
+        {
+            "id": 16,
+            "name": "收集扁口螺丝刀",
+            "content": "收集2级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020102
+            ],
+            "recycle": [
+                1020102
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 1
+            },
+            "nextTaskId": 17,
+            "unlockLevel": 1
+        },
+        {
+            "id": 17,
+            "name": "收集外六角扳手",
+            "content": "收集3级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020103
+            ],
+            "recycle": [
+                1020103
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 1
+            },
+            "nextTaskId": 18,
+            "unlockLevel": 1
+        },
+        {
+            "id": 18,
+            "name": "收集钳子",
+            "content": "收集4级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020104
+            ],
+            "recycle": [
+                1020104
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 2
+            },
+            "nextTaskId": 19,
+            "unlockLevel": 2
+        },
+        {
+            "id": 19,
+            "name": "收集扳手",
+            "content": "收集5级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020105
+            ],
+            "recycle": [
+                1020105
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 2
+            },
+            "nextTaskId": 20,
+            "unlockLevel": 2
+        },
+        {
+            "id": 20,
+            "name": "收集钢剪",
+            "content": "收集6级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020106
+            ],
+            "recycle": [
+                1020106
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 2
+            },
+            "nextTaskId": 21,
+            "unlockLevel": 2
+        },
+        {
+            "id": 21,
+            "name": "收集管钳",
+            "content": "收集7级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020107
+            ],
+            "recycle": [
+                1020107
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 3
+            },
+            "nextTaskId": 22,
+            "unlockLevel": 3
+        },
+        {
             "id": 22,
-            "name": "收集工具1020108",
+            "name": "收集钢锯",
             "content": "收集8级工具1个",
             "type": "composite",
             "needItems": [
@@ -420,216 +420,26 @@
         },
         {
             "id": 23,
-            "name": "收集工具3020105",
-            "content": "收集5级工具1个",
+            "name": "收集电锯",
+            "content": "收集9级工具1个",
             "type": "composite",
             "needItems": [
-                3020105
+                1020109
             ],
             "recycle": [
-                3020105
+                1020109
             ],
             "reward": {
                 "items": [],
                 "coin": 0,
-                "star": 2
+                "star": 4
             },
             "nextTaskId": 24,
-            "unlockLevel": 2
+            "unlockLevel": 3
         },
         {
             "id": 24,
-            "name": "收集化石2010104",
-            "content": "收集4级化石1个",
-            "type": "composite",
-            "needItems": [
-                2010104
-            ],
-            "recycle": [
-                2010104
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 2
-            },
-            "nextTaskId": 25,
-            "unlockLevel": 2
-        },
-        {
-            "id": 25,
-            "name": "收集工具3020101",
-            "content": "收集1级工具1个",
-            "type": "composite",
-            "needItems": [
-                3020101
-            ],
-            "recycle": [
-                3020101
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 1
-            },
-            "nextTaskId": 26,
-            "unlockLevel": 1
-        },
-        {
-            "id": 26,
-            "name": "收集花种2030101",
-            "content": "收集1级花种1个",
-            "type": "composite",
-            "needItems": [
-                2030101
-            ],
-            "recycle": [
-                2030101
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 1
-            },
-            "nextTaskId": 27,
-            "unlockLevel": 1
-        },
-        {
-            "id": 27,
-            "name": "收集化石1010101",
-            "content": "收集1级化石1个",
-            "type": "composite",
-            "needItems": [
-                1010101
-            ],
-            "recycle": [
-                1010101
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 1
-            },
-            "nextTaskId": 28,
-            "unlockLevel": 1
-        },
-        {
-            "id": 28,
-            "name": "收集花种2030102",
-            "content": "收集2级花种1个",
-            "type": "composite",
-            "needItems": [
-                2030102
-            ],
-            "recycle": [
-                2030102
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 1
-            },
-            "nextTaskId": 29,
-            "unlockLevel": 1
-        },
-        {
-            "id": 29,
-            "name": "收集蜗牛4040105",
-            "content": "收集5级蜗牛1个",
-            "type": "composite",
-            "needItems": [
-                4040105
-            ],
-            "recycle": [
-                4040105
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 2
-            },
-            "nextTaskId": 30,
-            "unlockLevel": 2
-        },
-        {
-            "id": 30,
-            "name": "收集工具1020203",
-            "content": "收集3级工具1个",
-            "type": "composite",
-            "needItems": [
-                1020203
-            ],
-            "recycle": [
-                1020203
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 1
-            },
-            "nextTaskId": 31,
-            "unlockLevel": 1
-        },
-        {
-            "id": 31,
-            "name": "收集蜗牛2040102",
-            "content": "收集2级蜗牛1个",
-            "type": "composite",
-            "needItems": [
-                2040102
-            ],
-            "recycle": [
-                2040102
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 1
-            },
-            "nextTaskId": 32,
-            "unlockLevel": 1
-        },
-        {
-            "id": 32,
-            "name": "收集化石3010104",
-            "content": "收集4级化石1个",
-            "type": "composite",
-            "needItems": [
-                3010104
-            ],
-            "recycle": [
-                3010104
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 2
-            },
-            "nextTaskId": 33,
-            "unlockLevel": 2
-        },
-        {
-            "id": 33,
-            "name": "收集花种2030201",
-            "content": "收集1级花种1个",
-            "type": "composite",
-            "needItems": [
-                2030201
-            ],
-            "recycle": [
-                2030201
-            ],
-            "reward": {
-                "items": [],
-                "coin": 0,
-                "star": 1
-            },
-            "nextTaskId": 34,
-            "unlockLevel": 1
-        },
-        {
-            "id": 34,
-            "name": "收集工具1020110",
+            "name": "收集电钻",
             "content": "收集10级工具1个",
             "type": "composite",
             "needItems": [
@@ -643,65 +453,255 @@
                 "coin": 0,
                 "star": 4
             },
-            "nextTaskId": 35,
+            "nextTaskId": 25,
             "unlockLevel": 4
         },
         {
-            "id": 35,
-            "name": "收集工具3020102",
+            "id": 25,
+            "name": "收集打磨器",
+            "content": "收集11级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020111
+            ],
+            "recycle": [
+                1020111
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 4
+            },
+            "nextTaskId": 26,
+            "unlockLevel": 4
+        },
+        {
+            "id": 26,
+            "name": "收集单只手套",
+            "content": "收集1级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020201
+            ],
+            "recycle": [
+                1020201
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 1
+            },
+            "nextTaskId": 27,
+            "unlockLevel": 1
+        },
+        {
+            "id": 27,
+            "name": "收集一双手套",
             "content": "收集2级工具1个",
             "type": "composite",
             "needItems": [
-                3020102
+                1020202
             ],
             "recycle": [
-                3020102
+                1020202
             ],
             "reward": {
                 "items": [],
                 "coin": 0,
                 "star": 1
             },
-            "nextTaskId": 36,
+            "nextTaskId": 28,
             "unlockLevel": 1
+        },
+        {
+            "id": 28,
+            "name": "收集手套",
+            "content": "收集3级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020203
+            ],
+            "recycle": [
+                1020203
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 1
+            },
+            "nextTaskId": 29,
+            "unlockLevel": 1
+        },
+        {
+            "id": 29,
+            "name": "收集起钉器",
+            "content": "收集1级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020101
+            ],
+            "recycle": [
+                1020101
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 1
+            },
+            "nextTaskId": 30,
+            "unlockLevel": 1
+        },
+        {
+            "id": 30,
+            "name": "收集扁口螺丝刀",
+            "content": "收集2级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020102
+            ],
+            "recycle": [
+                1020102
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 1
+            },
+            "nextTaskId": 31,
+            "unlockLevel": 1
+        },
+        {
+            "id": 31,
+            "name": "收集外六角扳手",
+            "content": "收集3级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020103
+            ],
+            "recycle": [
+                1020103
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 1
+            },
+            "nextTaskId": 32,
+            "unlockLevel": 1
+        },
+        {
+            "id": 32,
+            "name": "收集钳子",
+            "content": "收集4级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020104
+            ],
+            "recycle": [
+                1020104
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 2
+            },
+            "nextTaskId": 33,
+            "unlockLevel": 2
+        },
+        {
+            "id": 33,
+            "name": "收集扳手",
+            "content": "收集5级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020105
+            ],
+            "recycle": [
+                1020105
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 2
+            },
+            "nextTaskId": 34,
+            "unlockLevel": 2
+        },
+        {
+            "id": 34,
+            "name": "收集钢剪",
+            "content": "收集6级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020106
+            ],
+            "recycle": [
+                1020106
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 2
+            },
+            "nextTaskId": 35,
+            "unlockLevel": 2
+        },
+        {
+            "id": 35,
+            "name": "收集管钳",
+            "content": "收集7级工具1个",
+            "type": "composite",
+            "needItems": [
+                1020107
+            ],
+            "recycle": [
+                1020107
+            ],
+            "reward": {
+                "items": [],
+                "coin": 0,
+                "star": 3
+            },
+            "nextTaskId": 36,
+            "unlockLevel": 3
         },
         {
             "id": 36,
-            "name": "收集蜗牛2040103",
-            "content": "收集3级蜗牛1个",
+            "name": "收集钢锯",
+            "content": "收集8级工具1个",
             "type": "composite",
             "needItems": [
-                2040103
+                1020108
             ],
             "recycle": [
-                2040103
+                1020108
             ],
             "reward": {
                 "items": [],
                 "coin": 0,
-                "star": 1
+                "star": 3
             },
             "nextTaskId": 37,
-            "unlockLevel": 1
+            "unlockLevel": 3
         },
         {
             "id": 37,
-            "name": "收集花盆4050101",
-            "content": "收集1级花盆1个",
+            "name": "收集电锯",
+            "content": "收集9级工具1个",
             "type": "composite",
             "needItems": [
-                4050101
+                1020109
             ],
             "recycle": [
-                4050101
+                1020109
             ],
             "reward": {
                 "items": [],
                 "coin": 0,
-                "star": 1
+                "star": 4
             },
             "nextTaskId": -1,
-            "unlockLevel": 1
+            "unlockLevel": 3
         }
     ]
 }

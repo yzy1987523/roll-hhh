@@ -611,7 +611,7 @@
         "type": "composite",
         "next_composite": "2040102",
         "content": "简易布袋玩偶",
-        "sprite": "10301"
+        "sprite": "10801"
     },
     {
         "id": "2040102",
@@ -621,7 +621,7 @@
         "type": "composite",
         "next_composite": "2040103",
         "content": "呆萌布袋玩偶",
-        "sprite": "10302"
+        "sprite": "10802"
     },
     {
         "id": "2040103",
@@ -631,7 +631,7 @@
         "type": "composite",
         "next_composite": "",
         "content": "可爱布袋玩偶",
-        "sprite": "10303"
+        "sprite": "10803"
     },
     {
         "id": "3010101",

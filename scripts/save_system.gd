@@ -24,10 +24,8 @@ func _ready() -> void:
 	var save_data: Dictionary = _load_from_storage(SAVE_KEY)
 	if save_data.size() > 0:
 		_apply_save(save_data)
-		print(">>> [SaveSystem] 存档已加载")
 	else:
 		_init_board_from_map_config()
-		print(">>> [SaveSystem] 无存档, 从MapConfig加载棋盘布局")
 
 
 ## 保存游戏状态
@@ -35,14 +33,12 @@ func save_game() -> void:
 	var data: Dictionary = _build_save_data()
 	_write_to_storage(SAVE_KEY, data)
 	save_encyclopedia()
-	print(">>> [SaveSystem] 游戏已保存")
 
 
 ## 清除游戏存档 (战败后调用, 保留图鉴)
 func clear_game_save() -> void:
 	_remove_from_storage(SAVE_KEY)
 	save_encyclopedia()
-	print(">>> [SaveSystem] 游戏存档已清除 (图鉴保留)")
 	# 重新从 MapConfig 初始化棋盘
 	_init_board_from_map_config()
 
@@ -52,7 +48,6 @@ func unlock_encyclopedia(job: int, level: int) -> void:
 	var key: String = "%d_%d" % [job, level]
 	if not encyclopedia.has(key):
 		encyclopedia[key] = true
-		print(">>> [SaveSystem] 图鉴解锁: job=%d level=%d" % [job, level])
 
 
 ## 检查图鉴是否解锁
@@ -94,13 +89,10 @@ func init_board_from_config() -> void:
 
 ## 从 MapConfig 初始化棋盘布局
 func _init_board_from_map_config() -> void:
-	print(">>> [SaveSystem] _init_board_from_map_config 开始")
 	var map_loader := MCL.new()
 	if not map_loader.load_config():
-		print(">>> [SaveSystem] MapConfig加载失败")
 		return
 
-	print(">>> [SaveSystem] MapConfig加载成功，rows=%d, cols=%d" % [map_loader.rows, map_loader.cols])
 	GameManager.board_data.clear_board()
 
 	# 初始化局外道具（只有新游戏才包含背包）
@@ -114,7 +106,6 @@ func _init_board_from_map_config() -> void:
 	GameManager.board_data.init_grid_states_from_config(map_loader)
 
 	var cells: Array = map_loader.get_initial_cells()
-	print(">>> [SaveSystem] 从MapConfig初始化 %d 个格子" % cells.size())
 
 	for cell in cells:
 		var row: int = cell.get("row", 0)
@@ -128,7 +119,6 @@ func _init_board_from_map_config() -> void:
 		# 使用ItemManager获取物品数据并复制一份
 		var board_item: DataModels.BoardItemData = ItemManager.get_item(item_id)
 		if board_item == null:
-			print(">>> [SaveSystem] 警告: 物品ID %d 在ItemConfig中未找到" % item_id)
 			continue
 
 		# 复制物品数据(因为ItemManager的缓存是共享的)
@@ -142,10 +132,6 @@ func _init_board_from_map_config() -> void:
 		var board_index: int = pos.y * BD.GRID_COLS + pos.x
 		if IM.new().is_producer(item.id):
 			get_node("/root/ProducerManager").register_producer(board_index, item.id)
-
-		print(">>> [SaveSystem] 初始化格子 (%d,%d): item_id=%d, name=%s, level=%d, state=%d" % [
-			row, col, item_id, item.name, item.level, state
-		])
 
 
 ## 根据物品ID获取职业 (临时实现，需要根据实际ID规则调整)
@@ -174,7 +160,6 @@ func mark_tutorial_done() -> void:
 		if file:
 			file.store_string("true")
 			file.close()
-	print(">>> [SaveSystem] 新手教学标记完成")
 
 
 # ---- 构建存档数据 ----
@@ -191,6 +176,24 @@ func _build_save_data() -> Dictionary:
 	data["battle_turn"] = GameManager.battle_turn
 	data["shop_last_refresh_round"] = GameManager.shop_last_refresh_round
 	data["shop_items_data"] = GameManager.shop_items_data
+
+	# 体力恢复时间
+	data["last_energy_update_time"] = GameManager.last_energy_update_time
+
+	# 生成器状态
+	var producers_data: Array = []
+	var pm = get_node_or_null("/root/ProducerManager")
+	if pm != null:
+		for board_index in pm.get_all_producers():
+			var state = pm.get_producer_state(board_index)
+			if state != null:
+				producers_data.append({
+					"board_index": board_index,
+					"current_count": state.current_count,
+					"cooldown_remaining": state.cooldown_remaining,
+					"last_recovery_time": state.last_recovery_time
+				})
+	data["producers"] = producers_data
 
 	# 棋盘物品
 	var board_items: Array = []
@@ -257,6 +260,10 @@ func _apply_save(data: Dictionary) -> void:
 	GameManager.shop_last_refresh_round = data.get("shop_last_refresh_round", -1)
 	GameManager.shop_items_data = data.get("shop_items_data", [])
 
+	# 恢复体力时间和离线恢复
+	GameManager.last_energy_update_time = data.get("last_energy_update_time", Time.get_unix_time_from_system())
+	GameManager.apply_offline_energy_recovery()
+
 	# 清空棋盘再填充
 	GameManager.board_data.clear_board()
 
@@ -276,11 +283,23 @@ func _apply_save(data: Dictionary) -> void:
 	if grid_states.size() == BD.BOARD_SLOTS:
 		for i in range(BD.BOARD_SLOTS):
 			GameManager.board_data.set_grid_state(i, grid_states[i])
-		print(">>> [SaveSystem] 格子状态已从存档恢复")
 	else:
 		# 兼容：没有存档的旧存档，从 MapConfig 初始化
-		print(">>> [SaveSystem] 旧存档无格子状态，从MapConfig初始化")
 		_init_board_from_map_config()
+
+	# 恢复生成器状态（库存和冷却）
+	var producers_data: Array = data.get("producers", [])
+	var pm = get_node_or_null("/root/ProducerManager")
+	if pm != null:
+		for pdata in producers_data:
+			var board_index: int = pdata.get("board_index", -1)
+			if board_index >= 0:
+				pm.restore_producer_state(
+					board_index,
+					pdata.get("current_count", 0),
+					pdata.get("cooldown_remaining", 0.0),
+					pdata.get("last_recovery_time", 0.0)
+				)
 
 	# 恢复宿舍物品
 	GameManager.board_data.dormitory.clear()
@@ -364,7 +383,6 @@ func _load_from_storage(key: String) -> Dictionary:
 	var json := JSON.new()
 	var err := json.parse(json_str)
 	if err != OK:
-		print(">>> [SaveSystem] JSON解析失败: %s" % json.get_error_message())
 		return {}
 
 	var parsed_data = json.data
@@ -413,7 +431,6 @@ func submit_leaderboard_score(score: int) -> void:
 			file.store_string(json_str)
 			file.close()
 
-	print(">>> [SaveSystem] 排行榜分数已提交: %d" % score)
 
 
 func _load_player_data() -> Dictionary:

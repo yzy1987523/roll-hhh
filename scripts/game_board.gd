@@ -92,6 +92,7 @@ const COLOR_MERGE_HINT := Color("#FF8C00")  # 可合成提示色
 var cell_rects: Array = []     # ColorRect 背景
 var cell_panels: Array = []    # PanelContainer 格子容器
 var cell_sprites: Array = []   # TextureRect 角色精灵图
+var cell_containers: Array = []  # Control 容器（包裹sprite）
 var cell_select_frames: Array = []  # TextureRect 选中框（静态边框）
 var cell_highlight_effects: Array = []  # TextureRect 高亮效果（序列帧动画）
 var cell_state_overlays: Array = []  # TextureRect 状态叠加层（锁定/灰尘）
@@ -148,13 +149,16 @@ var target_select_item_slot: int = -1
 # ---- 遗物提示控制 ----
 var _relic_tip_showing: bool = false
 
+# ---- Idle 提示系统 ----
+var _idle_hint_timer: SceneTreeTimer = null
+var _idle_hint_playing: bool = false  # 提示动画是否正在播放
+const IDLE_HINT_DELAY: float = 5.0  # 5秒无操作后触发提示
+
 # ---- 教程系统 ----
 var tutorial_instance: Control = null
 
 
 func _ready() -> void:
-	print(">>> [GameBoard] _ready 开始")
-	print(">>> [Debug] grid_container=%s" % grid_container)
 	# 初始化资源跟踪变量
 	_last_gold = GameManager.gold
 	_last_energy = GameManager.energy
@@ -176,7 +180,6 @@ func _ready() -> void:
 	encyclopedia_button = get_node_or_null("MainLayout/MiddleBar/EncyclopediaButton")
 	bottom_hud_container = get_node_or_null("MainLayout/MiddleBar/BottomHUDContainer")
 	# 播放备战阶段BGM
-	print(">>> [GameBoard] Calling SoundSystem.play_bgm(SoundSystem.BGM_PREPARE)")
 	SoundSystem.play_bgm(SoundSystem.BGM_PREPARE)
 	# 加载选中效果序列帧
 	_load_select_frames()
@@ -194,7 +197,6 @@ func _ready() -> void:
 	_refresh_item_slots()
 	_refresh_game_board_texts()
 	_start_tutorial()
-	print(">>> [GameBoard] 备战阶段界面已加载")
 
 
 func _process(delta: float) -> void:
@@ -244,8 +246,6 @@ func _connect_signals() -> void:
 		spawn_priest.pressed.connect(_on_spawn_pressed.bind(DataModels.Job.PRIEST))
 	if end_turn_button:
 		end_turn_button.pressed.connect(_on_end_turn_pressed)
-	if build_button:
-		build_button.button_down.connect(_on_build_list_pressed)
 	if sacrifice_button:
 		sacrifice_button.pressed.connect(_on_sacrifice_button_pressed)
 	if dorm_button:
@@ -278,9 +278,12 @@ func _connect_signals() -> void:
 	close_settings_button.pressed.connect(_on_close_settings)
 	# 语言切换信号
 	LocalizationSystem.language_changed.connect(_on_localization_changed)
-	
+
 	# 设置按钮状态反馈
 	_setup_button_feedbacks()
+
+	# 启动 idle 提示计时器
+	_start_idle_hint_timer()
 
 
 ## 连接生成器相关信号
@@ -455,7 +458,6 @@ func _setup_board_ui() -> void:
 		if cell == null:
 			push_error(">>> [GameBoard] 静态格子节点 cell_%d 不存在!" % i)
 			continue
-		print(">>> [Debug] Found cell_%d: %s" % [i, cell])
 
 		cell_panels.append(cell)
 
@@ -501,11 +503,26 @@ func _setup_board_ui() -> void:
 		cell_highlight_effects.append(highlight_effect)
 
 		# 动态创建角色精灵（使用预制体）
-		var sprite := preload("res://scenes/board_item.tscn").instantiate()
-		sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		sprite.visible = false
-		sprite.z_index = 5
-		cell.add_child(sprite)
+		var sprite_container: Control = preload("res://scenes/board_item.tscn").instantiate()
+		var sprite: TextureRect
+		# 尝试通过路径获取 Sprite 节点（更可靠）
+		sprite = sprite_container.get_node_or_null("Sprite")
+		# 降级：取第一个子节点
+		if sprite == null and sprite_container.get_child_count() > 0:
+			var first: Node = sprite_container.get_child(0)
+			if first is TextureRect:
+				sprite = first
+		if sprite == null:
+			push_error(">>> [GameBoard] 无法从 board_item.tscn 获取 Sprite 节点")
+			sprite_container.queue_free()
+			continue
+		sprite_container.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
+		sprite_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		sprite_container.visible = false
+		sprite_container.z_index = 5
+		cell.add_child(sprite_container)
+		cell_sprites.append(sprite)
+		cell_containers.append(sprite_container)
 
 		# 动态创建生成器特效
 		var producer_fx := TextureRect.new()
@@ -518,7 +535,7 @@ func _setup_board_ui() -> void:
 		producer_fx.visible = false
 		producer_fx.scale = Vector2(3.4, 3.4)
 		producer_fx.z_index = 10
-		sprite.add_child(producer_fx)
+		sprite_container.add_child(producer_fx)
 		cell_producer_fx.append(producer_fx)
 
 		# 动态创建任务图标
@@ -540,19 +557,15 @@ func _setup_board_ui() -> void:
 		task_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		task_icon.visible = false
 		task_icon.z_index = 15
-		sprite.add_child(task_icon)
+		sprite_container.add_child(task_icon)
 		cell_task_icons.append(task_icon)
-
-		cell_sprites.append(sprite)
 
 		# 点击事件
 		if cell.gui_input.is_connected(_on_cell_gui_input):
 			cell.gui_input.disconnect(_on_cell_gui_input)
 		cell.gui_input.connect(_on_cell_gui_input.bind(i))
-		print(">>> [Debug] Connected gui_input for cell_%d" % i)
 
 	_refresh_board_display()
-	print(">>> [GameBoard] %dx%d 棋盘格已生成（静态bg + 动态棋子）" % [GRID_COLS, GRID_ROWS])
 
 
 
@@ -639,15 +652,15 @@ func _refresh_dorm_panel() -> void:
 # ---- 棋盘格拖拽处理 (任务 2.3 拖拽/选中) ----
 
 func _on_cell_gui_input(event: InputEvent, cell_index: int) -> void:
-	print(">>> [Debug] _on_cell_gui_input called, cell_index=%d, event=%s" % [cell_index, event])
+	# 重置 idle 提示计时器
+	_reset_idle_hint_timer()
+
 	# 检查格子状态 - LOCKED 状态不可交互
 	var bd: BoardData = GameManager.board_data
 	if not bd.can_interact(cell_index):
-		print(">>> [Debug] cell %d is not interactable (state=%d)" % [cell_index, bd.get_grid_state(cell_index)])
 		return
 
 	var ch: DataModels.BoardItemData = bd.get_item_at_index(cell_index)
-	print(">>> [Debug] cell=%d, item=%s, selected_index=%d" % [cell_index, ch.name if ch else "null", selected_index])
 
 	# 目标选择模式: 点击角色使用道具
 	if is_selecting_target and event is InputEventMouseButton:
@@ -825,19 +838,30 @@ func _play_swap_animation(src_index: int, tgt_index: int) -> void:
 
 
 ## 创建飞行动画精灵的辅助函数
-func _create_flying_sprite(ch: DataModels.BoardItemData) -> TextureRect:
-	var anim_sprite := TextureRect.new()
-	anim_sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
-	anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	anim_sprite.z_index = 10  # 动画层级（低于弹窗）
+func _create_flying_sprite(ch: DataModels.BoardItemData) -> Control:
+	# 使用 board_item 场景作为飞行动画精灵
+	var board_item: Control = preload("res://scenes/board_item.tscn").instantiate()
+	board_item.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
+	board_item.z_index = 10  # 动画层级（低于弹窗）
+	board_item.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	# 使用BoardItemData的sprite路径
-	var sprite_path: String = ch.get_sprite_path()
-	if ResourceLoader.exists(sprite_path):
-		anim_sprite.texture = load(sprite_path)
+	# 获取 Sprite 节点并设置纹理
+	var sprite: TextureRect = board_item.get_node_or_null("Sprite")
+	if sprite == null and board_item.get_child_count() > 0:
+		var first: Node = board_item.get_child(0)
+		if first is TextureRect:
+			sprite = first
 
-	return anim_sprite
+	if sprite != null:
+		sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		sprite.pivot_offset = Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
+		# 使用BoardItemData的sprite路径
+		var sprite_path: String = ch.get_sprite_path()
+		if ResourceLoader.exists(sprite_path):
+			sprite.texture = load(sprite_path)
+
+	return board_item
 
 
 ## 查找最近空格（排除指定单元格）
@@ -927,7 +951,6 @@ func _do_swap_and_displace(src_index: int, tgt_index: int, empty_index: int) -> 
 	var src_pos: Vector2i = BoardData.index_to_pos(src_index)
 	bd.swap_items(src_pos, tgt_pos)
 
-	print(">>> [GameBoard] 置换: 格%d→格%d, 格%d→格%d(空格)" % [tgt_index, empty_index, src_index, tgt_index])
 
 
 ## 执行实际的交换或移动（数据层）
@@ -948,7 +971,6 @@ func _do_swap_or_move(src_index: int, tgt_index: int) -> void:
 		# 更新ProducerManager注册
 		if ProducerManager.is_producer(src_index):
 			ProducerManager.move_producer(src_index, tgt_index)
-		print(">>> [GameBoard] 移动 %s 从格 %d 到格 %d" % [source_ch.name, src_index, tgt_index])
 	else:
 		# 交换 - 目标格子是Locked或DUSTY状态则不能交换
 		var tgt_state: int = bd.get_grid_state(tgt_index)
@@ -966,7 +988,6 @@ func _do_swap_or_move(src_index: int, tgt_index: int) -> void:
 			ProducerManager.move_producer(src_index, tgt_index)
 		elif tgt_is_prod:
 			ProducerManager.move_producer(tgt_index, src_index)
-		print(">>> [GameBoard] 交换 格%d ↔ 格%d" % [src_index, tgt_index])
 
 
 # ---- 角色合成 (任务 2.4) ----
@@ -981,7 +1002,6 @@ func _merge_at(src_index: int, tgt_index: int) -> void:
 
 	var merged: DataModels.BoardItemData = ItemManager.merge_items(src_item, tgt_item)
 	if merged == null:
-		print(">>> [GameBoard] 合成失败")
 		return
 
 	# 播放合成音效
@@ -1002,7 +1022,6 @@ func _merge_at(src_index: int, tgt_index: int) -> void:
 	# 合成位置上下左右的 LOCKED 格子 → 切换为 DUSTY
 	bd.trigger_merge_unlock(tgt_index)
 
-	print(">>> [GameBoard] 合成完成: %s Lv.%d 于格 %d" % [merged.name, merged.level, tgt_index])
 
 	# 刷新棋盘显示
 	_refresh_board_display()
@@ -1044,19 +1063,17 @@ func _try_spawn_coin_on_merge(merged: DataModels.BoardItemData, merge_index: int
 	var end_world: Vector2 = end_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
 
 	var anim_sprite := _create_flying_sprite(coin_item)
-	anim_sprite.global_position = start_cell.global_position
+	anim_sprite.global_position = start_world - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
 	add_child(anim_sprite)
+	anim_sprite.scale = Vector2(1, 1)
+	anim_sprite.modulate = Color(1.5, 1.5, 0.5, 1.0)
 
-	# 动画：弹出+飞向目标
+	# 动画：飞向目标（无缩放变化）
 	var tween := create_tween()
 	tween.set_parallel(true)
-	# 弹出效果：先向上偏移再飞向目标
-	var pop_offset := Vector2(0, -CELL_SIZE * 0.5)
-	tween.tween_property(anim_sprite, "global_position", start_world + pop_offset, 0.15)\
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.chain().tween_property(anim_sprite, "global_position", end_world, 0.3)\
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.chain().tween_interval(0.1)  # 短暂停顿
+	tween.tween_property(anim_sprite, "global_position", end_world - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0), 0.3)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(anim_sprite, "modulate", Color.WHITE, 0.3)
 
 	tween.finished.connect(func():
 		anim_sprite.queue_free()
@@ -1066,6 +1083,8 @@ func _try_spawn_coin_on_merge(merged: DataModels.BoardItemData, merge_index: int
 		bd.set_grid_state(empty_index, BoardData.GridState.OCCUPIED)
 		GameManager.board_items_changed.emit()
 		_refresh_board_display()
+		# 落地后播放脉冲动画
+		_play_pulse_animation(empty_index)
 	, CONNECT_ONE_SHOT)
 
 
@@ -1086,6 +1105,7 @@ func _collect_coinpile(cell_index: int) -> void:
 
 	# 隐藏金币堆sprite
 	cell_sprites[cell_index].visible = false
+	cell_containers[cell_index].visible = false
 
 	# 播放金币粒子特效
 	_play_coin_particle_effect(start_pos, coin_bar_pos, 10)
@@ -1153,14 +1173,10 @@ func _play_coin_particle_effect(start_pos: Vector2, end_pos: Vector2, particle_c
 
 func _play_merge_animation(cell_index: int) -> void:
 	if cell_index < 0 or cell_index >= cell_sprites.size():
-		print(">>> [Debug] MergeAnim: invalid cell_index %d" % cell_index)
 		return
 	var sprite: Control = cell_sprites[cell_index]
 	if sprite == null:
-		print(">>> [Debug] MergeAnim: sprite is null")
 		return
-
-	print(">>> [Debug] MergeAnim: playing on cell %d" % cell_index)
 
 	# 重置scale
 	sprite.scale = Vector2(1.0, 1.0)
@@ -1195,14 +1211,25 @@ func _play_land_animation(cell_index: int) -> void:
 	# 重置scale（防止残留）
 	sprite.scale = Vector2(1.0, 1.0)
 
-	# 使用弹性缓动：1.0 → 0.95 → 1.0
+
+## 播放脉冲动画：1 -> 1.15 -> 1（用于生成/合成落地提示）
+func _play_pulse_animation(cell_index: int) -> void:
+	if cell_index < 0 or cell_index >= cell_sprites.size():
+		return
+	var sprite: Control = cell_sprites[cell_index]
+	if sprite == null or not is_instance_valid(sprite):
+		return
+
+	# 先重置scale
+	sprite.scale = Vector2(1.0, 1.0)
+
+	# 脉冲动画：1 -> 1.15 -> 1
 	var tween := create_tween()
-	tween.set_parallel(false)
-	# 从当前(1.0)缩小到0.95，再弹回1.0
-	tween.tween_property(sprite, "scale", Vector2(0.91, 0.91), 0.01)\
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tween.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.6)\
-		.set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	tween.set_parallel(true)
+	tween.tween_property(sprite, "scale", Vector2(1.15, 1.15), 0.12)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.12)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN).set_delay(0.12)
 
 
 # ---- 生成器生产 (任务 2.X) ----
@@ -1215,7 +1242,6 @@ func _try_produce_item(cell_index: int) -> void:
 
 	# 检查能量是否足够
 	if not GameManager.spend_energy(1):
-		print(">>> [GameBoard] 生产失败: 能量不足")
 		TipManager.show_tip(LocalizationSystem.get_text("game_board.energy_insufficient"))
 		return
 
@@ -1224,7 +1250,6 @@ func _try_produce_item(cell_index: int) -> void:
 	if produced == null:
 		# 生产失败，返还能量
 		GameManager.restore_energy(1)
-		print(">>> [GameBoard] 生产失败: 无法产出物品")
 		return
 
 	# 找到空位放置
@@ -1237,7 +1262,6 @@ func _try_produce_item(cell_index: int) -> void:
 	if empty_pos == Vector2i(-1, -1):
 		# 棋盘已满，返还能量
 		GameManager.restore_energy(1)
-		print(">>> [GameBoard] 生产失败: 棋盘已满")
 		TipManager.show_tip(LocalizationSystem.get_text("game_board.board_full"))
 		return
 
@@ -1245,7 +1269,6 @@ func _try_produce_item(cell_index: int) -> void:
 	var placed: bool = bd.place_item(produced, empty_pos)
 	if not placed:
 		GameManager.restore_energy(1)
-		print(">>> [GameBoard] 生产失败: 无法放置物品")
 		return
 
 	GameManager.board_items_changed.emit()
@@ -1257,7 +1280,6 @@ func _try_produce_item(cell_index: int) -> void:
 	var start_pos: Vector2 = cell_panels[cell_index].global_position + Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
 	var end_pos: Vector2 = target_cell.global_position + Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
 
-	print(">>> [GameBoard] 生产成功: %s Lv.%d 于 (%d,%d)" % [produced.name, produced.level, empty_pos.x, empty_pos.y])
 
 	# 播放产出动画
 	_play_produce_animation(produced, start_pos, end_pos, BoardData.pos_to_index(empty_pos))
@@ -1284,23 +1306,22 @@ func _play_produce_animation(produced: DataModels.BoardItemData, start_pos: Vect
 
 	add_child(anim_sprite)
 	anim_sprite.global_position = start_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
-	anim_sprite.scale = Vector2(0.5, 0.5)
+	anim_sprite.scale = Vector2(1.0, 1.0)
 	anim_sprite.modulate = Color(1.5, 1.5, 0.5, 1.0)  # 金黄色发光效果
 
-	# 动画：从生成器位置飞到空位
+	# 动画：从生成器位置飞到空位（保持1倍大小，仅移动和发光消退）
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(anim_sprite, "global_position", end_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2), 0.3)\
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(anim_sprite, "scale", Vector2(1.0, 1.0), 0.3)\
-		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(anim_sprite, "modulate", Color.WHITE, 0.3)
 
 	tween.finished.connect(func():
 		anim_sprite.queue_free()
 		moving_cells.erase(target_index)
 		_refresh_board_display()
-		_play_land_animation(target_index)
+		# 落地后播放脉冲动画
+		_play_pulse_animation(target_index)
 	)
 
 
@@ -1338,7 +1359,6 @@ func _sacrifice_character(cell_index: int) -> void:
 		_play_coin_particle_effect(start_pos, coin_bar_pos, 5)
 		GameManager.add_gold(gold_bonus)
 
-	print(">>> [GameBoard] 献祭 %s Lv.%d, 返还能量 %d" % [ch.name, ch.level, refund])
 	selected_index = -1
 	_refresh_board_display()
 	_update_character_detail_panel()
@@ -1356,7 +1376,6 @@ func _sell_selected_item(cell_index: int) -> void:
 
 	# 检查是否可出售
 	if not ItemManager.is_sellable(ch.id):
-		print(">>> [GameBoard] 该物品不可出售: %s" % ch.name)
 		return
 
 	# 计算出售价格: 2^(level-1)
@@ -1377,7 +1396,6 @@ func _sell_selected_item(cell_index: int) -> void:
 	bd.remove_item(pos)
 	GameManager.board_items_changed.emit()
 
-	print(">>> [GameBoard] 出售 %s Lv.%d, 获得金币 %d" % [ch.name, ch.level, sell_price])
 	selected_index = -1
 	_refresh_board_display()
 	_update_character_detail_panel()
@@ -1385,35 +1403,26 @@ func _sell_selected_item(cell_index: int) -> void:
 
 # ---- 拖拽系统 (任务 2.3) ----
 
-func _start_drag(cell_index: int, mouse_pos: Vector2) -> void:
+func _start_drag(cell_index: int, _mouse_pos: Vector2) -> void:
 	is_dragging = true
 	drag_index = cell_index
 	selected_index = cell_index
 
-	# 直接拖拽物品精灵，将精灵从原格子移出到根节点
-	var sprite: TextureRect = cell_sprites[cell_index]
-	var old_parent: Node = sprite.get_parent()
-	old_parent.remove_child(sprite)
-	get_tree().root.add_child(sprite)
-	sprite.z_index = 50
-	sprite.z_as_relative = false
-	# 重置锚点并设置大小
-	sprite.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	sprite.offset_left = 0
-	sprite.offset_top = 0
-	sprite.offset_right = CELL_SIZE
-	sprite.offset_bottom = CELL_SIZE
-	sprite.pivot_offset = Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
-	sprite.scale = Vector2(1, 1)
-	# 设置初始位置（鼠标位置减去中心偏移，使物品中心对准鼠标）
-	sprite.position = mouse_pos - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+	# 拖拽容器，将容器从原格子移出到根节点
+	var container: Control = cell_containers[cell_index]
+	var old_parent: Node = container.get_parent()
+	old_parent.remove_child(container)
+	get_tree().root.add_child(container)
+	container.z_index = 50
+	container.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	container.position = _mouse_pos - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
 
 	# 拖拽时隐藏producer_fx（避免闪烁）
 	if cell_producer_fx.size() > cell_index and is_instance_valid(cell_producer_fx[cell_index]):
 		cell_producer_fx[cell_index].visible = false
 
 	# 隐藏原始格子
-	cell_panels[cell_index].modulate.a = 0.3
+	#cell_panels[cell_index].modulate.a = 0.3
 
 	# 找到所有可合成的目标格子
 	_find_merge_targets(cell_index)
@@ -1421,7 +1430,6 @@ func _start_drag(cell_index: int, mouse_pos: Vector2) -> void:
 	# 显示所有可合成目标的高亮动画（透明度0.5）
 	_update_merge_highlights()
 
-	print(">>> [GameBoard] 开始拖拽格 %d，可合成目标数: %d" % [cell_index, merge_targets.size()])
 
 
 func _create_drag_preview(cell_index: int, with_outline: bool = false) -> Control:
@@ -1461,9 +1469,9 @@ func _create_drag_preview(cell_index: int, with_outline: bool = false) -> Contro
 
 
 func _update_drag_preview(mouse_pos: Vector2) -> void:
-	# 更新拖拽中的物品精灵位置（使物品中心对准鼠标）
+	# 更新拖拽中的物品容器位置（使物品中心对准鼠标）
 	if is_dragging and drag_index >= 0:
-		cell_sprites[drag_index].position = mouse_pos - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+		cell_containers[drag_index].position = mouse_pos - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
 
 	# 高亮悬停的格子
 	hover_index = _get_hovered_cell_index(mouse_pos)
@@ -1569,32 +1577,28 @@ func _update_drag_preview_outline(show_outline: bool) -> void:
 		sprite.material = null
 
 
-## 将拖拽的精灵移回原格子
+## 将拖拽的容器移回原格子
 func _move_sprite_back_to_cell(cell_index: int, from_position: Vector2 = Vector2.ZERO) -> void:
-	if cell_index < 0 or cell_index >= cell_sprites.size():
+	if cell_index < 0 or cell_index >= cell_containers.size():
 		return
-	var sprite: TextureRect = cell_sprites[cell_index]
+	var container: Control = cell_containers[cell_index]
 	# 从根节点移除
-	sprite.get_parent().remove_child(sprite)
+	container.get_parent().remove_child(container)
 	# 添加回原格子
-	cell_panels[cell_index].add_child(sprite)
-	sprite.set_anchors_preset(Control.PRESET_FULL_RECT)
-	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	sprite.stretch_mode = TextureRect.STRETCH_KEEP
-	sprite.size = Vector2(CELL_SIZE, CELL_SIZE)
+	cell_panels[cell_index].add_child(container)
+	container.set_anchors_preset(Control.PRESET_CENTER)
+	container.position = Vector2.ZERO
 
 	# 如果有起始位置，播放平滑移回动画
 	if from_position != Vector2.ZERO:
 		# 设置初始位置（动画起点）
-		sprite.position = from_position - cell_panels[cell_index].global_position
-		sprite.scale = Vector2(1, 1)
+		container.position = from_position - cell_panels[cell_index].global_position
+		container.scale = Vector2(1, 1)
 		# 创建平滑移回动画
 		var tween := create_tween()
-		tween.tween_property(sprite, "position", Vector2.ZERO, 0.2)\
+		tween.tween_property(container, "position", Vector2.ZERO, 0.2)\
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	else:
-		sprite.position = Vector2.ZERO
-		sprite.scale = Vector2(1, 1)
+		container.scale = Vector2(1, 1)
 
 
 func _end_drag(_target_index: int) -> void:
@@ -1685,7 +1689,6 @@ func _end_drag(_target_index: int) -> void:
 	dorm_button.modulate = Color(1.0, 1.0, 1.0, 1.0)
 	# 每次棋子操作后自动存档
 	GameManager._auto_save()
-	print(">>> [GameBoard] 结束拖拽")
 
 
 # ---- 刷新所有producer_fx可见性 ----
@@ -1721,21 +1724,27 @@ func _refresh_board_display() -> void:
 
 		# 如果格子正在移动动画中，跳过渲染
 		if i in moving_cells:
-			cell_sprites[i].visible = false
+			if cell_sprites[i] != null:
+				cell_sprites[i].visible = false
+			if cell_containers[i] != null:
+				cell_containers[i].visible = false
 			continue
 
 		# 获取格子状态
 		var grid_state: int = bd.get_grid_state(i)
 
 		var ch: DataModels.BoardItemData = bd.get_item_at_index(i)
-		if ch != null and grid_state != BoardData.GridState.LOCKED:
+		if ch != null and grid_state != BoardData.GridState.LOCKED and cell_sprites[i] != null:
 			# 加载精灵图：使用BoardItemData的sprite路径
 			# LOCKED 状态不显示物品图片，DUSTY 仍显示图片但叠加 cell7
 			var sprite_path: String = ch.get_sprite_path()
 			var tex_exists: bool = ResourceLoader.exists(sprite_path)
 			var tex := load(sprite_path) if tex_exists else null
 			cell_sprites[i].texture = tex
-			cell_sprites[i].visible = (tex != null)
+			var show_item: bool = (tex != null)
+			cell_sprites[i].visible = show_item
+			if cell_containers[i] != null:
+				cell_containers[i].visible = show_item
 			# DUSTY 状态：物品显示为 0.7 灰度
 			if grid_state == BoardData.GridState.DUSTY:
 				cell_sprites[i].modulate = Color(0.7, 0.7, 0.7, 1.0)
@@ -1744,8 +1753,11 @@ func _refresh_board_display() -> void:
 			if tex == null:
 				print(">>> [Debug] 精灵图加载失败: %s" % sprite_path)
 		else:
-			cell_sprites[i].texture = null
-			cell_sprites[i].visible = false
+			if cell_sprites[i] != null:
+				cell_sprites[i].texture = null
+				cell_sprites[i].visible = false
+			if cell_containers[i] != null:
+				cell_containers[i].visible = false
 
 	# 更新高亮效果（拖拽时动态显示）
 	_update_merge_highlights()
@@ -1879,7 +1891,6 @@ func _find_merge_targets(drag_source_index: int) -> void:
 		if target_ch != null and target_ch.get_merge_chain() == source_ch.get_merge_chain() and target_ch.level == source_ch.level:
 			merge_targets.append(i)
 
-	print(">>> [Debug] 可合成目标格子数: %d" % merge_targets.size())
 
 
 ## 查找可合成的格子
@@ -1889,14 +1900,14 @@ func _find_merge_candidates() -> Array:
 
 	for i in range(BoardData.BOARD_SLOTS):
 		var ch: DataModels.BoardItemData = bd.get_item_at_index(i)
-		if ch == null:
+		if ch == null or not ch.can_merge():
 			continue
 
 		# 检查相邻格子是否有相同合成链、相同等级的角色
 		var neighbors := _get_neighbors(i)
 		for neighbor_index in neighbors:
 			var neighbor_ch: DataModels.BoardItemData = bd.get_item_at_index(neighbor_index)
-			if neighbor_ch != null and neighbor_ch.get_merge_chain() == ch.get_merge_chain() and neighbor_ch.level == ch.level:
+			if neighbor_ch != null and neighbor_ch.can_merge() and neighbor_ch.get_merge_chain() == ch.get_merge_chain() and neighbor_ch.level == ch.level:
 				# 找到可合成的格子
 				if not candidates.has(i):
 					candidates.append(i)
@@ -1932,14 +1943,13 @@ func _get_neighbors(index: int) -> Array:
 ## 启动高亮序列帧动画（持续运行，独立于格子列表）
 func _start_highlight_animation() -> void:
 	if SELECT_FRAMES.is_empty():
-		print(">>> [Warning] 序列帧纹理未加载！")
+		push_warning(">>> [GameBoard] 序列帧纹理未加载！")
 		return
 
 	# 如果动画已经在运行，不重复创建
 	if _select_tween and _select_tween.is_valid():
 		return
 
-	print(">>> [Debug] 启动高亮动画（持续运行模式）")
 
 	# 创建序列帧动画：循环切换帧索引
 	_select_tween = create_tween()
@@ -2041,17 +2051,14 @@ func _on_round_changed(_new_round: int) -> void:
 
 func _on_items_changed() -> void:
 	_refresh_item_slots()
-	print(">>> [GameBoard] 道具改变，刷新道具栏，当前道具数量: %d" % GameManager.items.size())
 
 
 func _on_board_items_changed() -> void:
 	_refresh_board_display()
-	print(">>> [GameBoard] 棋盘物品改变，刷新棋盘显示")
 
 
 func _on_task_items_updated(_task_items_info: Dictionary) -> void:
 	_update_task_icons()
-	print(">>> [GameBoard] 任务物品更新，刷新任务图标显示")
 
 
 # ---- 角色生成 (任务 2.2) ----
@@ -2062,12 +2069,10 @@ func _on_spawn_pressed(job: int) -> void:
 
 	# 检查棋盘是否已满
 	if GameManager.board_data.is_board_full():
-		print(">>> [GameBoard] 生成失败: 棋盘已满")
 		TipManager.show_tip(LocalizationSystem.get_text("game_board.board_full"))
 		return
 
 	if not GameManager.spend_energy(1):
-		print(">>> [GameBoard] 生成失败: 能量不足")
 		TipManager.show_tip(LocalizationSystem.get_text("game_board.energy_insufficient"))
 		return
 
@@ -2107,10 +2112,8 @@ func _on_spawn_pressed(job: int) -> void:
 	var pos: Vector2i = GameManager.board_data.place_item_first_empty(item)
 	if pos == Vector2i(-1, -1):
 		GameManager.restore_energy(1)
-		print(">>> [GameBoard] 生成失败: 无法放置")
 		return
 
-	print(">>> [GameBoard] 生成 %s Lv.%d 于 (%d, %d)" % [item.name, item.level, pos.x, pos.y])
 	GameManager.board_items_changed.emit()
 
 	# 获取生成按钮位置和目标格子位置
@@ -2191,14 +2194,12 @@ func _on_dorm_pressed() -> void:
 func _on_dorm_take_pressed(dorm_index: int) -> void:
 	SoundSystem.play_button_click()
 	if GameManager.board_data.is_board_full():
-		print(">>> [GameBoard] 取出失败: 棋盘已满")
 		TipManager.show_tip(LocalizationSystem.get_text("game_board.board_full"))
 		return
 	var item: DataModels.BoardItemData = GameManager.board_data.take_from_dormitory(dorm_index)
 	if item == null:
 		return
 	var pos: Vector2i = GameManager.board_data.place_item_first_empty(item)
-	print(">>> [GameBoard] 从宿舍取出 %s Lv.%d 到 (%d,%d)" % [item.name, item.level, pos.x, pos.y])
 	GameManager.board_items_changed.emit()
 	_refresh_dorm_panel()
 	_refresh_board_display()
@@ -2261,6 +2262,8 @@ func _play_dorm_to_board_animation(moved_data: Array, start_pos: Vector2) -> voi
 		if board_idx >= 0 and board_idx < cell_sprites.size():
 			hidden_indices.append(board_idx)
 			cell_sprites[board_idx].visible = false
+			if cell_containers[board_idx] != null:
+				cell_containers[board_idx].visible = false
 	
 	# 为每个角色播放从宿舍飞到棋盘的动画
 	for data in moved_data:
@@ -2300,7 +2303,10 @@ func _play_dorm_to_board_animation(moved_data: Array, start_pos: Vector2) -> voi
 		# 动画结束后恢复格子显示并播放落地动画
 		tween.finished.connect(func():
 			anim_sprite.queue_free()
-			cell_sprites[board_idx].visible = true
+			if board_idx >= 0 and board_idx < cell_sprites.size():
+				cell_sprites[board_idx].visible = true
+				if cell_containers[board_idx] != null:
+					cell_containers[board_idx].visible = true
 			_play_land_animation(board_idx)
 		)
 
@@ -2314,7 +2320,6 @@ func _drag_to_dorm() -> void:
 		return
 	var pos: Vector2i = BoardData.index_to_pos(drag_index)
 	bd.board_to_dormitory(pos)
-	print(">>> [GameBoard] 拖拽存入宿舍: %s Lv.%d" % [ch.name, ch.level])
 	
 	# 重置拖拽状态，确保高亮被隐藏
 	is_dragging = false
@@ -2345,7 +2350,6 @@ func _drag_to_backpack() -> void:
 	# 从棋盘移除（直接设置board数组）
 	bd.board[drag_index] = null
 
-	print(">>> [GameBoard] 拖拽存入背包: %s Lv.%d" % [ch.name, ch.level])
 
 	# 重置拖拽状态
 	is_dragging = false
@@ -2430,7 +2434,6 @@ func _open_backpack_ui() -> void:
 	_setup_backpack_panel()
 	_refresh_backpack_panel()
 	_backpack_scene_instance.visible = true
-	print(">>> [GameBoard] 打开背包界面")
 
 
 ## 设置背包面板（实例化场景）
@@ -2458,7 +2461,6 @@ func _close_backpack_ui() -> void:
 	_backpack_visible = false
 	if _backpack_scene_instance != null:
 		_backpack_scene_instance.visible = false
-	print(">>> [GameBoard] 关闭背包界面")
 
 
 func _on_backpack_close() -> void:
@@ -2500,7 +2502,7 @@ func _on_backpack_items_taken(marked_indices: Array[int]) -> void:
 				items_to_remove.append(idx)
 			else:
 				# 棋盘已满，物品保留在背包
-				print(">>> [GameBoard] 棋盘已满，物品保留在背包")
+				pass
 
 	# 清空成功移出的物品（从后往前移除）
 	for idx in items_to_remove:
@@ -2539,6 +2541,8 @@ func _play_backpack_to_board_animation(moved_data: Array, start_pos: Vector2) ->
 		var board_idx: int = data["board_index"]
 		if board_idx >= 0 and board_idx < cell_sprites.size():
 			cell_sprites[board_idx].visible = false
+			if cell_containers[board_idx] != null:
+				cell_containers[board_idx].visible = false
 
 	# 为每个物品播放从背包飞到棋盘的动画
 	for data in moved_data:
@@ -2580,6 +2584,8 @@ func _play_backpack_to_board_animation(moved_data: Array, start_pos: Vector2) ->
 			anim_sprite.queue_free()
 			if board_idx >= 0 and board_idx < cell_sprites.size():
 				cell_sprites[board_idx].visible = true
+				if cell_containers[board_idx] != null:
+					cell_containers[board_idx].visible = true
 				_play_land_animation(board_idx)
 		)
 
@@ -2610,7 +2616,6 @@ func _on_relic_pressed(relic: DataModels.ItemData) -> void:
 		# 延迟重置标志
 		await get_tree().create_timer(2.0).timeout
 		_relic_tip_showing = false
-	print(">>> [GameBoard] 遗物详情: %s - %s" % [relic.name, relic.description])
 
 
 func _on_relic_button_down(relic: DataModels.ItemData) -> void:
@@ -2667,7 +2672,6 @@ func _on_relic_next_pressed() -> void:
 
 
 func _on_relics_changed() -> void:
-	print(">>> [GameBoard] 遗物改变，刷新遗物面板，当前遗物数量: %d" % GameManager.relics.size())
 	_refresh_relic_panel()
 
 
@@ -2677,14 +2681,12 @@ func _find_control_at_position(pos: Vector2) -> Control:
 	# 从 GridContainer 开始递归查找包含该位置的 Control
 	var gc: GridContainer = grid_container
 	if gc == null:
-		print(">>> [Debug] grid_container is null!")
+		push_warning(">>> [GameBoard] grid_container is null!")
 		return null
-	print(">>> [Debug] grid_container=%s, rect=%s" % [gc, gc.get_global_rect()])
 	# 获取 GridContainer 内的所有 cell
 	for child in gc.get_children():
 		if child is Control:
 			var rect: Rect2 = child.get_global_rect()
-			print(">>> [Debug] cell %s, rect=%s, has_point=%s" % [child.name, rect, rect.has_point(pos)])
 			if rect.has_point(pos):
 				return child
 	return null
@@ -2709,7 +2711,6 @@ func _input(event: InputEvent) -> void:
 			if ch != null:
 				var pos: Vector2i = BoardData.index_to_pos(selected_index)
 				bd.board_to_dormitory(pos)
-				print(">>> [GameBoard] 存入宿舍: %s Lv.%d" % [ch.name, ch.level])
 				selected_index = -1
 				_refresh_board_display()
 				_update_character_detail_panel()
@@ -2722,26 +2723,22 @@ func _on_end_turn_pressed() -> void:
 	_update_character_detail_panel()
 	# Tutorial: advance on end turn (step 4)
 	_try_advance_tutorial(4)
-	print(">>> [GameBoard] 结束回合, 进入战斗阶段")
 	SoundSystem.play_button_click()
 	GameManager.enter_battle_phase()
 	get_tree().change_scene_to_file("res://scenes/battle_scene.tscn")
 
 
 func _on_back_pressed() -> void:
-	print(">>> [GameBoard] 返回主菜单")
 	SoundSystem.play_button_click()
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
 
 
 func _on_build_list_pressed() -> void:
-	print(">>> [GameBoard] 进入建造场景")
 	SoundSystem.play_button_click()
 	TransitionManager.change_scene_with_transition("res://scenes/building.tscn")
 
 
 func _on_out_item_clicked(item_id: int) -> void:
-	print(">>> [GameBoard] 点击局外道具: %d" % item_id)
 	# 获取物品数据
 	var item: DataModels.BoardItemData = ItemManager.get_item(item_id)
 	if item == null:
@@ -2798,7 +2795,6 @@ func _on_out_item_clicked(item_id: int) -> void:
 
 ## 处理提交请求：物品飞向任务栏后完成任务
 func _on_submit_requested() -> void:
-	print(">>> [GameBoard] 收到提交请求")
 	# 获取任务物品信息
 	var task_info: Dictionary = TaskManager.get_task_items_info()
 	var all_board_items: Array = task_info.get("board", [])
@@ -2851,6 +2847,8 @@ func _on_submit_requested() -> void:
 		# 隐藏原物品
 		if board_index < cell_sprites.size():
 			cell_sprites[board_index].visible = false
+			if cell_containers[board_index] != null:
+				cell_containers[board_index].visible = false
 		if board_index < cell_task_icons.size():
 			cell_task_icons[board_index].visible = false
 
@@ -2875,7 +2873,6 @@ func _on_submit_requested() -> void:
 
 ## 完成提交：实际移除物品并刷新
 func _finish_task_submission() -> void:
-	print(">>> [GameBoard] 执行任务完成")
 	# 获取当前任务的物品需求
 	var current_task: Dictionary = TaskManager.get_current_task()
 	if current_task.is_empty():
@@ -2895,7 +2892,6 @@ func _finish_task_submission() -> void:
 
 
 func _on_shop_pressed() -> void:
-	print(">>> [GameBoard] 打开商店")
 	SoundSystem.play_button_click()
 	# 使用弹窗方式打开商店（不切换场景）
 	var shop_scene := preload("res://scenes/shop_scene.tscn").instantiate()
@@ -2903,7 +2899,6 @@ func _on_shop_pressed() -> void:
 
 
 func _on_encyclopedia_pressed() -> void:
-	print(">>> [GameBoard] 打开图鉴")
 	SoundSystem.play_button_click()
 	_try_advance_tutorial(3)
 	var encyclopedia := preload("res://scenes/encyclopedia_scene.tscn").instantiate()
@@ -2978,13 +2973,11 @@ func _setup_item_slots() -> void:
 
 
 func _refresh_item_slots() -> void:
-	print(">>> [GameBoard] _refresh_item_slots 被调用，道具数量: %d" % GameManager.items.size())
 	for i in range(ITEM_SLOT_COUNT):
 		var bg: TextureRect = item_slot_nodes[i].get_node_or_null("Background")
 		
 		if i < GameManager.items.size():
 			var item: DataModels.ItemData = GameManager.items[i]
-			print(">>> [GameBoard] 刷新道具格子 %d: %s (ID: %d)" % [i, item.name, item.id])
 			
 			# 显示道具图片
 			var icon: TextureRect = item_slot_icons[i]
@@ -2993,10 +2986,9 @@ func _refresh_item_slots() -> void:
 				var tex := _get_item_texture(item)
 				icon.texture = tex
 				icon.visible = (tex != null)
-				print(">>> [GameBoard] 道具格子 %d 图片: %s, visible: %s" % [i, tex, icon.visible])
 			else:
-				print(">>> [GameBoard] 道具格子 %d 的 icon 为空！" % i)
-			
+				pass
+
 			# 背景不透明
 			if bg:
 				bg.modulate = Color(0.8, 0.8, 0.8, 1.0)
@@ -3084,7 +3076,6 @@ func _discard_item(slot_index: int) -> void:
 		return
 	GameManager.remove_item(slot_index)
 	_refresh_item_slots()
-	print(">>> [GameBoard] 丢弃道具: %d" % slot_index)
 
 
 func _use_item_direct(slot_index: int) -> void:
@@ -3096,7 +3087,6 @@ func _use_item_direct(slot_index: int) -> void:
 	var success: bool = result.get("success", false)
 	var affected_target: int = result.get("target_index", -1)
 
-	print(">>> [GameBoard] 使用道具 %s (直接使用), result: %s" % [item.name, result])
 
 	if success:
 		GameManager.remove_item(slot_index)
@@ -3105,7 +3095,6 @@ func _use_item_direct(slot_index: int) -> void:
 
 		# 如果有受影响的目标，播放高亮动效
 		if affected_target >= 0:
-			print(">>> [GameBoard] 播放高亮动效，目标: %d" % affected_target)
 			_play_item_effect_highlight(affected_target)
 	else:
 		print(">>> [GameBoard] 使用道具失败: %s" % item.name)
@@ -3125,7 +3114,6 @@ func _use_item_on_target(target_index: int) -> void:
 	var success: bool = result.get("success", false)
 	var affected_target: int = result.get("target_index", -1)
 
-	print(">>> [GameBoard] 使用道具 %s (目标: %d), result: %s" % [item.name, target_index, result])
 
 	if success:
 		GameManager.remove_item(slot_index)
@@ -3135,7 +3123,6 @@ func _use_item_on_target(target_index: int) -> void:
 		# 播放高亮动效（使用target_index，如果result中没有affected_target）
 		if affected_target < 0:
 			affected_target = target_index
-		print(">>> [GameBoard] 播放高亮动效，目标: %d" % affected_target)
 		_play_item_effect_highlight(affected_target)
 	else:
 		print(">>> [GameBoard] 使用道具失败: %s" % item.name)
@@ -3148,18 +3135,14 @@ func _use_item_on_target(target_index: int) -> void:
 
 ## 播放道具使用效果的高亮动效（0.5s红色高亮）
 func _play_item_effect_highlight(cell_index: int) -> void:
-	print(">>> [GameBoard] _play_item_effect_highlight 被调用，cell_index: %d" % cell_index)
-	print(">>> [GameBoard] is_dragging: %s, merge_targets.size: %d" % [is_dragging, merge_targets.size()])
 	
 	# 强制结束拖拽状态，避免冲突
 	if is_dragging:
-		print(">>> [GameBoard] 警告：在拖拽状态下播放道具高亮，强制结束拖拽")
 		is_dragging = false
 		merge_targets.clear()
 		_update_merge_highlights()
 	
 	# 清理所有格子的颜色状态（关键：避免之前的红色状态残留）
-	print(">>> [GameBoard] 重置所有格子的颜色状态")
 	for i in range(BoardData.BOARD_SLOTS):
 		# 隐藏高亮效果层
 		cell_highlight_effects[i].visible = false
@@ -3172,15 +3155,12 @@ func _play_item_effect_highlight(cell_index: int) -> void:
 			cell_rects[i].modulate = Color(0.5, 0.5, 0.5, 0.9) if is_even else Color(0.8, 0.8, 0.8, 0.7)
 	
 	if cell_index < 0 or cell_index >= cell_sprites.size():
-		print(">>> [GameBoard] 无效的 cell_index: %d (范围: 0-%d)" % [cell_index, cell_sprites.size() - 1])
 		return
 	
 	var sprite: Control = cell_sprites[cell_index]
 	if sprite == null or not is_instance_valid(sprite):
-		print(">>> [GameBoard] sprite 无效或为空")
 		return
 	
-	print(">>> [GameBoard] 开始播放高亮动效，格子: %d" % cell_index)
 	
 	# 创建高亮动画：红色闪烁
 	var tween := create_tween()
@@ -3228,6 +3208,7 @@ func _end_target_selection() -> void:
 
 
 func _on_item_slot_input(event: InputEvent, slot_index: int) -> void:
+	_reset_idle_hint_timer()
 	if event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
 		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
@@ -3242,7 +3223,6 @@ func _use_item_at_slot(slot_index: int) -> void:
 
 	# 查找选中的角色
 	if selected_index < 0:
-		print(">>> [GameBoard] 使用道具失败: 请先选中一个角色")
 		TipManager.show_tip(LocalizationSystem.get_text("game_board.select_character_first"))
 		return
 
@@ -3254,7 +3234,6 @@ func _use_item_at_slot(slot_index: int) -> void:
 		_refresh_item_slots()
 		_refresh_board_display()
 	else:
-		print(">>> [GameBoard] 使用道具失败")
 		TipManager.show_tip(LocalizationSystem.get_text("items.cannot_use"))
 
 
@@ -3365,12 +3344,13 @@ func _on_use_item(item_index: int) -> void:
 		_refresh_item_slots()
 		_refresh_board_display()
 	else:
-		print(">>> [GameBoard] 使用道具失败 (可能需要先选中一个角色)")
+		TipManager.show_tip(LocalizationSystem.get_text("items.cannot_use"))
 
 
 # ---- 设置面板 ----
 
 func _on_settings_pressed() -> void:
+	_reset_idle_hint_timer()
 	SoundSystem.play_button_click()
 	_show_settings_panel()
 
@@ -3423,7 +3403,6 @@ func _on_localization_changed(lang: String) -> void:
 	# 如果道具详情弹窗打开，关闭它（下次打开时会用新语言创建）
 	if item_detail_visible:
 		_hide_item_detail()
-	print(">>> [GameBoard] 语言切换为: %s" % lang)
 
 
 func _update_language_button_text() -> void:
@@ -3488,7 +3467,6 @@ func _on_clear_save_pressed() -> void:
 	_on_round_changed(GameManager.current_round)
 	# 显示提示
 	TipManager.show_tip(LocalizationSystem.get_text("settings.clear_save_confirm"), 2.0)
-	print(">>> [GameBoard] 存档已清空")
 
 
 
@@ -3512,3 +3490,84 @@ func _try_advance_tutorial(expected_step: int) -> void:
 	# Tutorial advancement is handled by tutorial_instance
 	# This method kept for compatibility with old tutorial overlay
 	pass
+
+
+# ---- Idle 提示系统 ----
+
+## 启动 idle 提示计时器
+func _start_idle_hint_timer() -> void:
+	_stop_idle_hint_timer()
+	_idle_hint_timer = get_tree().create_timer(IDLE_HINT_DELAY, false)
+	_idle_hint_timer.timeout.connect(_on_idle_hint_timeout)
+
+
+## 停止 idle 提示计时器
+func _stop_idle_hint_timer() -> void:
+	if _idle_hint_timer != null:
+		if _idle_hint_timer.timeout.is_connected(_on_idle_hint_timeout):
+			_idle_hint_timer.timeout.disconnect(_on_idle_hint_timeout)
+		_idle_hint_timer = null
+
+
+## 重置 idle 提示计时器（玩家操作时调用）
+func _reset_idle_hint_timer() -> void:
+	if not _idle_hint_playing:
+		_start_idle_hint_timer()
+
+
+## Idle 计时器到期回调
+func _on_idle_hint_timeout() -> void:
+	_idle_hint_timer = null
+	_play_idle_hint_animation()
+
+
+## 播放 idle 提示动画：找到两个相同物品（id一致），缩放 1 -> 1.1 -> 1 循环
+func _play_idle_hint_animation() -> void:
+	var bd: BoardData = GameManager.board_data
+	var found_pair: Array = []  # [idx1, idx2] 真正可合成的物品对
+
+	# 遍历棋盘，找到第一对可合成的物品（相邻 + merge_chain相同 + level相同 + id一致）
+	for i in range(BoardData.BOARD_SLOTS):
+		var ch: DataModels.BoardItemData = bd.get_item_at_index(i)
+		if ch == null or not ch.can_merge():
+			continue
+
+		var neighbors := _get_neighbors(i)
+		for neighbor_index in neighbors:
+			var neighbor_ch: DataModels.BoardItemData = bd.get_item_at_index(neighbor_index)
+			# id一致（相同物品）、同等级、同一合成链、都可以合成
+			if neighbor_ch != null and neighbor_ch.can_merge() and neighbor_ch.id == ch.id and neighbor_ch.level == ch.level:
+				found_pair = [i, neighbor_index]
+				break
+		if found_pair.size() == 2:
+			break
+
+	if found_pair.size() < 2:
+		# 没有可合成的物品，重新开始计时
+		_start_idle_hint_timer()
+		return
+
+	var idx1: int = found_pair[0]
+	var idx2: int = found_pair[1]
+
+	_idle_hint_playing = true
+
+	# 物品sprite引用
+	var sprite1: TextureRect = cell_sprites[idx1] if idx1 < cell_sprites.size() else null
+	var sprite2: TextureRect = cell_sprites[idx2] if idx2 < cell_sprites.size() else null
+
+	# 播放缩放动画：1 -> 1.1 -> 1，循环3次
+	# 使用并行tween让两个物品同时动画
+	for i in range(3):
+		var tween := create_tween()
+		tween.set_parallel(true)
+		if sprite1 != null:
+			tween.tween_property(sprite1, "scale", Vector2(1.1, 1.1), 0.2)
+			tween.tween_property(sprite1, "scale", Vector2(1.0, 1.0), 0.2).set_delay(0.2)
+		if sprite2 != null:
+			tween.tween_property(sprite2, "scale", Vector2(1.1, 1.1), 0.2)
+			tween.tween_property(sprite2, "scale", Vector2(1.0, 1.0), 0.2).set_delay(0.2)
+		await tween.finished
+
+	_idle_hint_playing = false
+	_start_idle_hint_timer()

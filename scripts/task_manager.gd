@@ -102,7 +102,6 @@ func _ready() -> void:
 	GameManager.backpack_items_changed.connect(_on_backpack_items_changed)
 	# 监听棋盘物品变化，刷新任务进度显示
 	GameManager.board_items_changed.connect(_on_backpack_items_changed)
-	print(">>> [TaskManager] 任务系统管理器已加载")
 
 
 func _on_backpack_items_changed() -> void:
@@ -125,7 +124,6 @@ func _load_out_task_config() -> void:
 
 	var file := FileAccess.open(OUT_TASK_CONFIG_PATH, FileAccess.READ)
 	if file == null:
-		print(">>> [TaskManager] 局外任务配置加载失败: %s" % FileAccess.get_open_error())
 		return
 
 	var json_str := file.get_as_text()
@@ -133,12 +131,10 @@ func _load_out_task_config() -> void:
 
 	var json := JSON.new()
 	if json.parse(json_str) != OK:
-		print(">>> [TaskManager] 局外任务配置JSON解析失败")
 		return
 
 	var data: Dictionary = json.data
 	if data.is_empty():
-		print(">>> [TaskManager] 局外任务配置数据为空")
 		return
 
 	_out_tasks = data.get("tasks", [])
@@ -149,7 +145,6 @@ func _load_out_task_config() -> void:
 			_out_tasks_by_id[id] = task
 
 	_out_tasks_loaded = true
-	# print(">>> [TaskManager] 局外任务配置加载成功: %d个成就" % _out_tasks.size())
 
 
 # ==========================================
@@ -372,7 +367,6 @@ func _consume_task_items(need_items: Array) -> bool:
 	# 检查是否满足所有需求
 	for count in need_counts.values():
 		if count > 0:
-			print(">>> [TaskManager] 物品不足，无法提交任务")
 			return false
 
 	# 执行移除
@@ -381,7 +375,6 @@ func _consume_task_items(need_items: Array) -> bool:
 	for remove_data in board_to_remove:
 		var pos: Vector2i = BoardData.index_to_pos(remove_data["index"])
 		board_data.remove_item(pos)
-		print(">>> [TaskManager] 消耗棋盘物品: index=%d, id=%d" % [remove_data["index"], remove_data["id"]])
 	# 移除完成后通知UI刷新
 	if not board_to_remove.is_empty():
 		GameManager.board_items_changed.emit()
@@ -391,7 +384,6 @@ func _consume_task_items(need_items: Array) -> bool:
 	backpack_to_remove.reverse()
 	for remove_idx in backpack_to_remove:
 		GameManager.remove_from_backpack(remove_idx)
-		print(">>> [TaskManager] 消耗背包物品: index=%d" % remove_idx)
 
 	return true
 
@@ -427,10 +419,6 @@ func _complete_task(task: Dictionary) -> void:
 	var next_id: int = task.get("nextTaskId", -1)
 	_current_task_id = next_id if next_id > 0 else 0
 
-	print(">>> [TaskManager] 局内任务完成: id=%d, 奖励: coin=%d, star=%d, exp=%d, items=%s" % [
-		task_id, coin_reward, star_reward, exp_reward, items_reward
-	])
-
 	task_completed.emit(task_id, reward)
 	task_items_updated.emit(get_task_items_info())
 
@@ -444,24 +432,19 @@ func set_current_task(task_id: int) -> void:
 func advance_task_chain() -> void:
 	# 跳过已完成的任务，找到下一个未完成的
 	var all_tasks: Array = _task_loader.get_all_tasks()
-	print(">>> [TaskManager] advance_task_chain: 共%d个任务, player_level=%d, completed=%s" % [all_tasks.size(), player_level, _completed_task_ids])
 	for task in all_tasks:
 		var tid: int = task.get("id", 0)
 		if tid <= 0:
 			continue
 		if tid in _completed_task_ids:
-			print(">>> [TaskManager] 跳过已完成任务: id=%d" % tid)
 			continue
 		var unlock_level: int = task.get("unlockLevel", 1)
 		if unlock_level > player_level:
-			print(">>> [TaskManager] 跳过等级不足任务: id=%d, unlockLevel=%d > playerLevel=%d" % [tid, unlock_level, player_level])
 			continue
 		_current_task_id = tid
-		print(">>> [TaskManager] 局内任务推进: id=%d, name=%s" % [tid, task.get("name", "")])
 		task_items_updated.emit(get_task_items_info())
 		return
 	_current_task_id = 0
-	print(">>> [TaskManager] 没有可接取的任务")
 	task_items_updated.emit(get_task_items_info())
 
 
@@ -521,12 +504,10 @@ func get_completed_achievement_ids() -> Array:
 ## @param amount int 增加量 (默认为1)
 func add_statistic(stat_type: String, amount: int = 1) -> void:
 	if not _statistics.has(stat_type):
-		print(">>> [TaskManager] 未知统计类型: %s" % stat_type)
 		return
 
 	var old_val: int = _statistics[stat_type]
 	_statistics[stat_type] = old_val + amount
-	print(">>> [TaskManager] 统计数据更新: %s = %d -> %d" % [stat_type, old_val, _statistics[stat_type]])
 
 	# 检查成就完成
 	_check_achievements_by_type(stat_type)
@@ -574,10 +555,6 @@ func _complete_achievement(task: Dictionary) -> void:
 	if exp_reward > 0:
 		add_exp(exp_reward)
 
-	print(">>> [TaskManager] 成就完成: id=%d, name=%s, exp奖励=%d" % [
-		task_id, task.get("name", ""), exp_reward
-	])
-
 	achievement_completed.emit(task_id, exp_reward)
 
 
@@ -590,7 +567,6 @@ func add_stars(amount: int) -> void:
 		return
 	stars += amount
 	stars_changed.emit(stars)
-	print(">>> [TaskManager] 获得星星: +%d, 当前: %d" % [amount, stars])
 
 
 func add_exp(amount: int) -> void:
@@ -598,7 +574,6 @@ func add_exp(amount: int) -> void:
 		return
 	exp += amount
 	exp_changed.emit(exp)
-	print(">>> [TaskManager] 获得经验: +%d, 当前: %d" % [amount, exp])
 	_check_level_up()
 
 
@@ -609,7 +584,6 @@ func _check_level_up() -> void:
 	if new_level > player_level:
 		player_level = new_level
 		level_up.emit(player_level)
-		print(">>> [TaskManager] 玩家升级: level=%d" % player_level)
 		# 升级后刷新可接取的局内/局外任务
 		advance_task_chain()
 
@@ -646,10 +620,6 @@ func load_from_save_data(data: Dictionary) -> void:
 	stars = data.get("stars", 0)
 	exp = data.get("exp", 0)
 	player_level = data.get("playerLevel", 1)
-
-	print(">>> [TaskManager] 任务状态已恢复: currentTask=%d, stars=%d, exp=%d, level=%d" % [
-		_current_task_id, stars, exp, player_level
-	])
 
 
 # ==========================================

@@ -46,7 +46,6 @@ func clear_board() -> void:
 	for i in range(BOARD_SLOTS):
 		_grid_states[i] = GridState.LOCKED
 	dormitory.clear()
-	print(">>> [BoardData] 棋盘和宿舍已清空")
 
 
 # ---- 坐标转换 ----
@@ -96,11 +95,9 @@ func get_item_index(item: DataModels.BoardItemData) -> int:
 ## 放置物品到棋盘指定位置, 成功返回 true
 func place_item(item: DataModels.BoardItemData, pos: Vector2i) -> bool:
 	if not is_valid_pos(pos):
-		print(">>> [BoardData] 放置失败: 坐标越界 (%d, %d)" % [pos.x, pos.y])
 		return false
 	var index: int = pos_to_index(pos)
 	if board[index] != null:
-		print(">>> [BoardData] 放置失败: 位置已被占用 (%d, %d)" % [pos.x, pos.y])
 		return false
 	board[index] = item
 	return true
@@ -112,7 +109,6 @@ func place_item_first_empty(item: DataModels.BoardItemData) -> Vector2i:
 		if board[i] == null:
 			board[i] = item
 			return index_to_pos(i)
-	print(">>> [BoardData] 放置失败: 棋盘已满")
 	return Vector2i(-1, -1)
 
 
@@ -148,7 +144,6 @@ func swap_items(pos_a: Vector2i, pos_b: Vector2i) -> bool:
 ## 将物品存入宿舍
 func store_to_dormitory(item: DataModels.BoardItemData) -> void:
 	dormitory.append(item)
-	print(">>> [BoardData] 物品存入宿舍: %s Lv.%d" % [item.name, item.level])
 
 
 ## 从宿舍取出物品 (按索引)
@@ -383,7 +378,6 @@ func dust_to_occupied(index: int) -> void:
 ## pos_to_index(x, y) 中 x=col(0-6), y=row(0-8)
 ## x=lua_row(0-6), y=lua_col(0-8)
 func init_grid_states_from_config(config: MapConfigLoader) -> void:
-	print(">>> [BoardData] init_grid_states_from_config: config.rows=%d, config.cols=%d" % [config.rows, config.cols])
 	var state_counts := {1: 0, 2: 0, 3: 0, 4: 0}  # 统计各状态数量
 	for lua_row in range(config.rows):  # Lua 行范围 0-6
 		for lua_col in range(config.cols):  # Lua 列范围 0-8
@@ -393,5 +387,4 @@ func init_grid_states_from_config(config: MapConfigLoader) -> void:
 			set_grid_state(index, state)
 			state_counts[state] += 1
 			if state == 2 or state == 3:  # DUSTY or OCCUPIED
-				print(">>> [BoardData] Lua[%d][%d] -> index=%d, state=%d (OCCUPIED=%d, DUSTY=%d)" % [lua_row, lua_col, index, state, BoardData.GridState.OCCUPIED, BoardData.GridState.DUSTY])
-	print(">>> [BoardData] 状态统计: LOCKED=%d, DUSTY=%d, OCCUPIED=%d, EMPTY=%d" % [state_counts[1], state_counts[2], state_counts[3], state_counts[4]])
+				print(">>> [BoardData] Lua[%d][%d] -> index=%d, state=%d (OCCUPIED=%d, DUSTY=%d)" % [lua_row, lua_col, index, state, GridState.OCCUPIED, GridState.DUSTY])

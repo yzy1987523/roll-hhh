@@ -39,7 +39,6 @@ signal producer_unregistered(board_index: int)
 
 func _ready() -> void:
 	_config_loader.load_config()
-	print(">>> [ProducerManager] 生成器时间管理器已初始化")
 
 
 func _process(delta: float) -> void:
@@ -91,18 +90,15 @@ func _update_single_producer(state: ProducerState, delta: float) -> void:
 func register_producer(board_index: int, item_id: int) -> bool:
 	# 检查是否已经是生成器
 	if _producers.has(board_index):
-		print(">>> [ProducerManager] 警告: 位置 %d 已是生成器" % board_index)
 		return false
 
 	# 获取物品配置
 	var cfg: Dictionary = _config_loader.get_item(item_id)
 	if cfg.is_empty():
-		print(">>> [ProducerManager] 注册失败: 找不到物品配置 id=%d" % item_id)
 		return false
 
 	var item_type: String = cfg.get("type", "")
 	if item_type != "production" and item_type != "maxproduction":
-		print(">>> [ProducerManager] 注册失败: 物品 %d 不是生成器类型 (type=%s)" % [item_id, item_type])
 		return false
 
 	var state := ProducerState.new()
@@ -117,7 +113,6 @@ func register_producer(board_index: int, item_id: int) -> bool:
 
 	_producers[board_index] = state
 	producer_registered.emit(board_index, state)
-	print(">>> [ProducerManager] 注册生成器: board=%d, item=%d, maxCount=%d, recovery=%.1fs, cooldown=%.1fs" % [board_index, item_id, state.max_count, state.recovery_time, state.cooldown_time])
 	return true
 
 
@@ -127,7 +122,6 @@ func unregister_producer(board_index: int) -> bool:
 		return false
 	_producers.erase(board_index)
 	producer_unregistered.emit(board_index)
-	print(">>> [ProducerManager] 注销生成器: board=%d" % board_index)
 	return true
 
 
@@ -136,7 +130,6 @@ func move_producer(from_index: int, to_index: int) -> bool:
 	if not _producers.has(from_index):
 		return false
 	if _producers.has(to_index):
-		print(">>> [ProducerManager] 移动失败: 目标位置 %d 已是生成器" % to_index)
 		return false
 
 	var state: ProducerState = _producers[from_index]
@@ -145,7 +138,6 @@ func move_producer(from_index: int, to_index: int) -> bool:
 	_producers[to_index] = state
 	producer_unregistered.emit(from_index)
 	producer_registered.emit(to_index, state)
-	print(">>> [ProducerManager] 移动生成器: %d -> %d" % [from_index, to_index])
 	return true
 
 
@@ -166,7 +158,6 @@ func swap_producer(index_a: int, index_b: int) -> bool:
 	producer_unregistered.emit(index_b)
 	producer_registered.emit(index_a, state_b)
 	producer_registered.emit(index_b, state_a)
-	print(">>> [ProducerManager] 交换生成器: %d <-> %d" % [index_a, index_b])
 	return true
 
 
@@ -180,7 +171,6 @@ func consume_stock(board_index: int) -> bool:
 		# 进入冷却
 		state.cooldown_remaining = state.cooldown_time
 		cooldown_started.emit(board_index, state.cooldown_time)
-		print(">>> [ProducerManager] 库存耗尽，进入冷却: board=%d, cooldown=%.1fs" % [board_index, state.cooldown_time])
 		return false
 
 	state.current_count -= 1
@@ -189,7 +179,6 @@ func consume_stock(board_index: int) -> bool:
 	if state.current_count <= 0:
 		state.cooldown_remaining = state.cooldown_time
 		cooldown_started.emit(board_index, state.cooldown_time)
-		print(">>> [ProducerManager] 库存耗尽，进入冷却: board=%d, cooldown=%.1fs" % [board_index, state.cooldown_time])
 
 	return true
 
@@ -250,3 +239,14 @@ func can_produce(board_index: int) -> bool:
 		return false
 	var state: ProducerState = _producers[board_index]
 	return state.cooldown_remaining <= 0 and state.current_count > 0
+
+
+# ---- 恢复生成器状态（存档加载时调用，不重新注册） ----
+func restore_producer_state(board_index: int, current_count: int, cooldown_remaining: float, last_recovery_time: float) -> void:
+	if not _producers.has(board_index):
+		return
+	var state: ProducerState = _producers[board_index]
+	state.current_count = current_count
+	state.cooldown_remaining = cooldown_remaining
+	state.last_recovery_time = last_recovery_time
+	stock_changed.emit(board_index, state.current_count, state.max_count)

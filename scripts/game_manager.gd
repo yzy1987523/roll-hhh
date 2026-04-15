@@ -52,6 +52,10 @@ var shop_items_data: Array = []  # 商店商品数据 [{"id": int, "is_relic": b
 var _energy_purchase_cost: int = 5  # 当前购买能量花费的钻石
 var _last_energy_reset_day: int = 0  # 上次重置能量购买费用的日期（天数）
 
+# ---- 体力恢复 ----
+const ENERGY_RECOVERY_INTERVAL: float = 120.0  # 每120秒（2分钟）恢复1点体力
+var last_energy_update_time: float = 0.0  # 上次更新体力的真实时间戳
+
 # ---- 教程状态 ----
 var tutorial_completed: bool = true  # 新手教程是否已完成 (已屏蔽)
 
@@ -83,7 +87,6 @@ func reset_tutorial() -> void:
 	var config := ConfigFile.new()
 	config.set_value("player", "tutorial_completed", false)
 	config.save("user://tutorial.cfg")
-	print(">>> [GameManager] 教程状态已重置")
 
 # ---- 棋盘数据 ----
 var board_data: BoardData = BoardData.new()
@@ -104,11 +107,9 @@ signal board_items_changed()  # 棋盘物品变化信号（放置/移除物品�
 ## 返回是否添加成功（栏位已满时返回false）
 func add_item(item: DataModels.ItemData) -> bool:
 	if items.size() >= MAX_ITEM_SLOTS:
-		print(">>> [GameManager] 道具栏已满，无法获取: %s" % item.name)
 		return false
 	items.append(item)
 	items_changed.emit()
-	print(">>> [GameManager] 获得道具: %s" % item.name)
 	_auto_save()
 	return true
 
@@ -119,14 +120,12 @@ func remove_item(index: int) -> void:
 		var item: DM.ItemData = items[index]
 		items.remove_at(index)
 		items_changed.emit()
-		print(">>> [GameManager] 移除道具: %s" % item.name)
 
 
 ## 添加局外道具
 func add_out_item(item_id: int) -> void:
 	out_items.append(item_id)
 	out_items_changed.emit()
-	print(">>> [GameManager] 添加局外道具: %d" % item_id)
 
 
 ## 移除局外道具
@@ -135,7 +134,6 @@ func remove_out_item(item_id: int) -> void:
 	if idx >= 0:
 		out_items.remove_at(idx)
 		out_items_changed.emit()
-		print(">>> [GameManager] 移除局外道具: %d" % item_id)
 
 
 ## 获取局外道具列表
@@ -147,7 +145,6 @@ func get_out_items() -> Array[int]:
 func add_to_backpack(board_item: DM.BoardItemData) -> bool:
 	backpack_items.append(board_item)
 	backpack_items_changed.emit()
-	print(">>> [GameManager] 物品移入背包: %s (Lv.%d)" % [board_item.name, board_item.level])
 	return true
 
 
@@ -157,7 +154,6 @@ func remove_from_backpack(index: int) -> void:
 		var item: DM.BoardItemData = backpack_items[index]
 		backpack_items.remove_at(index)
 		backpack_items_changed.emit()
-		print(">>> [GameManager] 物品移出背包: %s (Lv.%d)" % [item.name, item.level])
 
 
 ## 获取背包物品列表
@@ -171,11 +167,9 @@ func add_relic(relic: DM.ItemData) -> void:
 	if not relic.stackable:
 		for r in relics:
 			if r.id == relic.id:
-				print(">>> [GameManager] 遗物已拥有: %s" % relic.name)
 				return
 	relics.append(relic)
 	relics_changed.emit()
-	print(">>> [GameManager] 获得遗物: %s" % relic.name)
 	# 刷新所有角色的遗物加成
 	CharacterFactory.refresh_all_characters_relics()
 	_auto_save()
@@ -183,10 +177,46 @@ func add_relic(relic: DM.ItemData) -> void:
 # ---- 生命周期 ----
 
 func _ready() -> void:
-	print(">>> [GameManager] 游戏状态管理器已加载")
 	_load_tutorial_state()
 	_reset_to_defaults()
+	last_energy_update_time = Time.get_unix_time_from_system()
 	_initialized = true
+
+
+func _process(_delta: float) -> void:
+	if not _initialized:
+		return
+	_update_energy_recovery()
+
+
+## 根据真实时间恢复体力
+func _update_energy_recovery() -> void:
+	if energy >= max_energy:
+		last_energy_update_time = Time.get_unix_time_from_system()
+		return
+	var current_time: float = Time.get_unix_time_from_system()
+	var elapsed: float = current_time - last_energy_update_time
+	if elapsed >= ENERGY_RECOVERY_INTERVAL:
+		var recovered: int = int(elapsed / ENERGY_RECOVERY_INTERVAL)
+		var old_energy: int = energy
+		energy = mini(energy + recovered, max_energy)
+		last_energy_update_time = current_time - fmod(elapsed, ENERGY_RECOVERY_INTERVAL)
+		if energy != old_energy:
+			energy_changed.emit(energy)
+
+
+## 应用离线期间的体力恢复（存档加载时调用）
+func apply_offline_energy_recovery() -> void:
+	if energy >= max_energy:
+		last_energy_update_time = Time.get_unix_time_from_system()
+		return
+	var current_time: float = Time.get_unix_time_from_system()
+	var elapsed: float = current_time - last_energy_update_time
+	if elapsed >= ENERGY_RECOVERY_INTERVAL:
+		var recovered: int = int(elapsed / ENERGY_RECOVERY_INTERVAL)
+		energy = mini(energy + recovered, max_energy)
+		last_energy_update_time = current_time - fmod(elapsed, ENERGY_RECOVERY_INTERVAL)
+		energy_changed.emit(energy)
 
 
 # ---- 阶段流转 ----
@@ -202,10 +232,8 @@ func enter_prepare_phase() -> void:
 		var cfg: Dictionary = MechanicsDb.get_relic_effect(19)
 		var bonus: int = cfg.get("bonus", 3)
 		restore_energy(bonus)
-		print(">>> [GameManager] 初始能量加成 +%d (遗物ID 19)" % bonus)
 	
 	phase_changed.emit(phase)
-	print(">>> [GameManager] 进入备战阶段, 回合: %d" % current_round)
 	_auto_save()
 
 
@@ -214,21 +242,18 @@ func enter_battle_phase() -> void:
 	phase = PHASE_BATTLE
 	battle_turn = 0
 	phase_changed.emit(phase)
-	print(">>> [GameManager] 进入战斗阶段, 回合: %d" % current_round)
 
 
 ## 进入商店阶段
 func enter_shop_phase() -> void:
 	phase = PHASE_SHOP
 	phase_changed.emit(phase)
-	print(">>> [GameManager] 进入商店阶段")
 
 
 ## 进入游戏结束
 func enter_game_over() -> void:
 	phase = PHASE_GAME_OVER
 	phase_changed.emit(phase)
-	print(">>> [GameManager] 游戏结束, 存活 %d 回合" % current_round)
 
 
 # ---- 回合推进 ----
@@ -239,9 +264,7 @@ func advance_round() -> void:
 	# 检查是否完成一个9轮循环
 	if (current_round - 1) % ENEMY_CYCLE.size() == 0:
 		cycle_count += 1
-		print(">>> [GameManager] 完成第 %d 个循环" % cycle_count)
 	round_changed.emit(current_round)
-	print(">>> [GameManager] 推进到回合: %d" % current_round)
 	_auto_save()
 
 
@@ -268,7 +291,6 @@ func spend_energy(amount: int) -> bool:
 	if amount <= 0:
 		return false
 	if energy < amount:
-		print(">>> [GameManager] 能量不足: 需要 %d, 当前 %d" % [amount, energy])
 		return false
 	energy -= amount
 	energy_changed.emit(energy)
@@ -280,13 +302,15 @@ func restore_energy(amount: int) -> void:
 	if amount <= 0:
 		return
 	energy = mini(energy + amount, max_energy)
+	if energy >= max_energy:
+		last_energy_update_time = Time.get_unix_time_from_system()
 	energy_changed.emit(energy)
-	print(">>> [GameManager] 恢复能量 %d, 当前: %d/%d" % [amount, energy, max_energy])
 
 
 ## 重置能量为满
 func reset_energy() -> void:
 	energy = max_energy
+	last_energy_update_time = Time.get_unix_time_from_system()
 	energy_changed.emit(energy)
 
 
@@ -296,7 +320,6 @@ func check_energy_purchase_cost_reset() -> void:
 	if today > _last_energy_reset_day:
 		_energy_purchase_cost = 5
 		_last_energy_reset_day = today
-		print(">>> [GameManager] 能量购买费用已重置为 5 钻石")
 
 
 ## 获取当前能量购买费用
@@ -310,10 +333,8 @@ func get_energy_purchase_cost() -> int:
 func purchase_energy() -> bool:
 	check_energy_purchase_cost_reset()
 	if diamond < _energy_purchase_cost:
-		print(">>> [GameManager] 钻石不足，无法购买能量: 需要 %d, 当前 %d" % [_energy_purchase_cost, diamond])
 		return false
 	if energy >= max_energy:
-		print(">>> [GameManager] 能量已满，无法购买")
 		return false
 	if not spend_diamond(_energy_purchase_cost):
 		return false
@@ -321,7 +342,6 @@ func purchase_energy() -> bool:
 	restore_energy(100)
 	# 花费翻倍
 	_energy_purchase_cost *= 2
-	print(">>> [GameManager] 购买能量成功，花费 %d 钻石，下次购买花费 %d" % [cost_paid, _energy_purchase_cost])
 	return true
 
 
@@ -330,7 +350,6 @@ func spend_gold(amount: int) -> bool:
 	if amount <= 0:
 		return false
 	if gold < amount:
-		print(">>> [GameManager] 金币不足: 需要 %d, 当前 %d" % [amount, gold])
 		return false
 	gold -= amount
 	gold_changed.emit(gold)
@@ -343,7 +362,6 @@ func add_gold(amount: int) -> void:
 		return
 	gold += amount
 	gold_changed.emit(gold)
-	print(">>> [GameManager] 获得金币 %d, 当前: %d" % [amount, gold])
 
 
 ## 消耗钻石，成功返回true
@@ -351,7 +369,6 @@ func spend_diamond(amount: int) -> bool:
 	if amount <= 0:
 		return false
 	if diamond < amount:
-		print(">>> [GameManager] 钻石不足: 需要 %d, 当前 %d" % [amount, diamond])
 		return false
 	diamond -= amount
 	diamond_changed.emit(diamond)
@@ -364,7 +381,6 @@ func add_diamond(amount: int) -> void:
 		return
 	diamond += amount
 	diamond_changed.emit(diamond)
-	print(">>> [GameManager] 获得钻石 %d, 当前: %d" % [amount, diamond])
 
 
 # ---- 献祭能量计算 ----
@@ -394,7 +410,6 @@ func is_battle_timeout() -> bool:
 ## 重置为初始状态 (新游戏)
 func reset_game() -> void:
 	_reset_to_defaults()
-	print(">>> [GameManager] 游戏已重置")
 
 
 ## 战败后重置 (保留图鉴数据, 图鉴由其他系统管理)
@@ -415,7 +430,6 @@ func reset_after_defeat() -> void:
 	phase_changed.emit(phase)
 	items_changed.emit()
 	relics_changed.emit()
-	print(">>> [GameManager] 战败重置 (图鉴保留)")
 	if _initialized and is_instance_valid(get_node_or_null("/root/SaveSystem")):
 		SaveSystem.clear_game_save()
 		SaveSystem.init_board_from_config()  # 从MapConfig重新初始化
@@ -440,7 +454,7 @@ func _reset_to_defaults() -> void:
 ## 生成初始角色：战士、牧师、法师
 ## 注意：当前版本棋盘使用物品，由SaveSystem从MapConfig初始化
 func spawn_initial_characters() -> void:
-	print(">>> [GameManager] 当前版本棋盘由SaveSystem从MapConfig初始化，跳过角色生成")
+	pass
 
 
 ## 自动存档辅助 (仅在初始化完成且SaveSystem可用时调用)

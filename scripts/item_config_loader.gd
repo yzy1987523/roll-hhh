@@ -115,7 +115,7 @@ func roll_production_item(item_id: int) -> int:
 	if prod_items.is_empty() or randoms.is_empty():
 		return 0
 	if prod_items.size() != randoms.size():
-		return prod_items[0] if not prod_items.is_empty() else 0
+		return int(prod_items[0]) if not prod_items.is_empty() else 0
 
 	# 累加概率并随机
 	var total: float = 0.0
@@ -127,5 +127,5 @@ func roll_production_item(item_id: int) -> int:
 	for i in range(prod_items.size()):
 		cumulative += randoms[i]
 		if roll <= cumulative:
-			return prod_items[i]
-	return prod_items[0]
+			return int(prod_items[i])
+	return int(prod_items[0])

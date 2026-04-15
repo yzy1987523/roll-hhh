@@ -23,6 +23,9 @@ var _move_tween: Tween
 # ================================= 计时器 =================================
 var _move_timer: float = 0.0
 
+# ================================= 地板多边形边界（120度菱形 Floor_0_0）=======================
+var _floor_polygon: PackedVector2Array = PackedVector2Array([Vector2(-8, -36), Vector2(61, 3), Vector2(7, 37), Vector2(-66, -2)])
+
 # ================================= 格子尺寸（需与 GridManager 一致）=======================
 var _cell_size: Vector2 = Vector2(128, 64)
 
@@ -121,7 +124,12 @@ func _try_move_to_random_neighbor():
 
 # ================================= 移动能力检查 =================================
 func _can_move_to(grid: Vector2i) -> bool:
-	# 地图边界检查（与 GridManager 的 map_width=10, map_height=8 一致）
+	# 检查目标世界坐标是否在地板多边形范围内
+	var world_pos = _grid_to_world(grid)
+	if not _is_point_in_polygon(world_pos, _floor_polygon):
+		return false
+
+	# 地图边界检查
 	if grid.x < 1 or grid.x > 9 or grid.y < 1 or grid.y > 7:
 		return false
 
@@ -133,6 +141,11 @@ func _can_move_to(grid: Vector2i) -> bool:
 				if occupied[grid.y][grid.x] == true:
 					return false
 	return true
+
+# ================================= 点是否在多边形内 =================================
+func _is_point_in_polygon(point: Vector2, polygon: PackedVector2Array) -> bool:
+	# 使用Godot的Geometry2D.is_point_in_polygon
+	return Geometry2D.is_point_in_polygon(point, polygon)
 
 # ================================= 移动到目标格子 =================================
 func _move_to_grid(target: Vector2i, direction: Vector2i):

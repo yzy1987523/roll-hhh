@@ -1679,14 +1679,15 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -49.0
-offset_top = -74.0
-offset_right = 50.0
-offset_bottom = 69.0
+offset_left = -49.5
+offset_top = -71.5
+offset_right = 49.5
+offset_bottom = 71.5
 grow_horizontal = 2
 grow_vertical = 2
+pivot_offset_ratio = Vector2(0.5, 0.5)
 texture = ExtResource("11_hl2y5")
-expand_mode = 4
+expand_mode = 1
 stretch_mode = 5
 
 [node name="DetailPanel" type="PanelContainer" parent="MainLayout/DetailActionBar" unique_id=945550921]

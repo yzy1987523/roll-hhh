@@ -41,7 +41,6 @@ func _init():
 	print("\n>>> [Step 5] 模拟按钮点击日志...")
 	print(">>> [MainMenu] 开始游戏按钮被点击")
 	print(">>> [MainMenu] 设置按钮被点击")
-	print(">>> [GameBoard] 返回按钮被点击")
 
 	print("\n=== [Test] 测试完成 ===")
 	quit()

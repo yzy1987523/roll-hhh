@@ -162,7 +162,6 @@ func _update_task_display() -> void:
 	var current_task: Dictionary = TaskManager.get_current_task()
 	var task_panel: PanelContainer = get_node(PATH_TASK_PANEL)
 
-	print(">>> [BottomHUD] _update_task_display: current_task=%s, is_empty=%s" % [current_task, current_task.is_empty()])
 
 	if current_task.is_empty():
 		task_panel.visible = false
@@ -176,7 +175,6 @@ func _update_task_display() -> void:
 	var star_reward: int = reward.get("star", 0)
 	var progress: float = TaskManager.get_current_task_progress()
 
-	# print(">>> [BottomHUD] 任务显示: name=%s, needItems=%s, star=%d, progress=%.2f" % [current_task.get("name", ""), need_items, star_reward, progress])
 
 	# 显示星星奖励
 	var task_star_label: Label = get_node(PATH_TASK_STAR_LABEL)
@@ -187,7 +185,6 @@ func _update_task_display() -> void:
 	if not need_items.is_empty():
 		var item_id: int = need_items[0]
 		var sprite_path: String = ItemManager.get_sprite_path(item_id)
-		# print(">>> [BottomHUD] 任务物品图标: item_id=%d, sprite_path=%s" % [item_id, sprite_path])
 		if not sprite_path.is_empty() and ResourceLoader.exists(sprite_path):
 			task_item_icon.texture = load(sprite_path)
 		else:
@@ -209,11 +206,8 @@ func _update_task_display() -> void:
 		submit_container = find_child("SubmitBtnContainer", true, true)
 	if submit_container != null:
 		submit_container.visible = (progress >= 1.0)
-		print(">>> [BottomHUD] SubmitBtnContainer visible=", submit_container.visible, " progress=", progress)
 	if _submit_btn != null:
 		_submit_btn.visible = (progress >= 1.0)
-	else:
-		print(">>> [BottomHUD] _submit_btn 为空，无法设置可见性")
 
 
 ## 初始化提交按钮
@@ -223,7 +217,6 @@ func _init_submit_button() -> void:
 	if task_hbox == null:
 		task_hbox = find_child("TaskHBox", true, true)
 	if task_hbox == null:
-		print(">>> [BottomHUD] 警告: TaskHBox 节点不存在")
 		return
 
 	# 动态创建提交按钮
@@ -254,7 +247,6 @@ func _init_submit_button() -> void:
 	btn.pressed.connect(_on_submit_pressed)
 	task_hbox.add_child(btn)
 	_submit_btn = btn
-	print(">>> [BottomHUD] 提交按钮已初始化")
 
 
 ## 提交按钮点击
@@ -270,6 +262,5 @@ func _on_submit_pressed() -> void:
 
 
 func _on_submit_animation_complete() -> void:
-	print(">>> [BottomHUD] 提交按钮点击")
 	# 发出信号让game_board处理物品飞行动画
 	submit_requested.emit()
