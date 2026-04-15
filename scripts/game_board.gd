@@ -32,37 +32,25 @@ var _last_gold: int = 0
 var _last_energy: int = 0
 var _last_diamond: int = 0
 
-# 能量恢复计时器：每2分钟恢复1点能量
-const ENERGY_RECOVERY_INTERVAL := 120.0  # 2分钟
-var _energy_recovery_time: float = 0.0  # 距离下次恢复的计时
-
 # ---- 节点引用 ----
-@onready var gold_label: Label = $MainLayout/TopBar/GoldContainer/GoldRow/GoldLabel
-@onready var gold_buy_btn: Button = $MainLayout/TopBar/GoldContainer/GoldBuyBtn
-@onready var energy_label: Label = $MainLayout/TopBar/EnergyContainer/EnergyRow/EnergyLabel
-@onready var energy_buy_btn: Button = $MainLayout/TopBar/EnergyContainer/EnergyBuyBtn
-@onready var energy_timer: Label = $MainLayout/TopBar/EnergyContainer/EnergyTimer
-@onready var diamond_label: Label = $MainLayout/TopBar/DiamondContainer/DiamondRow/DiamondLabel
-@onready var diamond_buy_btn: Button = $MainLayout/TopBar/DiamondContainer/DiamondBuyBtn
 # ---- 节点引用 ----
 @onready var settings_button: Button = $MainLayout/TopBar/SettingsButton
-@onready var relic_panel: PanelContainer = $MainLayout/RelicBar/RelicPanel
-@onready var relic_scroll: ScrollContainer = $MainLayout/RelicBar/RelicPanel/ScrollContainer
-@onready var relic_list: HBoxContainer = $MainLayout/RelicBar/RelicPanel/ScrollContainer/RelicList
-@onready var relic_prev_button: Button = $MainLayout/RelicBar/PrevButton
-@onready var relic_next_button: Button = $MainLayout/RelicBar/NextButton
+var relic_panel: PanelContainer
+var relic_scroll: ScrollContainer
+var relic_list: HBoxContainer
+var relic_prev_button: Button
+var relic_next_button: Button
 
 @onready var grid_container: GridContainer = $MainLayout/BoardCenter/GridContainer
-@onready var board_sprite: Sprite2D = $BoardSprite
-@onready var spawn_warrior: TextureButton = $MainLayout/BottomBarContainer/BottomBar/SpawnRow/SpawnButtons/SpawnWarrior
-@onready var spawn_mage: TextureButton = $MainLayout/BottomBarContainer/BottomBar/SpawnRow/SpawnButtons/SpawnMage
-@onready var spawn_priest: TextureButton = $MainLayout/BottomBarContainer/BottomBar/SpawnRow/SpawnButtons/SpawnPriest
-@onready var end_turn_button: TextureButton = $MainLayout/DetailActionBar/EndTurnButton
-@onready var item_bar: HBoxContainer = $MainLayout/MiddleBar/ItemBar
-@onready var dorm_button: TextureButton = $MainLayout/MiddleBar/DormButton
-@onready var shop_button: TextureButton = $MainLayout/MiddleBar/ShopButton
-@onready var encyclopedia_button: TextureButton = $MainLayout/MiddleBar/EncyclopediaButton
-@onready var bottom_hud_container: Control = $MainLayout/MiddleBar/BottomHUDContainer
+var spawn_warrior: TextureButton
+var spawn_mage: TextureButton
+var spawn_priest: TextureButton
+var end_turn_button: TextureButton
+var item_bar: HBoxContainer
+var dorm_button: TextureButton
+var shop_button: TextureButton
+var encyclopedia_button: TextureButton
+var bottom_hud_container: Control
 
 # ---- 详情面板节点 ----
 @onready var detail_panel: PanelContainer = $MainLayout/DetailActionBar/DetailPanel
@@ -87,8 +75,8 @@ var _energy_recovery_time: float = 0.0  # 距离下次恢复的计时
 # ---- 常量 ----
 const GRID_COLS := 7
 const GRID_ROWS := 9
-const CELL_SIZE := 144
-const CHAR_SIZE := 140
+const CELL_SIZE := 133
+const CHAR_SIZE := 129
 
 # ---- 棋盘格子颜色 ----
 const COLOR_EMPTY_EVEN := Color("#3A5A8A")
@@ -165,10 +153,27 @@ var tutorial_instance: Control = null
 
 func _ready() -> void:
 	print(">>> [GameBoard] _ready 开始")
+	print(">>> [Debug] grid_container=%s" % grid_container)
 	# 初始化资源跟踪变量
 	_last_gold = GameManager.gold
 	_last_energy = GameManager.energy
 	_last_diamond = GameManager.diamond
+	# 获取遗物面板节点（可能不存在于场景中）
+	relic_panel = get_node_or_null("MainLayout/RelicBar/RelicPanel")
+	relic_scroll = get_node_or_null("MainLayout/RelicBar/RelicPanel/ScrollContainer")
+	relic_list = get_node_or_null("MainLayout/RelicBar/RelicPanel/ScrollContainer/RelicList")
+	relic_prev_button = get_node_or_null("MainLayout/RelicBar/PrevButton")
+	relic_next_button = get_node_or_null("MainLayout/RelicBar/NextButton")
+	# 获取已移除的节点（使用 get_node_or_null 避免错误）
+	spawn_warrior = get_node_or_null("MainLayout/BottomBarContainer/BottomBar/SpawnRow/SpawnButtons/SpawnWarrior")
+	spawn_mage = get_node_or_null("MainLayout/BottomBarContainer/BottomBar/SpawnRow/SpawnButtons/SpawnMage")
+	spawn_priest = get_node_or_null("MainLayout/BottomBarContainer/BottomBar/SpawnRow/SpawnButtons/SpawnPriest")
+	end_turn_button = get_node_or_null("MainLayout/DetailActionBar/EndTurnButton")
+	item_bar = get_node_or_null("MainLayout/MiddleBar/ItemBar")
+	dorm_button = get_node_or_null("MainLayout/MiddleBar/DormButton")
+	shop_button = get_node_or_null("MainLayout/MiddleBar/ShopButton")
+	encyclopedia_button = get_node_or_null("MainLayout/MiddleBar/EncyclopediaButton")
+	bottom_hud_container = get_node_or_null("MainLayout/MiddleBar/BottomHUDContainer")
 	# 播放备战阶段BGM
 	print(">>> [GameBoard] Calling SoundSystem.play_bgm(SoundSystem.BGM_PREPARE)")
 	SoundSystem.play_bgm(SoundSystem.BGM_PREPARE)
@@ -183,7 +188,7 @@ func _ready() -> void:
 	_setup_item_slots()
 	_setup_character_detail_panel()
 	_setup_settings_panel()
-	_update_resource_labels()
+	pass  # _update_resource_labels 已移除
 	_refresh_relic_panel()
 	_refresh_item_slots()
 	_refresh_game_board_texts()
@@ -193,7 +198,6 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_process_producer_fx_animation(delta)
-	_process_energy_recovery(delta)
 
 
 func _start_tutorial() -> void:
@@ -231,18 +235,27 @@ func _load_producer_fx() -> void:
 # ---- 信号连接 ----
 
 func _connect_signals() -> void:
-	spawn_warrior.pressed.connect(_on_spawn_pressed.bind(DataModels.Job.WARRIOR))
-	spawn_mage.pressed.connect(_on_spawn_pressed.bind(DataModels.Job.MAGE))
-	spawn_priest.pressed.connect(_on_spawn_pressed.bind(DataModels.Job.PRIEST))
-	end_turn_button.pressed.connect(_on_end_turn_pressed)
-	sacrifice_button.pressed.connect(_on_sacrifice_button_pressed)
-	dorm_button.pressed.connect(_on_dorm_pressed)
-	shop_button.pressed.connect(_on_shop_pressed)
+	if spawn_warrior:
+		spawn_warrior.pressed.connect(_on_spawn_pressed.bind(DataModels.Job.WARRIOR))
+	if spawn_mage:
+		spawn_mage.pressed.connect(_on_spawn_pressed.bind(DataModels.Job.MAGE))
+	if spawn_priest:
+		spawn_priest.pressed.connect(_on_spawn_pressed.bind(DataModels.Job.PRIEST))
+	if end_turn_button:
+		end_turn_button.pressed.connect(_on_end_turn_pressed)
+	if sacrifice_button:
+		sacrifice_button.pressed.connect(_on_sacrifice_button_pressed)
+	if dorm_button:
+		dorm_button.pressed.connect(_on_dorm_pressed)
+	if shop_button:
+		shop_button.pressed.connect(_on_shop_pressed)
 	settings_button.pressed.connect(_on_settings_pressed)
-	encyclopedia_button.pressed.connect(_on_encyclopedia_pressed)
-	bottom_hud_container.build_list_pressed.connect(_on_build_list_pressed)
-	bottom_hud_container.out_item_clicked.connect(_on_out_item_clicked)
-	bottom_hud_container.submit_requested.connect(_on_submit_requested)
+	if encyclopedia_button:
+		encyclopedia_button.pressed.connect(_on_encyclopedia_pressed)
+	if bottom_hud_container:
+		bottom_hud_container.build_list_pressed.connect(_on_build_list_pressed)
+		bottom_hud_container.out_item_clicked.connect(_on_out_item_clicked)
+		bottom_hud_container.submit_requested.connect(_on_submit_requested)
 	GameManager.gold_changed.connect(_on_gold_changed)
 	GameManager.energy_changed.connect(_on_energy_changed)
 	GameManager.diamond_changed.connect(_on_diamond_changed)
@@ -251,12 +264,10 @@ func _connect_signals() -> void:
 	GameManager.items_changed.connect(_on_items_changed)
 	GameManager.board_items_changed.connect(_on_board_items_changed)
 	TaskManager.task_items_updated.connect(_on_task_items_updated)
-	relic_prev_button.pressed.connect(_on_relic_prev_pressed)
-	relic_next_button.pressed.connect(_on_relic_next_pressed)
-	# 资源购买按钮信号
-	energy_buy_btn.pressed.connect(_on_energy_buy_pressed)
-	gold_buy_btn.pressed.connect(_on_gold_buy_pressed)
-	diamond_buy_btn.pressed.connect(_on_diamond_buy_pressed)
+	if relic_prev_button:
+		relic_prev_button.pressed.connect(_on_relic_prev_pressed)
+	if relic_next_button:
+		relic_next_button.pressed.connect(_on_relic_next_pressed)
 	# 设置面板信号
 	language_button.pressed.connect(_on_language_toggled)
 	reset_tutorial_button.pressed.connect(_on_reset_tutorial_pressed)
@@ -297,66 +308,6 @@ func _on_producer_registered(board_index: int, _state: ProducerManager.ProducerS
 
 func _on_producer_unregistered(board_index: int) -> void:
 	_hide_producer_fx(board_index)
-
-
-## 能量购买按钮点击
-func _on_energy_buy_pressed() -> void:
-	SoundSystem.play_button_click()
-	var cost: int = GameManager.get_energy_purchase_cost()
-	var content: String = "花费 %d 钻石购买 100 能量\n（下次购买将花费 %d 钻石）" % [cost, cost * 2]
-	PopupSystem.show(
-		"购买体力",
-		content,
-		"",
-		"购买",
-		"取消",
-		func(): _do_energy_purchase(cost)
-	)
-
-
-func _do_energy_purchase(_cost: int) -> void:
-	if GameManager.purchase_energy():
-		_show_float_text(energy_label, 100, true)
-	else:
-		PopupSystem.show("购买失败", "钻石不足或体力已满", "", "确定")
-
-
-## 金币购买按钮点击（看广告）
-func _on_gold_buy_pressed() -> void:
-	SoundSystem.play_button_click()
-	PopupSystem.show(
-		"获得金币",
-		"观看广告可获得 10000 金币",
-		"",
-		"观看广告",
-		"取消",
-		_do_gold_purchase
-	)
-
-
-func _do_gold_purchase() -> void:
-	# 模拟广告奖励：直接发放金币
-	GameManager.add_gold(10000)
-	_show_float_text(gold_label, 10000, true)
-
-
-## 钻石购买按钮点击（看广告）
-func _on_diamond_buy_pressed() -> void:
-	SoundSystem.play_button_click()
-	PopupSystem.show(
-		"获得钻石",
-		"观看广告可获得 1000 钻石",
-		"",
-		"观看广告",
-		"取消",
-		_do_diamond_purchase
-	)
-
-
-func _do_diamond_purchase() -> void:
-	# 模拟广告奖励：直接发放钻石
-	GameManager.add_diamond(1000)
-	_show_float_text(diamond_label, 1000, true)
 
 
 ## 更新生成器特效可见性
@@ -435,32 +386,6 @@ func _process_producer_fx_animation(delta: float) -> void:
 				cell_producer_fx[i].texture = frame_tex
 
 
-## 能量恢复计时：每2分钟恢复1点能量，不足100时显示倒计时
-func _process_energy_recovery(delta: float) -> void:
-	if GameManager.energy >= GameManager.max_energy:
-		# 能量已满，隐藏倒计时
-		energy_timer.visible = false
-		_energy_recovery_time = 0.0
-		return
-
-	# 开始计时
-	_energy_recovery_time += delta
-	var remaining: float = ENERGY_RECOVERY_INTERVAL - _energy_recovery_time
-	if remaining <= 0:
-		# 恢复1点能量
-		GameManager.restore_energy(1)
-		_energy_recovery_time = 0.0
-		remaining = ENERGY_RECOVERY_INTERVAL
-
-	# 显示倒计时
-	energy_timer.visible = true
-	var total_seconds: int = int(remaining)
-	@warning_ignore("integer_division")
-	var minutes: int = total_seconds / 60
-	var seconds: int = total_seconds % 60
-	energy_timer.text = "%d:%02d" % [minutes, seconds]
-
-
 ## 为所有TextureButton添加hover和press视觉反馈
 func _setup_button_feedbacks() -> void:
 	var texture_buttons: Array[TextureButton] = [
@@ -469,16 +394,18 @@ func _setup_button_feedbacks() -> void:
 		end_turn_button, close_settings_button
 	]
 	for btn in texture_buttons:
-		btn.mouse_entered.connect(_on_button_mouse_entered.bind(btn))
-		btn.mouse_exited.connect(_on_button_mouse_exited.bind(btn))
-		btn.button_down.connect(_on_button_down.bind(btn))
-		btn.button_up.connect(_on_button_up.bind(btn))
+		if is_instance_valid(btn):
+			btn.mouse_entered.connect(_on_button_mouse_entered.bind(btn))
+			btn.mouse_exited.connect(_on_button_mouse_exited.bind(btn))
+			btn.button_down.connect(_on_button_down.bind(btn))
+			btn.button_up.connect(_on_button_up.bind(btn))
 
 	# 为献祭按钮添加反馈
-	sacrifice_button.mouse_entered.connect(_on_button_mouse_entered.bind(sacrifice_button))
-	sacrifice_button.mouse_exited.connect(_on_button_mouse_exited.bind(sacrifice_button))
-	sacrifice_button.button_down.connect(_on_button_down.bind(sacrifice_button))
-	sacrifice_button.button_up.connect(_on_button_up.bind(sacrifice_button))
+	if is_instance_valid(sacrifice_button):
+		sacrifice_button.mouse_entered.connect(_on_button_mouse_entered.bind(sacrifice_button))
+		sacrifice_button.mouse_exited.connect(_on_button_mouse_exited.bind(sacrifice_button))
+		sacrifice_button.button_down.connect(_on_button_down.bind(sacrifice_button))
+		sacrifice_button.button_up.connect(_on_button_up.bind(sacrifice_button))
 
 
 func _on_button_mouse_entered(btn: BaseButton) -> void:
@@ -509,34 +436,32 @@ func _setup_board_ui() -> void:
 	CELL_LOCKED_ODD_TEXTURE = load("res://art/sprites/UI/icon/cell6.png")
 	CELL_DUSTY_TEXTURE = load("res://art/sprites/UI/icon/cell7.png")
 
-	for child in grid_container.get_children():
-		child.queue_free()
+	# 清空数组
 	cell_rects.clear()
 	cell_panels.clear()
 	cell_sprites.clear()
 	cell_select_frames.clear()
 	cell_highlight_effects.clear()
-
-	grid_container.columns = GRID_COLS
+	cell_state_overlays.clear()
+	cell_producer_fx.clear()
+	cell_task_icons.clear()
 
 	for i in range(GRID_COLS * GRID_ROWS):
-		var cell := Control.new()
-		cell.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
-		cell.mouse_filter = Control.MOUSE_FILTER_PASS
+		# 获取静态格子节点
+		var cell: Control = grid_container.get_node_or_null("cell_%d" % i)
+		if cell == null:
+			push_error(">>> [GameBoard] 静态格子节点 cell_%d 不存在!" % i)
+			continue
+		print(">>> [Debug] Found cell_%d: %s" % [i, cell])
 
-		# 格子背景（交替灰度0.5/0.8，透明度0.9/0.7）
-		var bg := TextureRect.new()
-		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-		bg.texture = CELL_BG_TEXTURE
-		bg.expand_mode = TextureRect.EXPAND_FIT_WIDTH
-		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		bg.modulate = Color(0.5, 0.5, 0.5, 0.9) if (i / GRID_COLS + i % GRID_COLS) % 2 == 0 else Color(0.8, 0.8, 0.8, 0.7)
-		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		bg.z_index = 0  # 最底层
-		cell.add_child(bg)
-		cell_rects.append(bg)
+		cell_panels.append(cell)
 
-		# 选中框（静态边框，初始隐藏）
+		# 获取静态 bg
+		var bg: TextureRect = cell.get_node_or_null("bg")
+		if bg:
+			cell_rects.append(bg)
+
+		# 动态创建选中框
 		var select_frame := TextureRect.new()
 		select_frame.set_anchors_preset(Control.PRESET_FULL_RECT)
 		select_frame.texture = CELL_SELECT_TEXTURE
@@ -544,65 +469,56 @@ func _setup_board_ui() -> void:
 		select_frame.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		select_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		select_frame.visible = false
-		select_frame.z_index = 1  # 在格子底之上
+		select_frame.z_index = 1
 		cell.add_child(select_frame)
 		cell_select_frames.append(select_frame)
 
-		# 状态叠加层（锁定/灰尘纹理，初始隐藏）
+		# 动态创建状态叠加层
 		var state_overlay := TextureRect.new()
 		state_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 		state_overlay.expand_mode = TextureRect.EXPAND_FIT_WIDTH
 		state_overlay.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		state_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		state_overlay.visible = false
-		state_overlay.z_index = 6  # 在物品精灵之上
+		state_overlay.z_index = 6
 		cell.add_child(state_overlay)
 		cell_state_overlays.append(state_overlay)
+
+		# 动态创建高亮效果
 		var highlight_effect := TextureRect.new()
 		highlight_effect.set_anchors_preset(Control.PRESET_FULL_RECT)
-		highlight_effect.texture = null
 		highlight_effect.expand_mode = TextureRect.EXPAND_FIT_WIDTH
 		highlight_effect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		highlight_effect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		highlight_effect.visible = false
-		highlight_effect.scale = Vector2(2.6, 2.6)  # 放大2.6倍
-		highlight_effect.pivot_offset = Vector2(CELL_SIZE / 2, CELL_SIZE / 2)  # 以中心为缩放原点
-		highlight_effect.z_index = 2  # 在选中框之上
+		highlight_effect.scale = Vector2(2.6, 2.6)
+		highlight_effect.pivot_offset = Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
+		highlight_effect.z_index = 2
 		cell.add_child(highlight_effect)
 		cell_highlight_effects.append(highlight_effect)
-		
-		if i == 0:
-			print(">>> [Debug] 选中框纹理: %s" % CELL_SELECT_TEXTURE)
 
-		# 角色精灵图（覆盖整个格子）
-		var sprite := TextureRect.new()
-		sprite.set_anchors_preset(Control.PRESET_FULL_RECT)
-		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		sprite.custom_minimum_size = Vector2(CHAR_SIZE, CHAR_SIZE)
-		sprite.position = Vector2(0, 0)
-		sprite.pivot_offset = Vector2(CELL_SIZE / 2, CELL_SIZE / 2)  # 以中央为缩放中心
+		# 动态创建角色精灵（使用预制体）
+		var sprite := preload("res://scenes/board_item.tscn").instantiate()
 		sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		sprite.visible = false
-		sprite.z_index = 5  # 正常角色层级，在动画之上
+		sprite.z_index = 5
 		cell.add_child(sprite)
 
-		# 生成器特效 fx02（作为物品sprite的子级）
+		# 动态创建生成器特效
 		var producer_fx := TextureRect.new()
 		producer_fx.set_anchors_preset(Control.PRESET_FULL_RECT)
 		producer_fx.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		producer_fx.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		producer_fx.custom_minimum_size = Vector2(CHAR_SIZE, CHAR_SIZE)
-		producer_fx.position = Vector2(0, 0)
 		producer_fx.pivot_offset = Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
 		producer_fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		producer_fx.visible = false
-		producer_fx.scale = Vector2(3.4, 3.4)  # 放大3.4倍
-		producer_fx.z_index = 10  # 在物品精灵之上
+		producer_fx.scale = Vector2(3.4, 3.4)
+		producer_fx.z_index = 10
 		sprite.add_child(producer_fx)
 		cell_producer_fx.append(producer_fx)
 
-		# 任务物品图标（左下角标记，作为物品精灵的子级）
+		# 动态创建任务图标
 		var task_icon := TextureRect.new()
 		task_icon.name = "TaskIcon"
 		task_icon.texture = preload("res://art/sprites/UI/icon/p1_2.png")
@@ -620,19 +536,21 @@ func _setup_board_ui() -> void:
 		task_icon.pivot_offset = Vector2(18, 18)
 		task_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		task_icon.visible = false
-		task_icon.z_index = 15  # 在物品精灵之上
+		task_icon.z_index = 15
 		sprite.add_child(task_icon)
 		cell_task_icons.append(task_icon)
 
-		# 点击事件
-		cell.gui_input.connect(_on_cell_gui_input.bind(i))
-
-		grid_container.add_child(cell)
-		cell_panels.append(cell)
 		cell_sprites.append(sprite)
 
+		# 点击事件
+		if cell.gui_input.is_connected(_on_cell_gui_input):
+			cell.gui_input.disconnect(_on_cell_gui_input)
+		cell.gui_input.connect(_on_cell_gui_input.bind(i))
+		print(">>> [Debug] Connected gui_input for cell_%d" % i)
+
 	_refresh_board_display()
-	print(">>> [GameBoard] %dx%d 棋盘格已生成" % [GRID_COLS, GRID_ROWS])
+	print(">>> [GameBoard] %dx%d 棋盘格已生成（静态bg + 动态棋子）" % [GRID_COLS, GRID_ROWS])
+
 
 
 # ---- 角色详情面板 ----
@@ -718,16 +636,20 @@ func _refresh_dorm_panel() -> void:
 # ---- 棋盘格拖拽处理 (任务 2.3 拖拽/选中) ----
 
 func _on_cell_gui_input(event: InputEvent, cell_index: int) -> void:
+	print(">>> [Debug] _on_cell_gui_input called, cell_index=%d, event=%s" % [cell_index, event])
 	# 检查格子状态 - LOCKED 状态不可交互
 	var bd: BoardData = GameManager.board_data
 	if not bd.can_interact(cell_index):
+		print(">>> [Debug] cell %d is not interactable (state=%d)" % [cell_index, bd.get_grid_state(cell_index)])
 		return
+
+	var ch: DataModels.BoardItemData = bd.get_item_at_index(cell_index)
+	print(">>> [Debug] cell=%d, item=%s, selected_index=%d" % [cell_index, ch.name if ch else "null", selected_index])
 
 	# 目标选择模式: 点击角色使用道具
 	if is_selecting_target and event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
 		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
-			var ch: DataModels.BoardItemData = bd.get_item_at_index(cell_index)
 			if ch != null:
 				_use_item_on_target(cell_index)
 				return
@@ -735,8 +657,6 @@ func _on_cell_gui_input(event: InputEvent, cell_index: int) -> void:
 				# 点击空格子取消选择
 				_end_target_selection()
 				return
-
-	var ch: DataModels.BoardItemData = bd.get_item_at_index(cell_index)
 
 	# 鼠标按下: 记录按下状态
 	if event is InputEventMouseButton:
@@ -1146,7 +1066,7 @@ func _try_spawn_coin_on_merge(merged: DataModels.BoardItemData, merge_index: int
 	, CONNECT_ONE_SHOT)
 
 
-## 收集金币堆：移动到金币栏，增加金币
+## 收集金币堆：粒子特效，增加金币
 func _collect_coinpile(cell_index: int) -> void:
 	var bd: BoardData = GameManager.board_data
 	var coin_item: DataModels.BoardItemData = bd.get_item_at_index(cell_index)
@@ -1156,43 +1076,76 @@ func _collect_coinpile(cell_index: int) -> void:
 	# 计算金币价值 f(n) = round(2.5^(n-1))
 	var coin_value: int = ItemManager.get_coinpile_value(coin_item.level)
 
-	# 获取终点（金币栏位置）
-	var coin_bar_pos: Vector2 = _get_coin_bar_position()
-
-	# 创建飞行动画：从当前位置飞到金币栏
+	# 获取位置用于粒子特效
 	var start_cell: Control = cell_panels[cell_index]
+	var start_pos: Vector2 = start_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+	var coin_bar_pos: Vector2 = Vector2(200, 100)  # 默认位置
 
-	var anim_sprite := _create_flying_sprite(coin_item)
-	anim_sprite.global_position = start_cell.global_position
-	add_child(anim_sprite)
+	# 隐藏金币堆sprite
+	cell_sprites[cell_index].visible = false
 
-	# 先播放飞向金币栏的动画
-	var tween := create_tween()
-	tween.tween_property(anim_sprite, "global_position", coin_bar_pos, 0.3)\
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	# 播放金币粒子特效
+	_play_coin_particle_effect(start_pos, coin_bar_pos, 10)
 
-	tween.finished.connect(func():
-		anim_sprite.queue_free()
-		# 从棋盘移除金币
-		bd.remove_item(BoardData.index_to_pos(cell_index))
-		GameManager.board_items_changed.emit()
-		# 增加金币
-		GameManager.add_gold(coin_value)
-		_refresh_board_display()
-		# 取消选中
-		selected_index = -1
-		_update_character_detail_panel()
-	, CONNECT_ONE_SHOT)
+	# 从棋盘移除金币
+	bd.remove_item(BoardData.index_to_pos(cell_index))
+	GameManager.board_items_changed.emit()
+
+	# 增加金币
+	GameManager.add_gold(coin_value)
+
+	# 取消选中
+	selected_index = -1
+	_update_character_detail_panel()
 
 
-## 获取金币栏位置（用于飞行动画终点）
-func _get_coin_bar_position() -> Vector2:
-	# 返回金币Label的中心位置
-	if gold_label != null:
-		var gpos: Vector2 = gold_label.global_position
-		var gsize: Vector2 = gold_label.size
-		return gpos + Vector2(gsize.x / 2.0, gsize.y / 2.0)
-	return Vector2(200, 100)
+## 金币粒子特效：从起点飞向终点
+func _play_coin_particle_effect(start_pos: Vector2, end_pos: Vector2, particle_count: int = 10) -> void:
+	# 创建粒子节点
+	var particle_container := Node2D.new()
+	particle_container.global_position = start_pos
+	particle_container.z_index = 15  # 高于飞行动画
+	add_child(particle_container)
+
+	# 为每个粒子创建精灵并设置初始位置
+	for i in range(particle_count):
+		var particle := Sprite2D.new()
+		particle.texture = JINBI_ICON
+		particle.scale = Vector2(0.5, 0.5)  # 缩小到一半
+		particle.global_position = start_pos + Vector2(
+			randf_range(-20, 20), randf_range(-20, 20)
+		)
+		particle.modulate = Color(1, 1, 1, 0.9)
+		particle_container.add_child(particle)
+
+		# 创建飞向终点的动画
+		var tween := create_tween()
+		var offset := Vector2(randf_range(-30, 30), randf_range(-30, 30))
+		var mid_pos: Vector2 = (start_pos + end_pos) / 2.0 + offset + Vector2(0, -50)  # 弧线上偏移
+
+		# 位置动画：起点 -> 中点(弧线) -> 终点
+		tween.tween_property(particle, "global_position", mid_pos, 0.15)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(particle, "global_position", end_pos, 0.25)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+		# 缩放动画：从小到大再到正常
+		tween.tween_property(particle, "scale", Vector2(0.8, 0.8), 0.15)
+		tween.tween_property(particle, "scale", Vector2(0.5, 0.5), 0.25)
+
+		# 透明度动画：渐隐
+		tween.tween_property(particle, "modulate:a", 0.0, 0.1).set_delay(0.35)
+
+		# 动画结束后删除粒子和容器
+		tween.finished.connect(func():
+			if is_instance_valid(particle):
+				particle.queue_free()
+		, CONNECT_ONE_SHOT)
+
+	# 延迟清理容器
+	await get_tree().create_timer(0.5).timeout
+	if is_instance_valid(particle_container):
+		particle_container.queue_free()
 
 
 func _play_merge_animation(cell_index: int) -> void:
@@ -1365,14 +1318,21 @@ func _sacrifice_character(cell_index: int) -> void:
 		var bonus_ratio: float = cfg.get("bonus_ratio", 0.2)
 		refund = int(refund * (1.0 + bonus_ratio))
 	
+	# 获取位置用于粒子特效（在移除物品前获取）
+	var start_cell: Control = cell_panels[cell_index]
+	var start_pos: Vector2 = start_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+	var coin_bar_pos: Vector2 = Vector2(200, 100)  # 默认位置
+
 	bd.remove_item(pos)
 	GameManager.board_items_changed.emit()
 	GameManager.restore_energy(refund)
-	
+
 	# 遗物: 献祭金币 (ID 22) - 献祭时获得金币
 	if ItemDatabase.has_relic(22, GameManager.relics):
 		var cfg22: Dictionary = MechanicsDb.get_relic_effect(22)
 		var gold_bonus: int = cfg22.get("gold_per_sacrifice", 1)
+		# 播放金币粒子特效
+		_play_coin_particle_effect(start_pos, coin_bar_pos, 5)
 		GameManager.add_gold(gold_bonus)
 
 	print(">>> [GameBoard] 献祭 %s Lv.%d, 返还能量 %d" % [ch.name, ch.level, refund])
@@ -1398,6 +1358,14 @@ func _sell_selected_item(cell_index: int) -> void:
 
 	# 计算出售价格: 2^(level-1)
 	var sell_price: int = ItemManager.get_sell_price(ch.id, ch.level)
+
+	# 获取位置用于粒子特效
+	var start_cell: Control = cell_panels[cell_index]
+	var start_pos: Vector2 = start_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+	var coin_bar_pos: Vector2 = Vector2(200, 100)  # 默认位置
+
+	# 播放金币粒子特效
+	_play_coin_particle_effect(start_pos, coin_bar_pos, 8)
 
 	# 获得金币
 	GameManager.add_gold(sell_price)
@@ -1559,6 +1527,8 @@ func _is_near_backpack_item(mouse_pos: Vector2) -> bool:
 
 
 func _is_near_dorm_button(mouse_pos: Vector2) -> bool:
+	if not is_instance_valid(dorm_button):
+		return false
 	# 扩展检测区域：宿舍按钮本身 + 周围扩展区域
 	var dorm_rect: Rect2 = dorm_button.get_global_rect()
 	var expand: int = 50  # 扩展50像素
@@ -1568,6 +1538,8 @@ func _is_near_dorm_button(mouse_pos: Vector2) -> bool:
 
 
 func _update_dorm_highlight() -> void:
+	if not is_instance_valid(dorm_button):
+		return
 	if is_dragging:
 		if is_hovering_dorm:
 			# 高亮：金色调 + 稍亮
@@ -1996,11 +1968,7 @@ func _get_job_color(job: int) -> Color:
 
 
 # ---- 资源标签更新 ----
-
-func _update_resource_labels() -> void:
-	gold_label.text = LocalizationSystem.get_text("game_board.gold", {"value": GameManager.gold})
-	energy_label.text = LocalizationSystem.get_text("game_board.energy", {"current": GameManager.energy, "max": GameManager.max_energy})
-	diamond_label.text = LocalizationSystem.get_text("game_board.diamond", {"value": GameManager.diamond})
+# 已移除（UI节点不存在）
 
 
 ## 飘字系统：显示资源增减动画
@@ -2048,27 +2016,15 @@ func _show_float_text(label_node: Label, amount: int, is_increase: bool) -> void
 
 
 func _on_gold_changed(new_gold: int) -> void:
-	var old_gold: int = _last_gold
-	_last_gold = new_gold
-	gold_label.text = LocalizationSystem.get_text("game_board.gold", {"value": new_gold})
-	if new_gold != old_gold:
-		_show_float_text(gold_label, new_gold - old_gold, new_gold > old_gold)
+	pass  # UI节点不存在，已移除
 
 
 func _on_energy_changed(new_energy: int) -> void:
-	var old_energy: int = _last_energy
-	_last_energy = new_energy
-	energy_label.text = LocalizationSystem.get_text("game_board.energy", {"current": new_energy, "max": GameManager.max_energy})
-	if new_energy != old_energy:
-		_show_float_text(energy_label, new_energy - old_energy, new_energy > old_energy)
+	pass  # UI节点不存在，已移除
 
 
 func _on_diamond_changed(new_diamond: int) -> void:
-	var old_diamond: int = _last_diamond
-	_last_diamond = new_diamond
-	diamond_label.text = LocalizationSystem.get_text("game_board.diamond", {"value": new_diamond})
-	if new_diamond != old_diamond:
-		_show_float_text(diamond_label, new_diamond - old_diamond, new_diamond > old_diamond)
+	pass  # UI节点不存在，已移除
 
 
 func _on_round_changed(_new_round: int) -> void:
@@ -2260,13 +2216,15 @@ func _on_dorm_close() -> void:
 			bd.marked_for_removal.clear()
 			_hide_dorm_ui()
 		else:
-			# 获取宿舍按钮中心位置作为动画起点（必须在隐藏面板之前获取）
-			var dorm_pos: Vector2 = dorm_button.global_position + Vector2(dorm_button.size.x / 2, dorm_button.size.y / 2)
-
 			# 执行数据操作，获取每个角色被放置到的棋盘索引
 			var moved_data: Array = bd.execute_removal()
 			# 每次棋子操作后自动存档
 			GameManager._auto_save()
+
+			# 获取宿舍按钮中心位置作为动画起点（必须在隐藏面板之前获取）
+			var dorm_pos: Vector2 = Vector2.ZERO
+			if is_instance_valid(dorm_button):
+				dorm_pos = dorm_button.global_position + Vector2(dorm_button.size.x / 2, dorm_button.size.y / 2)
 
 			if moved_data.size() > 0:
 				TipManager.show_tip(LocalizationSystem.get_text("game_board.removed_characters", {"count": moved_data.size()}))
@@ -2395,12 +2353,16 @@ func _drag_to_backpack() -> void:
 # ---- 遗物栏操作（常驻显示）----
 
 func _refresh_relic_panel() -> void:
+	# 如果遗物面板节点不存在则跳过
+	if not is_instance_valid(relic_panel) or not is_instance_valid(relic_list):
+		return
+
 	# 确保遗物面板可见
 	relic_panel.modulate = Color.WHITE
-	
+
 	# 设置遗物列表间隔为10
 	relic_list.add_theme_constant_override("separation", 10)
-	
+
 	# 清空旧内容
 	for child in relic_list.get_children():
 		child.queue_free()
@@ -2440,11 +2402,12 @@ func _refresh_relic_panel() -> void:
 	
 	# 更新翻页按钮状态：遗物未满时半透明禁用
 	await get_tree().process_frame  # 等待布局更新
-	var need_scroll: bool = relic_list.size.x > relic_scroll.size.x
-	relic_prev_button.disabled = not need_scroll
-	relic_next_button.disabled = not need_scroll
-	relic_prev_button.modulate = Color(1, 1, 1, 0.3) if not need_scroll else Color.WHITE
-	relic_next_button.modulate = Color(1, 1, 1, 0.3) if not need_scroll else Color.WHITE
+	if is_instance_valid(relic_scroll) and is_instance_valid(relic_prev_button) and is_instance_valid(relic_next_button):
+		var need_scroll: bool = relic_list.size.x > relic_scroll.size.x
+		relic_prev_button.disabled = not need_scroll
+		relic_next_button.disabled = not need_scroll
+		relic_prev_button.modulate = Color(1, 1, 1, 0.3) if not need_scroll else Color.WHITE
+		relic_next_button.modulate = Color(1, 1, 1, 0.3) if not need_scroll else Color.WHITE
 
 
 # ---- 背包系统 ----
@@ -2678,6 +2641,8 @@ func _on_relic_mouse_exited() -> void:
 
 
 func _on_relic_prev_pressed() -> void:
+	if not is_instance_valid(relic_scroll):
+		return
 	SoundSystem.play_button_click()
 	# 滚动到上一页
 	var scroll_width: int = int(relic_scroll.size.x)
@@ -2685,6 +2650,8 @@ func _on_relic_prev_pressed() -> void:
 
 
 func _on_relic_next_pressed() -> void:
+	if not is_instance_valid(relic_scroll):
+		return
 	SoundSystem.play_button_click()
 	# 滚动到下一页
 	var scroll_width: int = int(relic_scroll.size.x)
@@ -2698,7 +2665,34 @@ func _on_relics_changed() -> void:
 
 # ---- 棋盘→宿舍 (长按或双击可扩展, 暂用选中+宿舍按钮) ----
 
+func _find_control_at_position(pos: Vector2) -> Control:
+	# 从 GridContainer 开始递归查找包含该位置的 Control
+	var gc: GridContainer = grid_container
+	if gc == null:
+		print(">>> [Debug] grid_container is null!")
+		return null
+	print(">>> [Debug] grid_container=%s, rect=%s" % [gc, gc.get_global_rect()])
+	# 获取 GridContainer 内的所有 cell
+	for child in gc.get_children():
+		if child is Control:
+			var rect: Rect2 = child.get_global_rect()
+			print(">>> [Debug] cell %s, rect=%s, has_point=%s" % [child.name, rect, rect.has_point(pos)])
+			if rect.has_point(pos):
+				return child
+	return null
+
 func _input(event: InputEvent) -> void:
+	# 处理鼠标点击/移动 - 手动路由到正确的格子以解决 gui_input 信号不触发的问题
+	if event is InputEventMouseButton or event is InputEventMouseMotion:
+		var mouse_pos: Vector2 = event.global_position
+		var clicked_cell: Control = _find_control_at_position(mouse_pos)
+		if clicked_cell != null:
+			var cell_name: String = clicked_cell.name
+			if cell_name.begins_with("cell_"):
+				var cell_index_str: String = cell_name.substr(5)
+				var cell_index: int = cell_index_str.to_int()
+				_on_cell_gui_input(event, cell_index)
+				return  # 阻止事件继续传播到 GUI 系统
 	# 按 D 键将选中角色存入宿舍
 	if event is InputEventKey and event.pressed and event.keycode == KEY_D:
 		if selected_index >= 0:
@@ -2733,12 +2727,9 @@ func _on_back_pressed() -> void:
 
 
 func _on_build_list_pressed() -> void:
-	print(">>> [GameBoard] 打开建造清单")
+	print(">>> [GameBoard] 进入建造场景")
 	SoundSystem.play_button_click()
-	var build_list_scene = load("res://scenes/build_list_scene.tscn")
-	var build_list = build_list_scene.instantiate()
-	get_tree().root.add_child(build_list)
-	get_tree().root.move_child(build_list, get_tree().root.get_child_count() - 1)
+	TransitionManager.change_scene_with_transition("res://scenes/building.tscn")
 
 
 func _on_out_item_clicked(item_id: int) -> void:
@@ -3416,7 +3407,7 @@ func _on_localization_changed(lang: String) -> void:
 	_update_language_button_text()
 	_update_settings_texts()
 	_refresh_relic_panel()
-	_update_resource_labels()
+	pass  # _update_resource_labels 已移除
 	_refresh_game_board_texts()
 	_refresh_dorm_panel()
 	_refresh_item_slots()
@@ -3436,31 +3427,31 @@ func _update_language_button_text() -> void:
 
 func _refresh_game_board_texts() -> void:
 	# 更新底部按钮文本（通过 Label 子节点）
-	var warrior_label = spawn_warrior.get_node_or_null("Label")
+	var warrior_label = spawn_warrior.get_node_or_null("Label") if spawn_warrior else null
 	if warrior_label:
 		warrior_label.text = LocalizationSystem.get_text("game_board.spawn_warrior")
-	
-	var mage_label = spawn_mage.get_node_or_null("Label")
+
+	var mage_label = spawn_mage.get_node_or_null("Label") if spawn_mage else null
 	if mage_label:
 		mage_label.text = LocalizationSystem.get_text("game_board.spawn_mage")
-	
-	var priest_label = spawn_priest.get_node_or_null("Label")
+
+	var priest_label = spawn_priest.get_node_or_null("Label") if spawn_priest else null
 	if priest_label:
 		priest_label.text = LocalizationSystem.get_text("game_board.spawn_priest")
-	
-	var end_turn_label = end_turn_button.get_node_or_null("Label")
+
+	var end_turn_label = end_turn_button.get_node_or_null("Label") if end_turn_button else null
 	if end_turn_label:
 		end_turn_label.text = LocalizationSystem.get_text("game_board.end_turn")
-	
-	var dorm_label = dorm_button.get_node_or_null("Label")
+
+	var dorm_label = dorm_button.get_node_or_null("Label") if dorm_button else null
 	if dorm_label:
 		dorm_label.text = LocalizationSystem.get_text("game_board.dorm")
-	
-	var shop_label = shop_button.get_node_or_null("Label")
+
+	var shop_label = shop_button.get_node_or_null("Label") if shop_button else null
 	if shop_label:
 		shop_label.text = LocalizationSystem.get_text("game_board.shop")
-	
-	var encyclopedia_label = encyclopedia_button.get_node_or_null("Label")
+
+	var encyclopedia_label = encyclopedia_button.get_node_or_null("Label") if encyclopedia_button else null
 	if encyclopedia_label:
 		encyclopedia_label.text = LocalizationSystem.get_text("game_board.encyclopedia")
 	
@@ -3485,6 +3476,7 @@ func _on_clear_save_pressed() -> void:
 	_refresh_board_display()
 	_on_gold_changed(GameManager.gold)
 	_on_energy_changed(GameManager.energy)
+	_on_diamond_changed(GameManager.diamond)
 	_on_round_changed(GameManager.current_round)
 	# 显示提示
 	TipManager.show_tip(LocalizationSystem.get_text("settings.clear_save_confirm"), 2.0)
