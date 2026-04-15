@@ -46,6 +46,7 @@ var spawn_warrior: TextureButton
 var spawn_mage: TextureButton
 var spawn_priest: TextureButton
 var end_turn_button: TextureButton
+@onready var build_button: Control = $MainLayout/DetailActionBar/BuildButton
 var item_bar: HBoxContainer
 var dorm_button: TextureButton
 var shop_button: TextureButton
@@ -243,6 +244,8 @@ func _connect_signals() -> void:
 		spawn_priest.pressed.connect(_on_spawn_pressed.bind(DataModels.Job.PRIEST))
 	if end_turn_button:
 		end_turn_button.pressed.connect(_on_end_turn_pressed)
+	if build_button:
+		build_button.button_down.connect(_on_build_list_pressed)
 	if sacrifice_button:
 		sacrifice_button.pressed.connect(_on_sacrifice_button_pressed)
 	if dorm_button:
@@ -1577,7 +1580,7 @@ func _move_sprite_back_to_cell(cell_index: int, from_position: Vector2 = Vector2
 	cell_panels[cell_index].add_child(sprite)
 	sprite.set_anchors_preset(Control.PRESET_FULL_RECT)
 	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	sprite.stretch_mode = TextureRect.STRETCH_KEEP
 	sprite.size = Vector2(CELL_SIZE, CELL_SIZE)
 
 	# 如果有起始位置，播放平滑移回动画
@@ -1733,6 +1736,11 @@ func _refresh_board_display() -> void:
 			var tex := load(sprite_path) if tex_exists else null
 			cell_sprites[i].texture = tex
 			cell_sprites[i].visible = (tex != null)
+			# DUSTY 状态：物品显示为 0.7 灰度
+			if grid_state == BoardData.GridState.DUSTY:
+				cell_sprites[i].modulate = Color(0.7, 0.7, 0.7, 1.0)
+			else:
+				cell_sprites[i].modulate = Color.WHITE
 			if tex == null:
 				print(">>> [Debug] 精灵图加载失败: %s" % sprite_path)
 		else:
