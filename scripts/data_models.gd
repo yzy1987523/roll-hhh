@@ -30,7 +30,8 @@ enum BoardItemType {
 	EGG = 3,          # 龙蛋类
 	MAXEGG = 4,      # 最高级龙蛋
 	PRODUCTION = 5,  # 生产型物品
-	MAXPRODUCTION = 6 # 最高级生产型物品
+	MAXPRODUCTION = 6, # 最高级生产型物品
+	CONSUMABLE = 7    # 消耗品(体力球等)
 }
 
 # ---- Buff 触发时机 ----
@@ -302,11 +303,17 @@ class BoardItemData:
 	# 获取完整精灵图路径
 	func get_sprite_path() -> String:
 		if sprite.is_empty():
+			print(">>> [BoardItemData.get_sprite_path] id=%s, sprite为空" % id)
 			return ""
 		# UI图标使用特殊路径
+		var path: String
 		if sprite.begins_with("UI/"):
-			return "res://art/sprites/%s.png" % sprite
-		return "res://art/sprites/items/%s.png" % sprite
+			path = "res://art/sprites/%s.png" % sprite
+		else:
+			path = "res://art/sprites/items/%s.png" % sprite
+		print(">>> [BoardItemData.get_sprite_path] id=%s, name=%s, sprite=%s -> path=%s, exists=%s" % [
+			id, name, sprite, path, ResourceLoader.exists(path)])
+		return path
 
 	# 是否可叠加
 	func is_stackable() -> bool:
@@ -323,18 +330,43 @@ class BoardItemData:
 	# 从配置字典创建
 	static func from_config(cfg: Dictionary) -> BoardItemData:
 		var data := BoardItemData.new()
-		data.id = cfg.get("id", 0)
+		# id 可能是字符串或整数，统一转为 int
+		var id_val = cfg.get("id", 0)
+		data.id = int(id_val) if id_val is String or id_val is int else 0
 		data.name = cfg.get("name", "")
 		data.level = cfg.get("level", 1)
 		data.sprite = cfg.get("sprite", "")
-		data.item_type = cfg.get("type", 0)
-		data.next_composite = cfg.get("next_composite", 0)
+		# type 是字符串，需要映射到 BoardItemType enum
+		data.item_type = _parse_item_type(cfg.get("type", ""))
+		# next_composite 可能是字符串或整数，空字符串转为 0
+		var nc_val = cfg.get("next_composite", 0)
+		if nc_val is String:
+			data.next_composite = int(nc_val) if nc_val != "" else 0
+		else:
+			data.next_composite = nc_val
 		data.count = 1
 		# 生成器配置
 		data.max_count = cfg.get("maxCount", 0)
 		data.recovery_time = cfg.get("recovery_time", 0.0)
 		data.cooldown_time = cfg.get("cooldown_time", 0.0)
+		# 调试输出
+		print(">>> [BoardItemData.from_config] id=%s(%s), name=%s, sprite=%s, type=%s, next=%s" % [
+			id_val, data.id, data.name, data.sprite, cfg.get("type", ""), nc_val])
 		return data
+
+	# 将配置中的 type 字符串映射为 BoardItemType enum
+	static func _parse_item_type(type_str: String) -> int:
+		match type_str:
+			"composite": return BoardItemType.COMPOSITE
+			"production": return BoardItemType.PRODUCTION
+			"maxproduction": return BoardItemType.MAXPRODUCTION
+			"stockproduction": return BoardItemType.PRODUCTION  # 库存型也当作生产型
+			"autoproduction": return BoardItemType.PRODUCTION
+			"coinpile": return BoardItemType.COIN
+			"egg", "maxegg": return BoardItemType.EGG
+			"energy": return BoardItemType.CONSUMABLE
+			"consumable": return BoardItemType.CONSUMABLE
+		return BoardItemType.CONSUMABLE
 
 	# 复制物品
 	func duplicate() -> BoardItemData:

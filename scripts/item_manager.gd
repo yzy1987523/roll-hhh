@@ -31,7 +31,8 @@ func _load_items() -> void:
 	_item_cache.clear()
 
 	for item_data in _config_loader.items:
-		var id: int = item_data.get("id", 0)
+		var id_val = item_data.get("id", 0)
+		var id: int = int(id_val) if id_val is String or id_val is int else 0
 		if id == 0:
 			continue
 		var board_item: DM.BoardItemData = DM.BoardItemData.from_config(item_data)
@@ -49,10 +50,12 @@ func get_item(item_id: int) -> DM.BoardItemData:
 	# 尝试从配置加载器获取
 	var cfg: Dictionary = _config_loader.get_item(item_id)
 	if not cfg.is_empty():
+		print(">>> [ItemManager.get_item] item_id=%s, cfg=%s" % [item_id, cfg])
 		var board_item: DM.BoardItemData = DM.BoardItemData.from_config(cfg)
 		_item_cache[item_id] = board_item
 		return board_item
 
+	print(">>> [ItemManager.get_item] item_id=%s 未找到配置" % item_id)
 	return null
 
 

@@ -36,10 +36,8 @@ var selected_furniture: CanvasItem = null
 
 # 建造配置
 var build_config: Dictionary = {}
-var build_items: Array = []  # UI家具列表
 
 # UI节点
-var build_panel: Control = null
 var build_popup: Control = null
 var current_build_config: Dictionary = {}
 
@@ -73,28 +71,13 @@ func _ready():
 
 	print(">>> [GridManager] _ready: existing_floor_root=%s, existing_wall_root=%s" % [existing_floor_root, existing_wall_root])
 
-	if existing_floor_root != null and existing_wall_root != null:
-		# 静态模式：使用场景中已有的地板和墙体
-		floor_list = []
+	# 地板和墙已在 building.tscn 中静态定义，直接使用
+	floor_list = []
+	if existing_floor_root != null:
 		for child in existing_floor_root.get_children():
 			floor_list.append(child)
-		wall_root = existing_wall_root
-		print(">>> [GridManager] 使用静态地板和墙体（共 %d 地板，%d 墙体）" % [floor_list.size(), wall_root.get_child_count()])
-	else:
-		# 动态模式：创建地板和墙体
-		furniture_root = Node2D.new()
-		furniture_root.name = "FurnitureRoot"
-		add_child(furniture_root)
-
-		wall_root = Node2D.new()
-		wall_root.name = "WallRoot"
-		add_child(wall_root)
-
-		# 生成地图
-		init_preview()
-		generate_isometric_grid()
-		generate_room_walls()
-		print(">>> [GridManager] 动态生成地板和墙体")
+	wall_root = existing_wall_root
+	print(">>> [GridManager] 使用静态地板和墙体（共 %d 地板）" % floor_list.size())
 
 	# 初始化家具父节点（始终需要）
 	furniture_root = find_child("FurnitureRoot", true, false)
@@ -106,8 +89,30 @@ func _ready():
 	# 静态墙体边界锁定
 	set_map_border_limit()
 
-	# 创建UI
-	_create_build_panel()
+	# 连接家具图标管理器信号
+	_connect_furniture_icon_signals()
+
+# ================================= 连接家具图标信号 =================================
+func _connect_furniture_icon_signals() -> void:
+	# FurnitureIconManager 是 RoomRoot 的子节点，与 GridManager 是兄弟关系
+	var icon_mgr = get_node_or_null("../FurnitureIconManager")
+	print(">>> [GridManager] _connect_furniture_icon_signals: icon_mgr=%s" % icon_mgr)
+	if icon_mgr == null:
+		print(">>> [GridManager] 警告: FurnitureIconManager 未找到!")
+		return
+	if icon_mgr.has_signal("icon_clicked"):
+		icon_mgr.icon_clicked.connect(_on_furniture_icon_clicked)
+		print(">>> [GridManager] 已连接 FurnitureIconManager 信号")
+
+
+func _on_furniture_icon_clicked(build_id: int) -> void:
+	print(">>> [GridManager] _on_furniture_icon_clicked 收到信号! build_id=%d" % build_id)
+	# 显示建造确认弹窗
+	current_build_config = build_config.get(float(build_id), {})
+	if not current_build_config.is_empty():
+		_show_build_popup()
+	else:
+		print(">>> [GridManager] 警告: 找不到 build_id=%d 的配置!" % build_id)
 
 # ================================= 加载建造配置 =================================
 func _load_build_config():
@@ -131,165 +136,6 @@ func _load_build_config():
 			print(">>> [GridManager] 加载建造配置: id=%d, name=%s, unlockLevel=%d" % [item["id"], item["name"], item["unlockLevel"]])
 
 # ================================= 创建建造面板 =================================
-func _create_build_panel():
-	# 创建面板容器
-	build_panel = PanelContainer.new()
-	build_panel.name = "BuildPanel"
-	build_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	build_panel.position = Vector2(-220, 10)
-	build_panel.size = Vector2(210, 400)
-	build_panel.z_index = 2000
-
-	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.2, 0.2, 0.2, 0.9)
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	style.content_margin_left = 10
-	style.content_margin_right = 10
-	style.content_margin_top = 10
-	style.content_margin_bottom = 10
-	build_panel.add_theme_stylebox_override("panel", style)
-
-	add_child(build_panel)
-
-	# 标题
-	var title = Label.new()
-	title.text = "建造列表"
-	title.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	title.position = Vector2(0, 5)
-	title.size = Vector2(190, 25)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 18)
-	build_panel.add_child(title)
-
-	# 星星数量
-	var stars_label = Label.new()
-	stars_label.name = "StarsLabel"
-	stars_label.text = "★ %d" % _get_player_stars()
-	stars_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	stars_label.position = Vector2(0, 30)
-	stars_label.size = Vector2(190, 20)
-	stars_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	build_panel.add_child(stars_label)
-
-	# 滚动容器
-	var scroll = ScrollContainer.new()
-	scroll.name = "Scroll"
-	scroll.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	scroll.position = Vector2(0, 55)
-	scroll.size = Vector2(210, 340)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	build_panel.add_child(scroll)
-
-	# 家具列表容器
-	var vbox = VBoxContainer.new()
-	vbox.name = "FurnitureList"
-	vbox.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	vbox.size = Vector2(190, 0)
-	vbox.add_theme_constant_override("separation", 8)
-	scroll.add_child(vbox)
-
-	# 刷新家具列表
-	_refresh_build_list()
-
-func _refresh_build_list():
-	var vbox = build_panel.get_node_or_null("Scroll/FurnitureList")
-	if vbox == null:
-		return
-
-	# 清空现有
-	for child in vbox.get_children():
-		child.queue_free()
-
-	# 刷新星星
-	var stars_label = build_panel.get_node_or_null("StarsLabel")
-	if stars_label:
-		stars_label.text = "★ %d" % _get_player_stars()
-
-	var player_level = _get_player_level()
-
-	# 遍历所有建造配置
-	for id in build_config.keys():
-		var config = build_config[id]
-		var is_unlocked = config["unlockLevel"] <= player_level
-
-		var item = _create_furniture_item(config, is_unlocked)
-		vbox.add_child(item)
-
-func _create_furniture_item(config: Dictionary, is_unlocked: bool) -> Control:
-	var panel = PanelContainer.new()
-	panel.custom_minimum_size = Vector2(190, 60)
-
-	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.3, 0.3, 0.3, 0.8)
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_left = 6
-	style.corner_radius_bottom_right = 6
-	panel.add_theme_stylebox_override("panel", style)
-
-	var hbox = HBoxContainer.new()
-	hbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hbox.add_theme_constant_override("separation", 10)
-	panel.add_child(hbox)
-
-	# 家具图标
-	var icon = TextureRect.new()
-	icon.custom_minimum_size = Vector2(50, 50)
-	icon.texture = _get_placeholder_tex()
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	hbox.add_child(icon)
-
-	# 名称和等级
-	var vbox = VBoxContainer.new()
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	var name_label = Label.new()
-	name_label.text = config["name"]
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.add_theme_font_size_override("font_size", 14)
-	vbox.add_child(name_label)
-
-	var level_label = Label.new()
-	level_label.text = "Lv.%d" % config["unlockLevel"]
-	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	level_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-	level_label.add_theme_font_size_override("font_size", 12)
-	vbox.add_child(level_label)
-
-	# 未解锁时灰显
-	if not is_unlocked:
-		name_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
-		icon.modulate = Color(0.5, 0.5, 0.5)
-
-	hbox.add_child(vbox)
-
-	# 星星费用（只有解锁了才显示可点击）
-	if is_unlocked:
-		var star_btn = Button.new()
-		star_btn.custom_minimum_size = Vector2(50, 35)
-		star_btn.text = "★ %d" % config["starCost"]
-		star_btn.add_theme_color_override("font_color", Color(1, 0.8, 0))
-		star_btn.add_theme_font_size_override("font_size", 16)
-		star_btn.pressed.connect(_on_build_star_pressed.bind(config))
-		hbox.add_child(star_btn)
-	else:
-		var lock = Label.new()
-		lock.text = "🔒"
-		lock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		hbox.add_child(lock)
-
-	return panel
-
-func _on_build_star_pressed(config: Dictionary):
-	current_build_config = config
-	_show_build_popup()
-
 # ================================= 建造弹窗 =================================
 func _show_build_popup():
 	if build_popup != null:
@@ -365,34 +211,54 @@ func _on_cancel_build():
 		build_popup = null
 
 func _on_confirm_build():
+	print(">>> [GridManager] _on_confirm_build 开始")
 	var cost = current_build_config["starCost"]
 	var stars = _get_player_stars()
+	var build_id: int = current_build_config.get("id", 0)
+	print(">>> [GridManager] cost=%d, stars=%d, build_id=%d" % [cost, stars, build_id])
 
 	if stars < cost:
-		print(">>> [GridManager] 星星不足! 需要%d, 当前%d" % [cost, stars])
+		TipManager.show_tip("星星不足，需要 %d 颗星星" % cost, 2.0)
 		_on_cancel_build()
 		return
 
 	# 消耗星星（通过TaskManager）
 	TaskManager.add_stars(-cost)
+	TaskManager.add_completed_build_id(build_id)
+	print(">>> [GridManager] 消耗星星完成")
 
 	# 放置家具到棋盘
 	_place_furniture_at_empty()
+	print(">>> [GridManager] 放置家具完成")
 
-	# 刷新列表
-	_refresh_build_list()
+	# 更新家具贴图
+	_update_furniture_texture(build_id)
+	print(">>> [GridManager] 更新贴图完成")
+
+	# 刷新图标显示（隐藏已完成的图标）
+	_refresh_furniture_icons()
+	print(">>> [GridManager] 刷新图标完成")
+
 	_on_cancel_build()
+
+
+func _refresh_furniture_icons() -> void:
+	var icon_mgr = get_node_or_null("../FurnitureIconManager")
+	if icon_mgr and icon_mgr.has_method("refresh_all"):
+		icon_mgr.refresh_all()
+
+
+func _update_furniture_texture(build_id: int) -> void:
+	var icon_mgr = get_node_or_null("../FurnitureIconManager")
+	if icon_mgr and icon_mgr.has_method("update_furniture_texture"):
+		icon_mgr.update_furniture_texture(build_id)
 
 # ================================= 获取玩家数据 =================================
 func _get_player_stars() -> int:
-	if TaskManager and TaskManager.has_method("get_stars"):
-		return TaskManager.get_stars()
-	return 0
+	return TaskManager.get_stars()
 
 func _get_player_level() -> int:
-	if TaskManager and TaskManager.has_method("get_level"):
-		return TaskManager.get_level()
-	return 1
+	return TaskManager.get_level()
 
 # ================================= 放置家具到空格子 =================================
 func _place_furniture_at_empty():
@@ -598,6 +464,8 @@ func _process(_delta):
 	update_mouse_preview()
 
 func update_mouse_preview():
+	if preview_tile == null:
+		return
 	var mouse_g = world_to_grid(get_global_mouse_position())
 	if is_in_map(mouse_g.x, mouse_g.y):
 		preview_tile.visible = true

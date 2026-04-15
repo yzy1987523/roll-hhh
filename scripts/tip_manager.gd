@@ -19,15 +19,13 @@ func _ready() -> void:
 
 
 func _create_tip_ui() -> void:
-	# 容器
+	# 容器 - 使用PRESET_CENTER实现居中
 	_tip_container = PanelContainer.new()
 	_tip_container.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_tip_container.anchor_left = 0.5
-	_tip_container.anchor_right = 0.5
 	_tip_container.offset_left = -400
-	_tip_container.offset_top = 20
+	_tip_container.offset_top = 100
 	_tip_container.offset_right = 400
-	_tip_container.offset_bottom = 100
+	_tip_container.offset_bottom = 180
 	_tip_container.custom_minimum_size = Vector2(800, 80)
 	_tip_container.modulate = Color(1, 1, 1, 0)  # 初始隐藏
 

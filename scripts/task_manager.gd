@@ -84,6 +84,11 @@ func get_level() -> int:
 func get_completed_build_ids() -> Array:
 	return _completed_build_ids
 
+## 添加一个已完成的建造ID
+func add_completed_build_id(build_id: int) -> void:
+	if not _completed_build_ids.has(float(build_id)):
+		_completed_build_ids.append(float(build_id))
+
 ## 保存已完成的建造ID列表
 func save_completed_build_ids(ids: Array) -> void:
 	_completed_build_ids = ids

@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://board_item"]
+
+[node name="BoardItem" type="TextureRect"]
+custom_minimum_size = Vector2(129, 129)
+layout_mode = 2
+stretch_mode = 0
+expand_mode = 0

@@ -30,17 +30,25 @@ func load_config() -> bool:
 		print(">>> [ItemConfigLoader] JSON 解析失败")
 		return false
 
-	var data: Dictionary = json.data
-	if data.is_empty():
-		print(">>> [ItemConfigLoader] 配置数据为空")
-		return false
+	var data = json.data
 
-	items = data.get("items", [])
+	# JSON根可能是数组或字典，分别处理
+	if data is Array:
+		items = data
+	elif data is Dictionary:
+		if data.is_empty():
+			print(">>> [ItemConfigLoader] 配置数据为空")
+			return false
+		items = data.get("items", [])
+	else:
+		print(">>> [ItemConfigLoader] 配置数据格式错误: %s" % typeof(data))
+		return false
 
 	# 构建ID索引
 	_items_by_id.clear()
 	for item in items:
-		var id: int = item.get("id", 0)
+		var id_val = item.get("id", 0)
+		var id: int = int(id_val) if id_val is String or id_val is int else 0
 		if id > 0:
 			_items_by_id[id] = item
 

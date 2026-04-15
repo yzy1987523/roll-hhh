@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://ca42w3tss4qmv"]
 
 [ext_resource type="Script" uid="uid://bnepucyfdhkug" path="res://scripts/encyclopedia_scene.gd" id="1_enc"]
-[ext_resource type="Texture2D" uid="uid://d2wku35vuuwpc" path="res://art/sprites/UI/panels/panel.png" id="2_panel"]
-[ext_resource type="Texture2D" uid="uid://x0btk78hil8p" path="res://art/sprites/UI/items/smallItem/close.png" id="3_close"]
+[ext_resource type="Texture2D" uid="uid://lsv1d0fexgsh" path="res://art/sprites/UI/panels/panel.png" id="2_panel"]
+[ext_resource type="Texture2D" uid="uid://dv6kfqsd5cu5q" path="res://art/sprites/UI/items/smallItem/close.png" id="3_close"]
 
 [node name="EncyclopediaScene" type="Control" unique_id=1102075802]
 layout_mode = 3

@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://cb6s0hrqwimqt"]
+
+[ext_resource type="Texture2D" uid="uid://baw7sqftn0sng" path="res://art/sprites/UI/panels/bg_1.png" id="1_lu87m"]
+
+[node name="TransitionPanel" type="CanvasLayer" unique_id=1234567900]
+layer = 9999
+
+[node name="Backdrop" type="Control" parent="." unique_id=1234567901]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Tex" type="TextureRect" parent="Backdrop" unique_id=1234567902]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_lu87m")
+expand_mode = 1
+stretch_mode = 1

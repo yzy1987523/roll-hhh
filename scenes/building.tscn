@@ -1,12 +1,80 @@
 [gd_scene format=3 uid="uid://cpebd3hackblt"]
 
 [ext_resource type="Script" uid="uid://bthccr11qdbp6" path="res://scripts/grid_manager.gd" id="1_grid_manager"]
-[ext_resource type="Texture2D" uid="uid://diban_uid" path="res://art/building/diban.png" id="2_diban"]
-[ext_resource type="Texture2D" uid="uid://wall_uid" path="res://art/building/wall.png" id="3_wall"]
+[ext_resource type="Texture2D" uid="uid://dr1rk0aqloavo" path="res://art/building/diban.png" id="2_diban"]
+[ext_resource type="Texture2D" uid="uid://bba4g5jyn8bms" path="res://art/building/wall.png" id="3_wall"]
+[ext_resource type="Texture2D" uid="uid://b1krs7b6x6hs8" path="res://art/building/b001.png" id="4_b001"]
+[ext_resource type="Script" uid="uid://cjm6biu3u1nly" path="res://scripts/furniture_icon_manager.gd" id="5_furniture_icon"]
+[ext_resource type="Texture2D" uid="uid://cmkkhd8ab1go3" path="res://art/sprites/UI/panels/bg.png" id="6_bg"]
+[ext_resource type="Texture2D" uid="uid://dkghgukxcdawu" path="res://art/sprites/UI/icon/level_icon.png" id="7_level"]
+[ext_resource type="Texture2D" uid="uid://b0uxqkihyiajx" path="res://art/sprites/UI/button/play_btn.png" id="8_play"]
+[ext_resource type="Texture2D" uid="uid://uoxic7e2tsii" path="res://art/sprites/UI/button/build_list_btn.png" id="9_build_list"]
+[ext_resource type="Script" uid="uid://dbnbhm3mr3o0l" path="res://scripts/building_ui.gd" id="10_ui"]
+[ext_resource type="Script" uid="uid://csnaqjdb8me6b" path="res://scripts/character_2d.gd" id="11_char"]
+[ext_resource type="Texture2D" uid="uid://bbxxl5njaw8up" path="res://art/sprites/chars/player01.png" id="12_player01"]
+[ext_resource type="Texture2D" uid="uid://cny4deihxwv8" path="res://art/sprites/chars/player02.png" id="13_player02"]
 
 [node name="RoomRoot" type="Node2D" unique_id=1234567890]
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1234567891]
+
+[node name="BG" type="Sprite2D" parent="." unique_id=1234567901]
+position = Vector2(-51, 68)
+texture = ExtResource("6_bg")
+
+[node name="UILayer" type="CanvasLayer" parent="." unique_id=1234567902]
+script = ExtResource("10_ui")
+
+[node name="TopLeftUI" type="VBoxContainer" parent="UILayer" unique_id=1234567903]
+anchors_preset = 0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 220.0
+offset_bottom = 200.0
+grow_horizontal = 0
+theme_override_constants/separation = 10
+
+[node name="LevelContainer" type="VBoxContainer" parent="UILayer/TopLeftUI" unique_id=1602392119]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="LevelIcon" type="TextureRect" parent="UILayer/TopLeftUI/LevelContainer" unique_id=1234567904]
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+texture = ExtResource("7_level")
+expand_mode = 1
+
+[node name="LevelLabel" type="Label" parent="UILayer/TopLeftUI/LevelContainer" unique_id=1234567905]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Lv.1"
+horizontal_alignment = 1
+
+[node name="ExpProgressBar" type="ProgressBar" parent="UILayer/TopLeftUI/LevelContainer" unique_id=1234567906]
+custom_minimum_size = Vector2(120, 16)
+layout_mode = 2
+value = 50.0
+show_percentage = false
+
+[node name="BuildListBtn" type="TextureButton" parent="UILayer/TopLeftUI" unique_id=1234567907]
+custom_minimum_size = Vector2(120, 48)
+layout_mode = 2
+texture_normal = ExtResource("9_build_list")
+
+[node name="BottomLeftUI" type="Control" parent="UILayer" unique_id=1234567908]
+layout_mode = 3
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -100.0
+offset_right = 100.0
+grow_vertical = 0
+
+[node name="PlayBtn" type="TextureButton" parent="UILayer/BottomLeftUI" unique_id=1234567909]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 1
+texture_normal = ExtResource("8_play")
 
 [node name="GridManager" type="Node2D" parent="." unique_id=1234567892]
 script = ExtResource("1_grid_manager")
@@ -15,641 +83,641 @@ is_edit_mode = false
 [node name="FloorRoot" type="Node2D" parent="." unique_id=39983779]
 
 [node name="Floor_0_0" type="Polygon2D" parent="FloorRoot" unique_id=854390502]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(0, -32, 64, 0, 0, 32, -64, 0)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_0_1" type="Polygon2D" parent="FloorRoot" unique_id=1001499023]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-64, 0, 0, 32, -64, 64, -128, 32)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_0_2" type="Polygon2D" parent="FloorRoot" unique_id=1009206596]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-128, 32, -64, 64, -128, 96, -192, 64)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_0_3" type="Polygon2D" parent="FloorRoot" unique_id=1157095722]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-192, 64, -128, 96, -192, 128, -256, 96)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_0_4" type="Polygon2D" parent="FloorRoot" unique_id=1701713757]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-256, 96, -192, 128, -256, 160, -320, 128)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_0_5" type="Polygon2D" parent="FloorRoot" unique_id=839574281]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-320, 128, -256, 160, -320, 192, -384, 160)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_0_6" type="Polygon2D" parent="FloorRoot" unique_id=116282674]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-384, 160, -320, 192, -384, 224, -448, 192)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_0_7" type="Polygon2D" parent="FloorRoot" unique_id=445085914]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-448, 192, -384, 224, -448, 256, -512, 224)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_1_0" type="Polygon2D" parent="FloorRoot" unique_id=1698876945]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(64, 0, 128, 32, 64, 64, 0, 32)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_1_1" type="Polygon2D" parent="FloorRoot" unique_id=450140442]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(0, 32, 64, 64, 0, 96, -64, 64)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_1_2" type="Polygon2D" parent="FloorRoot" unique_id=575698846]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-64, 64, 0, 96, -64, 128, -128, 96)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_1_3" type="Polygon2D" parent="FloorRoot" unique_id=125654324]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-128, 96, -64, 128, -128, 160, -192, 128)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_1_4" type="Polygon2D" parent="FloorRoot" unique_id=1028279364]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-192, 128, -128, 160, -192, 192, -256, 160)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_1_5" type="Polygon2D" parent="FloorRoot" unique_id=513297261]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-256, 160, -192, 192, -256, 224, -320, 192)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_1_6" type="Polygon2D" parent="FloorRoot" unique_id=698797331]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-320, 192, -256, 224, -320, 256, -384, 224)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_1_7" type="Polygon2D" parent="FloorRoot" unique_id=1201450565]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-384, 224, -320, 256, -384, 288, -448, 256)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_2_0" type="Polygon2D" parent="FloorRoot" unique_id=1764027374]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(128, 32, 192, 64, 128, 96, 64, 64)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_2_1" type="Polygon2D" parent="FloorRoot" unique_id=346771957]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(64, 64, 128, 96, 64, 128, 0, 96)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_2_2" type="Polygon2D" parent="FloorRoot" unique_id=1135083920]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(0, 96, 64, 128, 0, 160, -64, 128)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_2_3" type="Polygon2D" parent="FloorRoot" unique_id=548511963]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-64, 128, 0, 160, -64, 192, -128, 160)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_2_4" type="Polygon2D" parent="FloorRoot" unique_id=165344964]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-128, 160, -64, 192, -128, 224, -192, 192)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_2_5" type="Polygon2D" parent="FloorRoot" unique_id=1541386413]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-192, 192, -128, 224, -192, 256, -256, 224)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_2_6" type="Polygon2D" parent="FloorRoot" unique_id=1564661503]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-256, 224, -192, 256, -256, 288, -320, 256)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_2_7" type="Polygon2D" parent="FloorRoot" unique_id=336509240]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-320, 256, -256, 288, -320, 320, -384, 288)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_3_0" type="Polygon2D" parent="FloorRoot" unique_id=1952816357]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(192, 64, 256, 96, 192, 128, 128, 96)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_3_1" type="Polygon2D" parent="FloorRoot" unique_id=247235576]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(128, 96, 192, 128, 128, 160, 64, 128)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_3_2" type="Polygon2D" parent="FloorRoot" unique_id=1413490689]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(64, 128, 128, 160, 64, 192, 0, 160)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_3_3" type="Polygon2D" parent="FloorRoot" unique_id=298154318]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(0, 160, 64, 192, 0, 224, -64, 192)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_3_4" type="Polygon2D" parent="FloorRoot" unique_id=1558351823]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-64, 192, 0, 224, -64, 256, -128, 224)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_3_5" type="Polygon2D" parent="FloorRoot" unique_id=1147264564]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-128, 224, -64, 256, -128, 288, -192, 256)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_3_6" type="Polygon2D" parent="FloorRoot" unique_id=428954023]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-192, 256, -128, 288, -192, 320, -256, 288)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_3_7" type="Polygon2D" parent="FloorRoot" unique_id=1055693948]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-256, 288, -192, 320, -256, 352, -320, 320)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_4_0" type="Polygon2D" parent="FloorRoot" unique_id=783540603]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(256, 96, 320, 128, 256, 160, 192, 128)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_4_1" type="Polygon2D" parent="FloorRoot" unique_id=2105576232]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(192, 128, 256, 160, 192, 192, 128, 160)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_4_2" type="Polygon2D" parent="FloorRoot" unique_id=1048519867]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(128, 160, 192, 192, 128, 224, 64, 192)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_4_3" type="Polygon2D" parent="FloorRoot" unique_id=868440642]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(64, 192, 128, 224, 64, 256, 0, 224)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_4_4" type="Polygon2D" parent="FloorRoot" unique_id=288486398]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(0, 224, 64, 256, 0, 288, -64, 256)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_4_5" type="Polygon2D" parent="FloorRoot" unique_id=1213554792]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-64, 256, 0, 288, -64, 320, -128, 288)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_4_6" type="Polygon2D" parent="FloorRoot" unique_id=2013677958]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-128, 288, -64, 320, -128, 352, -192, 320)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_4_7" type="Polygon2D" parent="FloorRoot" unique_id=2006468895]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-192, 320, -128, 352, -192, 384, -256, 352)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_5_0" type="Polygon2D" parent="FloorRoot" unique_id=818533848]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(320, 128, 384, 160, 320, 192, 256, 160)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_5_1" type="Polygon2D" parent="FloorRoot" unique_id=1573256228]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(256, 160, 320, 192, 256, 224, 192, 192)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_5_2" type="Polygon2D" parent="FloorRoot" unique_id=226966985]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(192, 192, 256, 224, 192, 256, 128, 224)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_5_3" type="Polygon2D" parent="FloorRoot" unique_id=410777626]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(128, 224, 192, 256, 128, 288, 64, 256)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_5_4" type="Polygon2D" parent="FloorRoot" unique_id=603314183]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(64, 256, 128, 288, 64, 320, 0, 288)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_5_5" type="Polygon2D" parent="FloorRoot" unique_id=1913911713]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(0, 288, 64, 320, 0, 352, -64, 320)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_5_6" type="Polygon2D" parent="FloorRoot" unique_id=703237507]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-64, 320, 0, 352, -64, 384, -128, 352)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_5_7" type="Polygon2D" parent="FloorRoot" unique_id=1234953536]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-128, 352, -64, 384, -128, 416, -192, 384)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_6_0" type="Polygon2D" parent="FloorRoot" unique_id=1573656267]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(384, 160, 448, 192, 384, 224, 320, 192)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_6_1" type="Polygon2D" parent="FloorRoot" unique_id=1098282657]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(320, 192, 384, 224, 320, 256, 256, 224)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_6_2" type="Polygon2D" parent="FloorRoot" unique_id=1776902435]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(256, 224, 320, 256, 256, 288, 192, 256)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_6_3" type="Polygon2D" parent="FloorRoot" unique_id=465663657]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(192, 256, 256, 288, 192, 320, 128, 288)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_6_4" type="Polygon2D" parent="FloorRoot" unique_id=579978121]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(128, 288, 192, 320, 128, 352, 64, 320)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_6_5" type="Polygon2D" parent="FloorRoot" unique_id=265387323]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(64, 320, 128, 352, 64, 384, 0, 352)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_6_6" type="Polygon2D" parent="FloorRoot" unique_id=731571264]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(0, 352, 64, 384, 0, 416, -64, 384)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_6_7" type="Polygon2D" parent="FloorRoot" unique_id=777065268]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(-64, 384, 0, 416, -64, 448, -128, 416)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_7_0" type="Polygon2D" parent="FloorRoot" unique_id=1058419513]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(448, 192, 512, 224, 448, 256, 384, 224)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_7_1" type="Polygon2D" parent="FloorRoot" unique_id=1040333202]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(384, 224, 448, 256, 384, 288, 320, 256)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_7_2" type="Polygon2D" parent="FloorRoot" unique_id=1141794046]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(320, 256, 384, 288, 320, 320, 256, 288)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_7_3" type="Polygon2D" parent="FloorRoot" unique_id=71554058]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(256, 288, 320, 320, 256, 352, 192, 320)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_7_4" type="Polygon2D" parent="FloorRoot" unique_id=183045367]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(192, 320, 256, 352, 192, 384, 128, 352)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_7_5" type="Polygon2D" parent="FloorRoot" unique_id=2142123530]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(128, 352, 192, 384, 128, 416, 64, 384)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_7_6" type="Polygon2D" parent="FloorRoot" unique_id=1254189335]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(64, 384, 128, 416, 64, 448, 0, 416)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_7_7" type="Polygon2D" parent="FloorRoot" unique_id=1563533808]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(0, 416, 64, 448, 0, 480, -64, 448)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_8_0" type="Polygon2D" parent="FloorRoot" unique_id=2082290599]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(512, 224, 576, 256, 512, 288, 448, 256)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_8_1" type="Polygon2D" parent="FloorRoot" unique_id=801019243]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(448, 256, 512, 288, 448, 320, 384, 288)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_8_2" type="Polygon2D" parent="FloorRoot" unique_id=912286007]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(384, 288, 448, 320, 384, 352, 320, 320)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_8_3" type="Polygon2D" parent="FloorRoot" unique_id=718419707]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(320, 320, 384, 352, 320, 384, 256, 352)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_8_4" type="Polygon2D" parent="FloorRoot" unique_id=50162572]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(256, 352, 320, 384, 256, 416, 192, 384)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_8_5" type="Polygon2D" parent="FloorRoot" unique_id=739861908]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(192, 384, 256, 416, 192, 448, 128, 416)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_8_6" type="Polygon2D" parent="FloorRoot" unique_id=176888057]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(128, 416, 192, 448, 128, 480, 64, 448)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_8_7" type="Polygon2D" parent="FloorRoot" unique_id=759292886]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(64, 448, 128, 480, 64, 512, 0, 480)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_9_0" type="Polygon2D" parent="FloorRoot" unique_id=810300842]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(576, 256, 640, 288, 576, 320, 512, 288)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_9_1" type="Polygon2D" parent="FloorRoot" unique_id=1616822133]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(512, 288, 576, 320, 512, 352, 448, 320)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_9_2" type="Polygon2D" parent="FloorRoot" unique_id=1950864838]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(448, 320, 512, 352, 448, 384, 384, 352)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_9_3" type="Polygon2D" parent="FloorRoot" unique_id=1878869978]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(384, 352, 448, 384, 384, 416, 320, 384)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_9_4" type="Polygon2D" parent="FloorRoot" unique_id=963661837]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(320, 384, 384, 416, 320, 448, 256, 416)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_9_5" type="Polygon2D" parent="FloorRoot" unique_id=177681822]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(256, 416, 320, 448, 256, 480, 192, 448)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_9_6" type="Polygon2D" parent="FloorRoot" unique_id=2129757454]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(192, 448, 256, 480, 192, 512, 128, 480)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Floor_9_7" type="Polygon2D" parent="FloorRoot" unique_id=660489222]
+color = Color(0.28, 0.24, 0.2, 1)
 texture = ExtResource("2_diban")
 texture_scale = Vector2(60, 60)
-color = Color(0.28, 0.24, 0.2, 1)
 polygon = PackedVector2Array(128, 480, 192, 512, 128, 544, 64, 512)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
@@ -729,55 +797,143 @@ vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 [node name="LeftWall_0" type="Polygon2D" parent="WallRoot" unique_id=1360864460]
 texture = ExtResource("3_wall")
 texture_scale = Vector2(372, 217)
-polygon = PackedVector2Array(-64,-144, 0,-176, 0,-32, -64,0)
+polygon = PackedVector2Array(-64, -144, 0, -176, 0, -32, -64, 0)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="LeftWall_1" type="Polygon2D" parent="WallRoot" unique_id=1695658201]
 texture = ExtResource("3_wall")
 texture_scale = Vector2(372, 217)
-polygon = PackedVector2Array(-128,-112, -64,-144, -64,0, -128,32)
+polygon = PackedVector2Array(-128, -112, -64, -144, -64, 0, -128, 32)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="LeftWall_2" type="Polygon2D" parent="WallRoot" unique_id=1785176661]
 texture = ExtResource("3_wall")
 texture_scale = Vector2(372, 217)
-polygon = PackedVector2Array(-192,-80, -128,-112, -128,32, -192,64)
+polygon = PackedVector2Array(-192, -80, -128, -112, -128, 32, -192, 64)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="LeftWall_3" type="Polygon2D" parent="WallRoot" unique_id=26020219]
 texture = ExtResource("3_wall")
 texture_scale = Vector2(372, 217)
-polygon = PackedVector2Array(-256,-48, -192,-80, -192,64, -256,96)
+polygon = PackedVector2Array(-256, -48, -192, -80, -192, 64, -256, 96)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="LeftWall_4" type="Polygon2D" parent="WallRoot" unique_id=618040559]
 texture = ExtResource("3_wall")
 texture_scale = Vector2(372, 217)
-polygon = PackedVector2Array(-320,-16, -256,-48, -256,96, -320,128)
+polygon = PackedVector2Array(-320, -16, -256, -48, -256, 96, -320, 128)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="LeftWall_5" type="Polygon2D" parent="WallRoot" unique_id=338650261]
 texture = ExtResource("3_wall")
 texture_scale = Vector2(372, 217)
-polygon = PackedVector2Array(-384,16, -320,-16, -320,128, -384,160)
+polygon = PackedVector2Array(-384, 16, -320, -16, -320, 128, -384, 160)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="LeftWall_6" type="Polygon2D" parent="WallRoot" unique_id=1418528095]
 texture = ExtResource("3_wall")
 texture_scale = Vector2(372, 217)
-polygon = PackedVector2Array(-448,48, -384,16, -384,160, -448,192)
+polygon = PackedVector2Array(-448, 48, -384, 16, -384, 160, -448, 192)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="LeftWall_7" type="Polygon2D" parent="WallRoot" unique_id=1302717912]
 texture = ExtResource("3_wall")
 texture_scale = Vector2(372, 217)
-polygon = PackedVector2Array(-512,80, -448,48, -448,192, -512,224)
+polygon = PackedVector2Array(-512, 80, -448, 48, -448, 192, -512, 224)
 uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+
+[node name="FurnitureRoot" type="Node2D" parent="." unique_id=716735959]
+
+[node name="Furniture_0" type="Polygon2D" parent="FurnitureRoot" unique_id=9999990]
+position = Vector2(209, 39)
+texture = ExtResource("4_b001")
+texture_scale = Vector2(72, 64)
+polygon = PackedVector2Array(-36, 64, 36, 64, 36, 128, -36, 128)
+uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
+vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+
+[node name="Furniture_1" type="Polygon2D" parent="FurnitureRoot" unique_id=9999991]
+position = Vector2(-74, -65)
+texture = ExtResource("4_b001")
+texture_scale = Vector2(72, 64)
+polygon = PackedVector2Array(28, 96, 100, 96, 100, 160, 28, 160)
+uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
+vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+
+[node name="Furniture_2" type="Polygon2D" parent="FurnitureRoot" unique_id=9999992]
+position = Vector2(176, 170)
+texture = ExtResource("4_b001")
+texture_scale = Vector2(72, 64)
+polygon = PackedVector2Array(92, 128, 164, 128, 164, 192, 92, 192)
+uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
+vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+
+[node name="Furniture_3" type="Polygon2D" parent="FurnitureRoot" unique_id=9999993]
+position = Vector2(-21, -27)
+texture = ExtResource("4_b001")
+texture_scale = Vector2(72, 64)
+polygon = PackedVector2Array(-100, 96, -28, 96, -28, 160, -100, 160)
+uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
+vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+
+[node name="Furniture_4" type="Polygon2D" parent="FurnitureRoot" unique_id=9999994]
+position = Vector2(-183, 138)
+texture = ExtResource("4_b001")
+texture_scale = Vector2(72, 64)
+polygon = PackedVector2Array(-36, 128, 36, 128, 36, 192, -36, 192)
+uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
+vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+
+[node name="Furniture_5" type="Polygon2D" parent="FurnitureRoot" unique_id=9999995]
+position = Vector2(-8, 170)
+texture = ExtResource("4_b001")
+texture_scale = Vector2(72, 64)
+polygon = PackedVector2Array(28, 160, 100, 160, 100, 224, 28, 224)
+uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
+vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+
+[node name="Furniture_6" type="Polygon2D" parent="FurnitureRoot" unique_id=9999996]
+texture = ExtResource("4_b001")
+texture_scale = Vector2(72, 64)
+polygon = PackedVector2Array(-164, 128, -92, 128, -92, 192, -164, 192)
+uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
+vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+
+[node name="Furniture_7" type="Polygon2D" parent="FurnitureRoot" unique_id=9999997]
+texture = ExtResource("4_b001")
+texture_scale = Vector2(72, 64)
+polygon = PackedVector2Array(-100, 160, -28, 160, -28, 224, -100, 224)
+uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
+vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+
+[node name="Furniture_8" type="Polygon2D" parent="FurnitureRoot" unique_id=9999998]
+texture = ExtResource("4_b001")
+texture_scale = Vector2(72, 64)
+polygon = PackedVector2Array(-36, 192, 36, 192, 36, 256, -36, 256)
+uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
+vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+
+[node name="Furniture_9" type="Polygon2D" parent="FurnitureRoot" unique_id=9999999]
+texture = ExtResource("4_b001")
+texture_scale = Vector2(72, 64)
+polygon = PackedVector2Array(92, 192, 164, 192, 164, 256, 92, 256)
+uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
+vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+
+[node name="FurnitureIconManager" type="Node2D" parent="." unique_id=1234567893]
+script = ExtResource("5_furniture_icon")
+
+[node name="CharacterRoot" type="Node2D" parent="." unique_id=1234567894]
+script = ExtResource("11_char")
+frames = Array[Texture2D]([ExtResource("12_player01"), ExtResource("13_player02")])
+
+[connection signal="pressed" from="UILayer/TopLeftUI/BuildListBtn" to="UILayer" method="_on_build_list_pressed"]
+[connection signal="pressed" from="UILayer/BottomLeftUI/PlayBtn" to="UILayer" method="_on_play_pressed"]

@@ -1,8 +1,6 @@
 [gd_scene format=3 uid="uid://lhfpkjexs7e5"]
 
 [ext_resource type="Script" uid="uid://blsuwfdclth4a" path="res://scripts/game_board.gd" id="1_game_board"]
-[ext_resource type="Texture2D" uid="uid://kvf818xd21b4" path="res://art/sprites/UI/panels/棋盘格.png" id="2_board"]
-[ext_resource type="Texture2D" uid="uid://dptl0umyb2xch" path="res://art/sprites/UI/panels/bg_0.png" id="2_sax53"]
 [ext_resource type="Texture2D" uid="uid://x4yg0g26r063" path="res://art/sprites/UI/items/smallItem/coin.png" id="3_coin"]
 [ext_resource type="Texture2D" uid="uid://cimhkfb5qgsea" path="res://art/sprites/UI/items/smallItem/engery.png" id="4_energy"]
 [ext_resource type="Texture2D" uid="uid://8q11l3kyangs" path="res://art/sprites/UI/items/smallItem/time.png" id="5_time"]
@@ -17,9 +15,9 @@
 [ext_resource type="Texture2D" uid="uid://dtkidhksbb3bi" path="res://art/sprites/UI/items/smallItem/cell_0.png" id="15_8auva"]
 [ext_resource type="Texture2D" uid="uid://c25vh10f0w554" path="res://art/sprites/UI/items/smallItem/spawner2.png" id="15_hrnlr"]
 [ext_resource type="Texture2D" uid="uid://d2wku35vuuwpc" path="res://art/sprites/UI/panels/panel.png" id="17_hrnlr"]
-[ext_resource type="Texture2D" uid="uid://nbvvllprboxf" path="res://art/sprites/UI/panels/endBtn.png" id="18_endbtn"]
 [ext_resource type="Texture2D" uid="uid://btegp2rhlo35b" path="res://art/sprites/UI/panels/detailPanel.png" id="19_detailpanel"]
 [ext_resource type="Script" uid="uid://bottom_hud_script" path="res://scripts/bottom_hud.gd" id="20_bottom_hud"]
+[ext_resource type="Texture2D" uid="uid://kuang001" path="res://art/sprites/UI/panels/kuang.png" id="22_kuang"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_detailpanel"]
 
@@ -51,13 +49,11 @@ color = Color(0.34917623, 0.069724604, 0.40591022, 1)
 
 [node name="BG" type="Sprite2D" parent="." unique_id=951053424]
 position = Vector2(550, 980)
-texture = ExtResource("2_sax53")
 
 [node name="BoardSprite" type="Sprite2D" parent="." unique_id=1798221776]
 visible = false
 position = Vector2(543.99994, 1184.9999)
 scale = Vector2(3.9, 3.9)
-texture = ExtResource("2_board")
 
 [node name="MainLayout" type="VBoxContainer" parent="." unique_id=1089691933]
 layout_mode = 1
@@ -247,8 +243,7 @@ accessibility_live = 2
 [node name="NinePatchRect" type="NinePatchRect" parent="MainLayout/RelicBar/RelicPanel" unique_id=2075609798]
 self_modulate = Color(1, 1, 1, 0)
 layout_mode = 2
-texture = ExtResource("18_endbtn")
-patch_margin_left = 75
+texture patch_margin_left = 75
 patch_margin_top = 32
 patch_margin_right = 75
 patch_margin_bottom = 27
@@ -489,6 +484,900 @@ size_flags_vertical = 3
 layout_mode = 2
 theme_override_constants/h_separation = 2
 theme_override_constants/v_separation = 2
+columns = 7
+
+[node name="cell_0" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000000]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_0" unique_id=1000063]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_1" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000001]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_1" unique_id=1000064]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_2" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000002]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_2" unique_id=1000065]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_3" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000003]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_3" unique_id=1000066]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_4" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000004]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_4" unique_id=1000067]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_5" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000005]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_5" unique_id=1000068]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_6" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000006]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_6" unique_id=1000069]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_7" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000007]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_7" unique_id=1000070]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_8" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000008]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_8" unique_id=1000071]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_9" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000009]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_9" unique_id=1000072]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_10" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000010]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_10" unique_id=1000073]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_11" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000011]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_11" unique_id=1000074]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_12" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000012]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_12" unique_id=1000075]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_13" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000013]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_13" unique_id=1000076]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_14" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000014]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_14" unique_id=1000077]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_15" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000015]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_15" unique_id=1000078]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_16" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000016]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_16" unique_id=1000079]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_17" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000017]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_17" unique_id=1000080]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_18" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000018]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_18" unique_id=1000081]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_19" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000019]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_19" unique_id=1000082]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_20" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000020]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_20" unique_id=1000083]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_21" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000021]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_21" unique_id=1000084]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_22" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000022]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_22" unique_id=1000085]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_23" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000023]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_23" unique_id=1000086]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_24" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000024]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_24" unique_id=1000087]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_25" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000025]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_25" unique_id=1000088]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_26" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000026]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_26" unique_id=1000089]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_27" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000027]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_27" unique_id=1000090]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_28" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000028]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_28" unique_id=1000091]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_29" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000029]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_29" unique_id=1000092]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_30" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000030]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_30" unique_id=1000093]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_31" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000031]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_31" unique_id=1000094]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_32" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000032]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_32" unique_id=1000095]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_33" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000033]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_33" unique_id=1000096]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_34" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000034]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_34" unique_id=1000097]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_35" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000035]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_35" unique_id=1000098]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_36" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000036]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_36" unique_id=1000099]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_37" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000037]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_37" unique_id=1000100]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_38" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000038]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_38" unique_id=1000101]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_39" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000039]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_39" unique_id=1000102]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_40" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000040]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_40" unique_id=1000103]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_41" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000041]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_41" unique_id=1000104]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_42" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000042]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_42" unique_id=1000105]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_43" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000043]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_43" unique_id=1000106]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_44" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000044]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_44" unique_id=1000107]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_45" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000045]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_45" unique_id=1000108]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_46" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000046]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_46" unique_id=1000109]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_47" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000047]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_47" unique_id=1000110]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_48" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000048]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_48" unique_id=1000111]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_49" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000049]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_49" unique_id=1000112]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_50" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000050]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_50" unique_id=1000113]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_51" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000051]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_51" unique_id=1000114]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_52" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000052]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_52" unique_id=1000115]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_53" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000053]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_53" unique_id=1000116]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_54" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000054]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_54" unique_id=1000117]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_55" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000055]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_55" unique_id=1000118]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_56" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000056]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_56" unique_id=1000119]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_57" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000057]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_57" unique_id=1000120]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_58" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000058]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_58" unique_id=1000121]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_59" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000059]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_59" unique_id=1000122]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_60" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000060]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_60" unique_id=1000123]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_61" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000061]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_61" unique_id=1000124]
+modulate = Color(0.8, 0.8, 0.8, 0.7)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="cell_62" type="Control" parent="MainLayout/BoardCenter/GridContainer" unique_id=1000062]
+custom_minimum_size = Vector2(133, 133)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="bg" type="TextureRect" parent="MainLayout/BoardCenter/GridContainer/cell_62" unique_id=1000125]
+modulate = Color(0.5, 0.5, 0.5, 0.9)
+anchors_preset = 15
+mouse_filter = 0
+z_index = 1
+texture = ExtResource("15_8auva")
+expand_mode = 0
+stretch_mode = 0
+
+[node name="BoardBg" type="NinePatchRect" parent="MainLayout/BoardCenter" unique_id=268332316]
+custom_minimum_size = Vector2(1008, 1280)
+layout_mode = 2
+mouse_filter = 0
+z_index = 0
+texture = ExtResource("22_kuang")
+patch_margin_left = 20
+patch_margin_top = 20
+patch_margin_right = 20
+patch_margin_bottom = 20
 
 [node name="BottomBarContainer" type="Control" parent="MainLayout" unique_id=152674900]
 custom_minimum_size = Vector2(0, 150)
@@ -711,8 +1600,7 @@ visible = false
 custom_minimum_size = Vector2(216, 216)
 layout_mode = 2
 size_flags_vertical = 4
-texture_normal = ExtResource("18_endbtn")
-stretch_mode = 5
+texture_normal stretch_mode = 5
 
 [node name="Label" type="Label" parent="MainLayout/DetailActionBar/EndTurnButton" unique_id=945550930]
 layout_mode = 1
@@ -815,8 +1703,7 @@ layout_mode = 2
 size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 40
 text = "EN"
-icon = ExtResource("18_endbtn")
-flat = true
+icon flat = true
 icon_alignment = 1
 expand_icon = true
 
@@ -826,8 +1713,7 @@ layout_mode = 2
 size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 40
 text = "Reset Tutorial"
-icon = ExtResource("18_endbtn")
-flat = true
+icon flat = true
 icon_alignment = 1
 expand_icon = true
 
@@ -837,7 +1723,6 @@ layout_mode = 2
 size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 40
 text = "Tutorial reset!"
-icon = ExtResource("18_endbtn")
-flat = true
+icon flat = true
 icon_alignment = 1
 expand_icon = true
