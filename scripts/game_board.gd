@@ -323,9 +323,9 @@ func _connect_signals() -> void:
 	# 启动 idle 提示计时器
 	_start_idle_hint_timer()
 
-	# 刷新任务面板显示（从building返回后需要重新加载物品图片）
+	# 使用 call_deferred 确保任务面板完全构建后再刷新
 	if bottom_hud_container and bottom_hud_container.has_method("refresh_task_display"):
-		bottom_hud_container.refresh_task_display()
+		bottom_hud_container.call_deferred("refresh_task_display")
 
 
 ## 连接生成器相关信号
@@ -1521,14 +1521,16 @@ func _collect_coinpile(cell_index: int) -> void:
 	# 获取位置用于粒子特效
 	var start_cell: Control = cell_panels[cell_index]
 	var start_pos: Vector2 = start_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
-	var coin_bar_pos: Vector2 = Vector2(200, 100)  # 默认位置
+	# 动态获取金币栏位置（参考经验特效的获取方式）
+	var coin_bar_pos: Vector2 = _get_gold_bar_position()
 
 	# 隐藏金币堆sprite
 	cell_sprites[cell_index].visible = false
 	cell_containers[cell_index].visible = false
 
-	# 播放金币粒子特效
-	_play_coin_particle_effect(start_pos, coin_bar_pos, 10)
+	# 播放金币粒子特效（粒子数量根据金币堆等级调整）
+	var particle_count := mini(maxi(coin_item.level, 1), 10)
+	_play_coin_particle_effect(start_pos, coin_bar_pos, particle_count)
 
 	# 从棋盘移除金币
 	bd.remove_item(BoardData.index_to_pos(cell_index))
@@ -1557,14 +1559,15 @@ func _collect_energy_ball(cell_index: int) -> void:
 	# 获取位置用于粒子特效
 	var start_cell: Control = cell_panels[cell_index]
 	var start_pos: Vector2 = start_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
-	var energy_bar_pos: Vector2 = energy_label.global_position + Vector2(energy_label.size.x / 2.0, energy_label.size.y / 2.0)
+	var energy_bar_pos: Vector2 = _get_energy_bar_position()
 
 	# 隐藏体力球sprite
 	cell_sprites[cell_index].visible = false
 	cell_containers[cell_index].visible = false
 
-	# 播放体力粒子特效（绿色能量球飞向体力条）
-	_play_energy_particle_effect(start_pos, energy_bar_pos, 8)
+	# 播放体力粒子特效（绿色能量球飞向体力条，粒子数量根据体力值调整）
+	var energy_particle_count := mini(maxi(energy_value, 1), 10)
+	_play_energy_particle_effect(start_pos, energy_bar_pos, energy_particle_count)
 
 	# 从棋盘移除体力球
 	bd.remove_item(BoardData.index_to_pos(cell_index))
@@ -1668,6 +1671,30 @@ func _play_coin_particle_effect(start_pos: Vector2, end_pos: Vector2, particle_c
 	await get_tree().create_timer(0.5).timeout
 	if is_instance_valid(particle_container):
 		particle_container.queue_free()
+
+
+## 获取金币栏图标位置（用于粒子特效终点）
+func _get_gold_bar_position() -> Vector2:
+	var gold_icon: Node = get_node_or_null("MainLayout/TopBar/ResourceDisplay/GoldContainer/GoldRow/GoldIcon")
+	if gold_icon != null:
+		return gold_icon.global_position + Vector2(20, 20)  # 图标中心偏移
+	# 回退到 resource_display 的金币区域
+	var resource_display: Node = get_node_or_null("MainLayout/TopBar/ResourceDisplay")
+	if resource_display != null:
+		return resource_display.global_position + Vector2(200, 30)
+	return Vector2(300, 50)  # 最终回退
+
+
+## 获取体力条图标位置（用于粒子特效终点）
+func _get_energy_bar_position() -> Vector2:
+	var energy_icon: Node = get_node_or_null("MainLayout/TopBar/ResourceDisplay/EnergyContainer/EnergyRow/EnergyIcon")
+	if energy_icon != null:
+		return energy_icon.global_position + Vector2(20, 20)  # 图标中心偏移
+	# 回退到 resource_display 的体力区域
+	var resource_display: Node = get_node_or_null("MainLayout/TopBar/ResourceDisplay")
+	if resource_display != null:
+		return resource_display.global_position + Vector2(50, 30)
+	return Vector2(100, 50)  # 最终回退
 
 
 ## 经验粒子特效：从起点飞向等级条位置
@@ -1845,7 +1872,7 @@ func _sacrifice_character(cell_index: int) -> void:
 	# 获取位置用于粒子特效（在移除物品前获取）
 	var start_cell: Control = cell_panels[cell_index]
 	var start_pos: Vector2 = start_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
-	var coin_bar_pos: Vector2 = Vector2(200, 100)  # 默认位置
+	var coin_bar_pos: Vector2 = _get_gold_bar_position()
 
 	bd.remove_item(pos)
 	GameManager.board_items_changed.emit()
@@ -1884,10 +1911,11 @@ func _sell_selected_item(cell_index: int) -> void:
 	# 获取位置用于粒子特效
 	var start_cell: Control = cell_panels[cell_index]
 	var start_pos: Vector2 = start_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
-	var coin_bar_pos: Vector2 = Vector2(200, 100)  # 默认位置
+	var coin_bar_pos: Vector2 = _get_gold_bar_position()
 
-	# 播放金币粒子特效
-	_play_coin_particle_effect(start_pos, coin_bar_pos, 8)
+	# 播放金币粒子特效（粒子数量根据等级调整）
+	var particle_count := mini(maxi(ch.level, 1), 10)
+	_play_coin_particle_effect(start_pos, coin_bar_pos, particle_count)
 
 	# 获得金币
 	GameManager.add_gold(sell_price)
