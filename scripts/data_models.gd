@@ -347,9 +347,6 @@ class BoardItemData:
 		data.max_count = cfg.get("maxCount", 0)
 		data.recovery_time = cfg.get("recovery_time", 0.0)
 		data.cooldown_time = cfg.get("cooldown_time", 0.0)
-		# 调试输出
-		print(">>> [BoardItemData.from_config] id=%s(%s), name=%s, sprite=%s, type=%s, next=%s" % [
-			id_val, data.id, data.name, data.sprite, cfg.get("type", ""), nc_val])
 		return data
 
 	# 将配置中的 type 字符串映射为 BoardItemType enum

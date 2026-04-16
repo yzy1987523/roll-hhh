@@ -180,7 +180,19 @@
 				"take_failed_board_full": "Take Failed: Board Full",
 				"egg_not_hatchable": "Egg cannot be hatched yet",
 				"merge_hint": "Drag to a same item to merge",
-				"no_action": "No action available"
+				"no_action": "No action available",
+				"energy_full": "Energy is Full",
+				"buy_energy_title": "Buy Energy",
+				"buy_energy_confirm": "Purchase 100 energy for {cost} diamonds?",
+				"buy_energy_success": "Purchase successful!",
+				"buy_energy_failed": "Purchase failed, not enough diamonds",
+				"gold_buy_tip": "Gold purchase coming soon",
+				"gold_buy_title": "Get Gold",
+				"gold_buy_desc": "Watch an ad to get 1000 gold",
+				"watch_ad": "Watch Ad",
+				"diamond_buy_tip": "Diamond purchase coming soon",
+				"diamond_buy_title": "Get Diamonds",
+				"diamond_buy_desc": "Watch an ad to get 1000 diamonds"
 			},
 			"items": {
 				"10_desc": "Random ally gains 1 level",
@@ -317,6 +329,12 @@
 				"8_name": "Priest Cross",
 				"9_desc": "Priests gain +2 HP",
 				"9_name": "Priest Robe"
+			},
+			"common": {
+				"confirm": "Confirm",
+				"cancel": "Cancel",
+				"ok": "OK",
+				"close": "Close"
 			},
 			"settings": {
 				"clear_save": "Clear Save",
@@ -590,7 +608,19 @@
 				"take_failed_board_full": "取出失败: 棋盘已满",
 				"egg_not_hatchable": "龙蛋暂不可孵化",
 				"merge_hint": "拖拽到相同物品处合成",
-				"no_action": "该物品无法执行动作"
+				"no_action": "该物品无法执行动作",
+				"energy_full": "体力已满",
+				"buy_energy_title": "购买体力",
+				"buy_energy_confirm": "是否花费 {cost} 钻石购买100体力？",
+				"buy_energy_success": "购买成功！",
+				"buy_energy_failed": "购买失败，钻石不足",
+				"gold_buy_tip": "金币购买功能开发中",
+				"gold_buy_title": "获取金币",
+				"gold_buy_desc": "看广告获得1000金币",
+				"watch_ad": "看广告",
+				"diamond_buy_tip": "钻石购买功能开发中",
+				"diamond_buy_title": "获取钻石",
+				"diamond_buy_desc": "看广告获得1000钻石"
 			},
 			"items": {
 				"10_desc": "随机1个角色升1级",
@@ -723,6 +753,12 @@
 				"8_name": "牧师十字架",
 				"9_desc": "牧师血量+2",
 				"9_name": "牧师长袍"
+			},
+			"common": {
+				"confirm": "确认",
+				"cancel": "取消",
+				"ok": "确定",
+				"close": "关闭"
 			},
 			"settings": {
 				"clear_save": "清空存档",

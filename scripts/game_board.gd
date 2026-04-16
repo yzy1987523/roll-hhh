@@ -47,11 +47,21 @@ var spawn_mage: TextureButton
 var spawn_priest: TextureButton
 var end_turn_button: TextureButton
 @onready var build_button: Control = $MainLayout/DetailActionBar/BuildButton
+var build_button_click_area: TextureButton
 var item_bar: HBoxContainer
 var dorm_button: TextureButton
 var shop_button: TextureButton
 var encyclopedia_button: TextureButton
 var bottom_hud_container: Control
+
+# ---- 资源显示节点 (TopBar/ResourceDisplay) ----
+@onready var energy_label: Label = $MainLayout/TopBar/ResourceDisplay/EnergyContainer/EnergyRow/EnergyLabel
+@onready var energy_timer: Label = $MainLayout/TopBar/ResourceDisplay/EnergyContainer/EnergyTimer
+@onready var energy_buy_btn: Button = $MainLayout/TopBar/ResourceDisplay/EnergyContainer/EnergyBuyBtn
+@onready var gold_label: Label = $MainLayout/TopBar/ResourceDisplay/GoldContainer/GoldRow/GoldLabel
+@onready var gold_buy_btn: Button = $MainLayout/TopBar/ResourceDisplay/GoldContainer/GoldBuyBtn
+@onready var diamond_label: Label = $MainLayout/TopBar/ResourceDisplay/DiamondContainer/DiamondRow/DiamondLabel
+@onready var diamond_buy_btn: Button = $MainLayout/TopBar/ResourceDisplay/DiamondContainer/DiamondBuyBtn
 
 # ---- 详情面板节点 ----
 @onready var detail_panel: PanelContainer = $MainLayout/DetailActionBar/DetailPanel
@@ -154,6 +164,10 @@ var _idle_hint_timer: SceneTreeTimer = null
 var _idle_hint_playing: bool = false  # 提示动画是否正在播放
 const IDLE_HINT_DELAY: float = 5.0  # 5秒无操作后触发提示
 
+# 呼吸动效相关
+var _breathing_timer: SceneTreeTimer = null
+var _breathing_indices: Array = []  # 正在呼吸动画的格子索引
+
 # ---- 教程系统 ----
 var tutorial_instance: Control = null
 
@@ -174,6 +188,7 @@ func _ready() -> void:
 	spawn_mage = get_node_or_null("MainLayout/BottomBarContainer/BottomBar/SpawnRow/SpawnButtons/SpawnMage")
 	spawn_priest = get_node_or_null("MainLayout/BottomBarContainer/BottomBar/SpawnRow/SpawnButtons/SpawnPriest")
 	end_turn_button = get_node_or_null("MainLayout/DetailActionBar/EndTurnButton")
+	build_button_click_area = get_node_or_null("MainLayout/DetailActionBar/BuildButton/ClickArea")
 	item_bar = get_node_or_null("MainLayout/MiddleBar/ItemBar")
 	dorm_button = get_node_or_null("MainLayout/MiddleBar/DormButton")
 	shop_button = get_node_or_null("MainLayout/MiddleBar/ShopButton")
@@ -201,6 +216,8 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_process_producer_fx_animation(delta)
+	if energy_timer != null and energy_timer.visible:
+		_update_energy_timer_text()
 
 
 func _start_tutorial() -> void:
@@ -253,8 +270,16 @@ func _connect_signals() -> void:
 	if shop_button:
 		shop_button.pressed.connect(_on_shop_pressed)
 	settings_button.pressed.connect(_on_settings_pressed)
+	if energy_buy_btn:
+		energy_buy_btn.pressed.connect(_on_energy_buy_pressed)
+	if gold_buy_btn:
+		gold_buy_btn.pressed.connect(_on_gold_buy_pressed)
+	if diamond_buy_btn:
+		diamond_buy_btn.pressed.connect(_on_diamond_buy_pressed)
 	if encyclopedia_button:
 		encyclopedia_button.pressed.connect(_on_encyclopedia_pressed)
+	if build_button_click_area:
+		build_button_click_area.pressed.connect(_on_build_button_pressed)
 	if bottom_hud_container:
 		bottom_hud_container.build_list_pressed.connect(_on_build_list_pressed)
 		bottom_hud_container.out_item_clicked.connect(_on_out_item_clicked)
@@ -281,6 +306,11 @@ func _connect_signals() -> void:
 
 	# 设置按钮状态反馈
 	_setup_button_feedbacks()
+
+	# 初始化资源标签显示
+	_on_gold_changed(GameManager.gold)
+	_on_energy_changed(GameManager.energy)
+	_on_diamond_changed(GameManager.diamond)
 
 	# 启动 idle 提示计时器
 	_start_idle_hint_timer()
@@ -884,6 +914,97 @@ func _find_nearest_empty_cell(exclude_index: int) -> int:
 	return nearest
 
 
+## 检查棋盘是否有空位
+func has_empty_slot() -> bool:
+	var bd: BoardData = GameManager.board_data
+	for i in range(BoardData.BOARD_SLOTS):
+		if bd.get_item_at_index(i) == null:
+			return true
+	return false
+
+
+## 颤动动效（合成时的动效）：0.8 -> 1.1 -> 1.0 + 白色闪烁
+func play_shake_animation(obj: Control) -> void:
+	if obj == null or not is_instance_valid(obj):
+		return
+	obj.scale = Vector2(1.0, 1.0)
+	obj.modulate = Color.WHITE
+
+	var tween := create_tween()
+	tween.set_parallel(false)
+	tween.tween_property(obj, "scale", Vector2(0.8, 0.8), 0.1).from(Vector2(1.0, 1.0))
+	tween.tween_property(obj, "scale", Vector2(1.1, 1.1), 0.15)
+	tween.tween_property(obj, "scale", Vector2(1.0, 1.0), 0.15)
+
+	var tween2 := create_tween()
+	tween2.set_parallel(true)
+	tween2.tween_property(obj, "modulate", Color(2.0, 2.0, 2.0, 1.0), 0.05)
+	tween2.tween_property(obj, "modulate", Color(1.0, 1.0, 0.5, 1.0), 0.1)
+	tween2.tween_property(obj, "modulate", Color.WHITE, 0.25)
+
+
+## 生成物品：从起始坐标飞向目标位置，到达后播放一次颤动动效
+## 返回是否生成成功（棋盘满时返回false）
+func spawn_item(start_pos: Vector2, item_id: int, target_index: int) -> bool:
+	var bd: BoardData = GameManager.board_data
+	if target_index < 0 or target_index >= BoardData.BOARD_SLOTS:
+		return false
+	if bd.get_item_at_index(target_index) != null:
+		return false
+
+	var item: DataModels.BoardItemData = ItemManager.get_item(item_id)
+	if item == null:
+		return false
+
+	# 标记目标格子为移动中
+	moving_cells.append(target_index)
+	_refresh_board_display()
+
+	# 创建飞行动画精灵（使用裸 TextureRect，避免 board_item.tscn 的 layout 系统干扰）
+	var anim_sprite := TextureRect.new()
+	anim_sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
+	anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	anim_sprite.pivot_offset = Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
+	anim_sprite.z_index = 10
+	anim_sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var sprite_path: String = item.get_sprite_path()
+	if ResourceLoader.exists(sprite_path):
+		anim_sprite.texture = load(sprite_path)
+
+	add_child(anim_sprite)
+	anim_sprite.global_position = start_pos - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+	anim_sprite.scale = Vector2(1.0, 1.0)
+
+	# 目标格子中心世界坐标
+	var target_cell: Control = cell_panels[target_index]
+	var end_pos: Vector2 = target_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+
+	# 位移动画
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(anim_sprite, "global_position", end_pos - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0), 0.3)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+	tween.finished.connect(func():
+		anim_sprite.queue_free()
+		moving_cells.erase(target_index)
+		# 放置物品到目标格子
+		var tgt_pos: Vector2i = BoardData.index_to_pos(target_index)
+		var placed_item: DataModels.BoardItemData = item.duplicate()
+		bd.place_item(placed_item, tgt_pos)
+		bd.set_grid_state(target_index, BoardData.GridState.OCCUPIED)
+		GameManager.board_items_changed.emit()
+		_refresh_board_display()
+		# 落地后播放颤动动效
+		if target_index < cell_sprites.size() and cell_sprites[target_index] != null:
+			play_shake_animation(cell_sprites[target_index])
+	, CONNECT_ONE_SHOT)
+
+	return true
+
+
 ## 被换角色移动到空格：被挤开角色有飞行动画
 func _play_displace_to_empty_animation(src_index: int, tgt_index: int, empty_index: int) -> void:
 	# 隐藏拖拽预览
@@ -1052,40 +1173,11 @@ func _try_spawn_coin_on_merge(merged: DataModels.BoardItemData, merge_index: int
 	var coin_level: int = 1
 	# 金币堆ID: 3020101-3020106 对应等级1-6
 	var coin_id: int = 3020100 + coin_level
-	var coin_item: DataModels.BoardItemData = ItemManager.get_item(coin_id)
-	if coin_item == null:
-		return
 
-	# 创建飞行动画：从合成位置飞到空格
+	# 获取起始位置并使用 spawn_item 生成金币
 	var start_cell: Control = cell_panels[merge_index]
-	var end_cell: Control = cell_panels[empty_index]
 	var start_world: Vector2 = start_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
-	var end_world: Vector2 = end_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
-
-	var anim_sprite := _create_flying_sprite(coin_item)
-	anim_sprite.global_position = start_world - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
-	add_child(anim_sprite)
-	anim_sprite.scale = Vector2(1, 1)
-	anim_sprite.modulate = Color(1.5, 1.5, 0.5, 1.0)
-
-	# 动画：飞向目标（无缩放变化）
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(anim_sprite, "global_position", end_world - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0), 0.3)\
-			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(anim_sprite, "modulate", Color.WHITE, 0.3)
-
-	tween.finished.connect(func():
-		anim_sprite.queue_free()
-		# 放置金币到空格
-		var empty_pos: Vector2i = BoardData.index_to_pos(empty_index)
-		bd.place_item(coin_item.duplicate(), empty_pos)
-		bd.set_grid_state(empty_index, BoardData.GridState.OCCUPIED)
-		GameManager.board_items_changed.emit()
-		_refresh_board_display()
-		# 落地后播放脉冲动画
-		_play_pulse_animation(empty_index)
-	, CONNECT_ONE_SHOT)
+	spawn_item(start_world, coin_id, empty_index)
 
 
 ## 收集金币堆：粒子特效，增加金币
@@ -1177,27 +1269,7 @@ func _play_merge_animation(cell_index: int) -> void:
 	var sprite: Control = cell_sprites[cell_index]
 	if sprite == null:
 		return
-
-	# 重置scale
-	sprite.scale = Vector2(1.0, 1.0)
-	# 重置颜色
-	sprite.modulate = Color.WHITE
-
-	# 创建缩放动画 Tween (sequential by default)
-	var tween := create_tween()
-	tween.set_parallel(false)
-
-	# 0.8 -> 1.1 -> 1.0
-	tween.tween_property(sprite, "scale", Vector2(0.8, 0.8), 0.1).from(Vector2(1.0, 1.0))
-	tween.tween_property(sprite, "scale", Vector2(1.1, 1.1), 0.15)
-	tween.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.15)
-
-	# 白色闪烁
-	var tween2 := create_tween()
-	tween2.set_parallel(true)
-	tween2.tween_property(sprite, "modulate", Color(2.0, 2.0, 2.0, 1.0), 0.05)
-	tween2.tween_property(sprite, "modulate", Color(1.0, 1.0, 0.5, 1.0), 0.1)
-	tween2.tween_property(sprite, "modulate", Color.WHITE, 0.25)
+	play_shake_animation(sprite)
 
 
 ## 落地动效：缩小到0.95再丝滑还原
@@ -1265,64 +1337,19 @@ func _try_produce_item(cell_index: int) -> void:
 		TipManager.show_tip(LocalizationSystem.get_text("game_board.board_full"))
 		return
 
-	# 放置到空位
-	var placed: bool = bd.place_item(produced, empty_pos)
-	if not placed:
-		GameManager.restore_energy(1)
-		return
-
-	GameManager.board_items_changed.emit()
 	# 播放生产成功音效
 	SoundSystem.play_merge()
 
-	# 获取目标格子中心位置
-	var target_cell: Control = cell_panels[BoardData.pos_to_index(empty_pos)]
+	# 获取起始位置和目标格子索引
 	var start_pos: Vector2 = cell_panels[cell_index].global_position + Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
-	var end_pos: Vector2 = target_cell.global_position + Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
-
+	var target_index: int = BoardData.pos_to_index(empty_pos)
 
 	# 播放产出动画
-	_play_produce_animation(produced, start_pos, end_pos, BoardData.pos_to_index(empty_pos))
+	if not spawn_item(start_pos, produced.id, target_index):
+		GameManager.restore_energy(1)
 
 	# 每次棋子操作后自动存档
 	GameManager._auto_save()
-
-
-func _play_produce_animation(produced: DataModels.BoardItemData, start_pos: Vector2, end_pos: Vector2, target_index: int) -> void:
-	# 标记目标格子为移动中（动画完成前不显示）
-	moving_cells.append(target_index)
-	_refresh_board_display()
-
-	# 创建飞入动画精灵
-	var anim_sprite := TextureRect.new()
-	anim_sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
-	anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	anim_sprite.z_index = 10
-
-	var sprite_path: String = produced.get_sprite_path()
-	if ResourceLoader.exists(sprite_path):
-		anim_sprite.texture = load(sprite_path)
-
-	add_child(anim_sprite)
-	anim_sprite.global_position = start_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
-	anim_sprite.scale = Vector2(1.0, 1.0)
-	anim_sprite.modulate = Color(1.5, 1.5, 0.5, 1.0)  # 金黄色发光效果
-
-	# 动画：从生成器位置飞到空位（保持1倍大小，仅移动和发光消退）
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(anim_sprite, "global_position", end_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2), 0.3)\
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(anim_sprite, "modulate", Color.WHITE, 0.3)
-
-	tween.finished.connect(func():
-		anim_sprite.queue_free()
-		moving_cells.erase(target_index)
-		_refresh_board_display()
-		# 落地后播放脉冲动画
-		_play_pulse_animation(target_index)
-	)
 
 
 # ---- 献祭 (任务 2.5) ----
@@ -1881,6 +1908,10 @@ func _find_merge_targets(drag_source_index: int) -> void:
 	if source_ch == null:
 		return
 
+	# 如果物品已达顶级（无法合成），不显示高亮
+	if not source_ch.can_merge():
+		return
+
 	# 遍历所有格子，找到相同合成链、相同等级的角色
 	for i in range(BoardData.BOARD_SLOTS):
 		if i == drag_source_index:
@@ -2034,15 +2065,40 @@ func _show_float_text(label_node: Label, amount: int, is_increase: bool) -> void
 
 
 func _on_gold_changed(new_gold: int) -> void:
-	pass  # UI节点不存在，已移除
+	gold_label.text = str(new_gold)
 
 
 func _on_energy_changed(new_energy: int) -> void:
-	pass  # UI节点不存在，已移除
+	energy_label.text = str(new_energy)
+	_update_energy_timer_visible(new_energy)
+
+
+func _update_energy_timer_visible(current_energy: int) -> void:
+	# 体力在100以下时显示倒计时（100时不再自动恢复）
+	if current_energy >= 100:
+		energy_timer.visible = false
+	else:
+		energy_timer.visible = true
+		_update_energy_timer_text()
+
+
+func _update_energy_timer_text() -> void:
+	if energy_timer == null or not energy_timer.visible:
+		return
+	var current_time: float = Time.get_unix_time_from_system()
+	var elapsed: float = current_time - GameManager.last_energy_update_time
+	var remaining: float = GameManager.ENERGY_RECOVERY_INTERVAL - elapsed
+	if remaining < 0:
+		remaining = 0
+	var seconds: int = int(remaining)
+	@warning_ignore("integer_division")
+	var minutes: int = seconds / 60
+	seconds = seconds % 60
+	energy_timer.text = "%d:%02d" % [minutes, seconds]
 
 
 func _on_diamond_changed(new_diamond: int) -> void:
-	pass  # UI节点不存在，已移除
+	diamond_label.text = str(new_diamond)
 
 
 func _on_round_changed(_new_round: int) -> void:
@@ -2144,35 +2200,36 @@ func _play_spawn_animation(ch: DataModels.BoardItemData, start_pos: Vector2, end
 	# 刷新显示（目标格子不显示角色）
 	_refresh_board_display()
 
-	# 创建飞入动画精灵（视觉反馈）
-	var anim_sprite := TextureRect.new()
-	anim_sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
-	anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	anim_sprite.z_index = 10  # 动画层级（低于弹窗）
+	# 使用 board_item.tscn 预制体创建动画精灵
+	var anim_container: Control = preload("res://scenes/board_item.tscn").instantiate()
+	var anim_sprite: TextureRect = anim_container.get_node_or_null("Sprite")
+	if anim_sprite == null:
+		anim_container.queue_free()
+		return
 
-	# 加载精灵图
+	# 设置纹理
 	var sprite_path: String = ch.get_sprite_path()
 	if ResourceLoader.exists(sprite_path):
 		anim_sprite.texture = load(sprite_path)
 
-	add_child(anim_sprite)
+	add_child(anim_container)
+	anim_container.z_index = 10  # 动画层级（低于弹窗）
 
 	# 使用世界坐标设置初始位置（让精灵中央对准目标）
-	anim_sprite.global_position = start_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
-	anim_sprite.scale = Vector2(0.5, 0.5)
+	anim_container.global_position = start_pos - Vector2(CELL_SIZE as float / 2, CELL_SIZE as float / 2)
+	anim_container.scale = Vector2(0.5, 0.5)
 
 	# 动画：从小到大、从按钮位置飞到目标格子（终点也是左上角对齐）
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(anim_sprite, "global_position", end_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2), 0.3)\
+	tween.tween_property(anim_container, "global_position", end_pos - Vector2(CELL_SIZE as float / 2, CELL_SIZE as float / 2), 0.3)\
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(anim_sprite, "scale", Vector2(1.0, 1.0), 0.3)\
+	tween.tween_property(anim_container, "scale", Vector2(1.0, 1.0), 0.3)\
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 	# 动画结束后清理并刷新显示
 	tween.finished.connect(func():
-		anim_sprite.queue_free()
+		anim_container.queue_free()
 		moving_cells.erase(target_index)
 		_refresh_board_display()
 		_play_land_animation(target_index)
@@ -2891,6 +2948,83 @@ func _finish_task_submission() -> void:
 	_refresh_board_display()
 
 
+func _on_energy_buy_pressed() -> void:
+	SoundSystem.play_button_click()
+	var cost: int = GameManager.get_energy_purchase_cost()
+	var cost_text: String = LocalizationSystem.get_text("game_board.buy_energy_confirm", {"cost": cost})
+	PopupSystem.show(
+		LocalizationSystem.get_text("game_board.buy_energy_title"),
+		cost_text,
+		"",  # description
+		LocalizationSystem.get_text("common.confirm"),  # confirm_text
+		"",  # close_text
+		Callable(self, "_do_energy_buy"),  # on_confirm
+		Callable(self, "_on_popup_close")  # on_close
+	)
+
+
+func _do_energy_buy() -> void:
+	if GameManager.purchase_energy():
+		TipManager.show_tip(LocalizationSystem.get_text("game_board.buy_energy_success"))
+	else:
+		TipManager.show_tip(LocalizationSystem.get_text("game_board.buy_energy_failed"))
+
+
+func _on_gold_buy_pressed() -> void:
+	SoundSystem.play_button_click()
+	PopupSystem.show(
+		LocalizationSystem.get_text("game_board.gold_buy_title"),
+		LocalizationSystem.get_text("game_board.gold_buy_desc"),
+		"",  # description
+		LocalizationSystem.get_text("game_board.watch_ad"),  # confirm_text
+		"",  # close_text
+		Callable(self, "_do_gold_buy"),  # on_confirm
+		Callable(self, "_on_popup_close")  # on_close
+	)
+
+
+func _do_gold_buy() -> void:
+	GameManager.add_gold(1000)
+	PopupSystem.hide()
+
+
+func _on_diamond_buy_pressed() -> void:
+	SoundSystem.play_button_click()
+	PopupSystem.show(
+		LocalizationSystem.get_text("game_board.diamond_buy_title"),
+		LocalizationSystem.get_text("game_board.diamond_buy_desc"),
+		"",  # description
+		LocalizationSystem.get_text("game_board.watch_ad"),  # confirm_text
+		"",  # close_text
+		Callable(self, "_do_diamond_buy"),  # on_confirm
+		Callable(self, "_on_popup_close")  # on_close
+	)
+
+
+func _do_diamond_buy() -> void:
+	GameManager.add_diamond(1000)
+	PopupSystem.hide()
+
+
+func _on_popup_close() -> void:
+	PopupSystem.hide()
+
+
+func _on_build_button_pressed() -> void:
+	print(">>> [GameBoard] BuildButton pressed!")
+	SoundSystem.play_button_click()
+	# 播放按钮缩放动画
+	if build_button:
+		var tween := create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(build_button, "scale", Vector2(1.1, 1.1), 0.15)\
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tween.tween_property(build_button, "scale", Vector2(1.0, 1.0), 0.15)\
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN).set_delay(0.15)
+	# 切换到Building场景
+	get_tree().change_scene_to_file("res://scenes/building.tscn")
+
+
 func _on_shop_pressed() -> void:
 	SoundSystem.play_button_click()
 	# 使用弹窗方式打开商店（不切换场景）
@@ -3512,6 +3646,7 @@ func _stop_idle_hint_timer() -> void:
 ## 重置 idle 提示计时器（玩家操作时调用）
 func _reset_idle_hint_timer() -> void:
 	if not _idle_hint_playing:
+		_stop_breathing_animation()
 		_start_idle_hint_timer()
 
 
@@ -3521,53 +3656,71 @@ func _on_idle_hint_timeout() -> void:
 	_play_idle_hint_animation()
 
 
-## 播放 idle 提示动画：找到两个相同物品（id一致），缩放 1 -> 1.1 -> 1 循环
+## 开启呼吸动效：每隔1.0秒播放一次颤动弹效
+func _start_breathing_animation(idx1: int, idx2: int) -> void:
+	_stop_breathing_animation()
+	_breathing_indices = [idx1, idx2]
+	_breathing_timer = get_tree().create_timer(1.0, true)
+	_breathing_timer.timeout.connect(_on_breathing_tick)
+
+
+## 停止呼吸动效
+func _stop_breathing_animation() -> void:
+	if _breathing_timer != null:
+		if _breathing_timer.timeout.is_connected(_on_breathing_tick):
+			_breathing_timer.timeout.disconnect(_on_breathing_tick)
+		_breathing_timer = null
+	_breathing_indices.clear()
+	_idle_hint_playing = false
+
+
+## 呼吸计时器回调
+func _on_breathing_tick() -> void:
+	_breathing_timer = null
+	for idx in _breathing_indices:
+		if idx >= 0 and idx < cell_sprites.size() and cell_sprites[idx] != null:
+			play_shake_animation(cell_sprites[idx])
+	if not _breathing_indices.is_empty():
+		_breathing_timer = get_tree().create_timer(1.0, true)
+		_breathing_timer.timeout.connect(_on_breathing_tick)
+
+
+## 播放 idle 提示动画：找到两个相同物品（id一致），播放呼吸动效
 func _play_idle_hint_animation() -> void:
 	var bd: BoardData = GameManager.board_data
 	var found_pair: Array = []  # [idx1, idx2] 真正可合成的物品对
 
-	# 遍历棋盘，找到第一对可合成的物品（相邻 + merge_chain相同 + level相同 + id一致）
+	# 遍历棋盘，找到第一对可合成的物品（相邻 + id一致 + level相同 + 可合成 + 非LOCKED + 非DUSTY）
 	for i in range(BoardData.BOARD_SLOTS):
 		var ch: DataModels.BoardItemData = bd.get_item_at_index(i)
 		if ch == null or not ch.can_merge():
 			continue
 
+		# 检查格子状态，非LOCKED且非DUSTY才显示物品
+		var grid_state: int = bd.get_grid_state(i)
+		if grid_state == BoardData.GridState.LOCKED or grid_state == BoardData.GridState.DUSTY:
+			continue
+
+		# 检查 sprite 是否有有效贴图
+		if i >= cell_sprites.size() or cell_sprites[i] == null or cell_sprites[i].texture == null:
+			continue
+
 		var neighbors := _get_neighbors(i)
 		for neighbor_index in neighbors:
 			var neighbor_ch: DataModels.BoardItemData = bd.get_item_at_index(neighbor_index)
-			# id一致（相同物品）、同等级、同一合成链、都可以合成
+			var neighbor_state: int = bd.get_grid_state(neighbor_index)
 			if neighbor_ch != null and neighbor_ch.can_merge() and neighbor_ch.id == ch.id and neighbor_ch.level == ch.level:
-				found_pair = [i, neighbor_index]
-				break
+				if neighbor_state != BoardData.GridState.LOCKED and neighbor_state != BoardData.GridState.DUSTY:
+					if neighbor_index < cell_sprites.size() and cell_sprites[neighbor_index] != null and cell_sprites[neighbor_index].texture != null:
+						found_pair = [i, neighbor_index]
+						break
 		if found_pair.size() == 2:
 			break
 
 	if found_pair.size() < 2:
-		# 没有可合成的物品，重新开始计时
 		_start_idle_hint_timer()
 		return
 
-	var idx1: int = found_pair[0]
-	var idx2: int = found_pair[1]
-
 	_idle_hint_playing = true
-
-	# 物品sprite引用
-	var sprite1: TextureRect = cell_sprites[idx1] if idx1 < cell_sprites.size() else null
-	var sprite2: TextureRect = cell_sprites[idx2] if idx2 < cell_sprites.size() else null
-
-	# 播放缩放动画：1 -> 1.1 -> 1，循环3次
-	# 使用并行tween让两个物品同时动画
-	for i in range(3):
-		var tween := create_tween()
-		tween.set_parallel(true)
-		if sprite1 != null:
-			tween.tween_property(sprite1, "scale", Vector2(1.1, 1.1), 0.2)
-			tween.tween_property(sprite1, "scale", Vector2(1.0, 1.0), 0.2).set_delay(0.2)
-		if sprite2 != null:
-			tween.tween_property(sprite2, "scale", Vector2(1.1, 1.1), 0.2)
-			tween.tween_property(sprite2, "scale", Vector2(1.0, 1.0), 0.2).set_delay(0.2)
-		await tween.finished
-
-	_idle_hint_playing = false
+	_start_breathing_animation(found_pair[0], found_pair[1])
 	_start_idle_hint_timer()

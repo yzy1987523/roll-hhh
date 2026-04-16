@@ -10,19 +10,18 @@
 [ext_resource type="Texture2D" uid="uid://b0uxqkihyiajx" path="res://art/sprites/UI/button/play_btn.png" id="8_play"]
 [ext_resource type="Texture2D" uid="uid://uoxic7e2tsii" path="res://art/sprites/UI/button/build_list_btn.png" id="9_build_list"]
 [ext_resource type="Texture2D" uid="uid://cdclyme6yn7e" path="res://art/building/b002.png" id="10_jc16f"]
-[ext_resource type="Texture2D" uid="uid://bmissing003" path="res://art/building/b003.png" id="16_b003"]
-[ext_resource type="Texture2D" uid="uid://bmissing004" path="res://art/building/b004.png" id="17_b004"]
-[ext_resource type="Texture2D" uid="uid://bmissing005" path="res://art/building/b005.png" id="18_b005"]
-[ext_resource type="Texture2D" uid="uid://bmissing006" path="res://art/building/b006.png" id="19_b006"]
-[ext_resource type="Texture2D" uid="uid://bmissing007" path="res://art/building/b007.png" id="20_b007"]
-[ext_resource type="Texture2D" uid="uid://bmissing008" path="res://art/building/b008.png" id="21_b008"]
-[ext_resource type="Texture2D" uid="uid://bmissing009" path="res://art/building/b009.png" id="22_b009"]
-[ext_resource type="Texture2D" uid="uid://bmissing010" path="res://art/building/b010.png" id="23_b010"]
-[ext_resource type="Texture2D" uid="uid://bmissing011" path="res://art/building/b011.png" id="24_b011"]
 [ext_resource type="Script" uid="uid://dbnbhm3mr3o0l" path="res://scripts/building_ui.gd" id="10_ui"]
 [ext_resource type="Script" uid="uid://csnaqjdb8me6b" path="res://scripts/character_2d.gd" id="11_char"]
 [ext_resource type="Texture2D" uid="uid://bbxxl5njaw8up" path="res://art/sprites/chars/player01.png" id="12_player01"]
 [ext_resource type="Texture2D" uid="uid://cny4deihxwv8" path="res://art/sprites/chars/player02.png" id="13_player02"]
+[ext_resource type="Texture2D" uid="uid://ctn2w3qj886gx" path="res://art/building/b003.png" id="16_b003"]
+[ext_resource type="Texture2D" uid="uid://e55mwsiuv26k" path="res://art/building/b004.png" id="17_b004"]
+[ext_resource type="Texture2D" uid="uid://ck53bt0uw7i4n" path="res://art/building/b005.png" id="18_b005"]
+[ext_resource type="Texture2D" uid="uid://7q0brqcnm3qk" path="res://art/building/b006.png" id="19_b006"]
+[ext_resource type="Texture2D" uid="uid://cisiv10heb54t" path="res://art/building/b007.png" id="20_b007"]
+[ext_resource type="Texture2D" uid="uid://dtsocwtwfeen5" path="res://art/building/b008.png" id="21_b008"]
+[ext_resource type="Texture2D" uid="uid://2cyl5ydwhcss" path="res://art/building/b009.png" id="22_b009"]
+[ext_resource type="Texture2D" uid="uid://b44o05gihhc8m" path="res://art/building/b010.png" id="23_b010"]
 
 [node name="RoomRoot" type="Node2D" unique_id=1234567890]
 
@@ -126,7 +125,7 @@ vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 [node name="FurnitureRoot" type="Node2D" parent="." unique_id=716735959]
 
 [node name="Furniture_0" type="Polygon2D" parent="FurnitureRoot" unique_id=9999990]
-position = Vector2(60, 10)
+position = Vector2(-51, -32)
 texture = ExtResource("4_b001")
 texture_scale = Vector2(72, 64)
 polygon = PackedVector2Array(-36, 64, 36, 64, 36, 128, -36, 128)
@@ -134,7 +133,7 @@ uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Furniture_1" type="Polygon2D" parent="FurnitureRoot" unique_id=9999991]
-position = Vector2(-176, -87)
+position = Vector2(-242, -89)
 texture = ExtResource("10_jc16f")
 texture_scale = Vector2(72, 64)
 polygon = PackedVector2Array(28, 96, 100, 96, 100, 160, 28, 160)
@@ -142,7 +141,7 @@ uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Furniture_2" type="Polygon2D" parent="FurnitureRoot" unique_id=9999992]
-position = Vector2(176, 170)
+position = Vector2(-342, -98)
 texture = ExtResource("16_b003")
 texture_scale = Vector2(72, 64)
 polygon = PackedVector2Array(92, 128, 164, 128, 164, 192, 92, 192)
@@ -150,7 +149,7 @@ uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Furniture_3" type="Polygon2D" parent="FurnitureRoot" unique_id=9999993]
-position = Vector2(-21, -27)
+position = Vector2(-22, 30)
 texture = ExtResource("17_b004")
 texture_scale = Vector2(72, 64)
 polygon = PackedVector2Array(-100, 96, -28, 96, -28, 160, -100, 160)
@@ -158,7 +157,7 @@ uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Furniture_4" type="Polygon2D" parent="FurnitureRoot" unique_id=9999994]
-position = Vector2(-183, 138)
+position = Vector2(-144, 30)
 texture = ExtResource("18_b005")
 texture_scale = Vector2(72, 64)
 polygon = PackedVector2Array(-36, 128, 36, 128, 36, 192, -36, 192)
@@ -166,7 +165,7 @@ uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Furniture_5" type="Polygon2D" parent="FurnitureRoot" unique_id=9999995]
-position = Vector2(-8, 170)
+position = Vector2(-237, -42)
 texture = ExtResource("19_b006")
 texture_scale = Vector2(72, 64)
 polygon = PackedVector2Array(28, 160, 100, 160, 100, 224, 28, 224)
@@ -174,6 +173,7 @@ uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Furniture_6" type="Polygon2D" parent="FurnitureRoot" unique_id=9999996]
+position = Vector2(38, -177)
 texture = ExtResource("20_b007")
 texture_scale = Vector2(72, 64)
 polygon = PackedVector2Array(-164, 128, -92, 128, -92, 192, -164, 192)
@@ -181,6 +181,7 @@ uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Furniture_7" type="Polygon2D" parent="FurnitureRoot" unique_id=9999997]
+position = Vector2(-297, -31)
 texture = ExtResource("21_b008")
 texture_scale = Vector2(72, 64)
 polygon = PackedVector2Array(-100, 160, -28, 160, -28, 224, -100, 224)
@@ -188,6 +189,7 @@ uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Furniture_8" type="Polygon2D" parent="FurnitureRoot" unique_id=9999998]
+position = Vector2(44, -124)
 texture = ExtResource("22_b009")
 texture_scale = Vector2(72, 64)
 polygon = PackedVector2Array(-36, 192, 36, 192, 36, 256, -36, 256)
@@ -195,6 +197,7 @@ uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="Furniture_9" type="Polygon2D" parent="FurnitureRoot" unique_id=9999999]
+position = Vector2(-399, -116)
 texture = ExtResource("23_b010")
 texture_scale = Vector2(72, 64)
 polygon = PackedVector2Array(92, 192, 164, 192, 164, 256, 92, 256)

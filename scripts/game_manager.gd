@@ -191,7 +191,7 @@ func _process(_delta: float) -> void:
 
 ## 根据真实时间恢复体力
 func _update_energy_recovery() -> void:
-	if energy >= max_energy:
+	if energy >= 100:
 		last_energy_update_time = Time.get_unix_time_from_system()
 		return
 	var current_time: float = Time.get_unix_time_from_system()
@@ -199,7 +199,7 @@ func _update_energy_recovery() -> void:
 	if elapsed >= ENERGY_RECOVERY_INTERVAL:
 		var recovered: int = int(elapsed / ENERGY_RECOVERY_INTERVAL)
 		var old_energy: int = energy
-		energy = mini(energy + recovered, max_energy)
+		energy = mini(energy + recovered, 100)
 		last_energy_update_time = current_time - fmod(elapsed, ENERGY_RECOVERY_INTERVAL)
 		if energy != old_energy:
 			energy_changed.emit(energy)
@@ -207,14 +207,14 @@ func _update_energy_recovery() -> void:
 
 ## 应用离线期间的体力恢复（存档加载时调用）
 func apply_offline_energy_recovery() -> void:
-	if energy >= max_energy:
+	if energy >= 100:
 		last_energy_update_time = Time.get_unix_time_from_system()
 		return
 	var current_time: float = Time.get_unix_time_from_system()
 	var elapsed: float = current_time - last_energy_update_time
 	if elapsed >= ENERGY_RECOVERY_INTERVAL:
 		var recovered: int = int(elapsed / ENERGY_RECOVERY_INTERVAL)
-		energy = mini(energy + recovered, max_energy)
+		energy = mini(energy + recovered, 100)
 		last_energy_update_time = current_time - fmod(elapsed, ENERGY_RECOVERY_INTERVAL)
 		energy_changed.emit(energy)
 
@@ -301,8 +301,8 @@ func spend_energy(amount: int) -> bool:
 func restore_energy(amount: int) -> void:
 	if amount <= 0:
 		return
-	energy = mini(energy + amount, max_energy)
-	if energy >= max_energy:
+	energy = energy + amount
+	if energy >= 100:
 		last_energy_update_time = Time.get_unix_time_from_system()
 	energy_changed.emit(energy)
 
@@ -333,8 +333,6 @@ func get_energy_purchase_cost() -> int:
 func purchase_energy() -> bool:
 	check_energy_purchase_cost_reset()
 	if diamond < _energy_purchase_cost:
-		return false
-	if energy >= max_energy:
 		return false
 	if not spend_diamond(_energy_purchase_cost):
 		return false

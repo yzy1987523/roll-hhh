@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://lhfpkjexs7e5"]
 
 [ext_resource type="Script" uid="uid://blsuwfdclth4a" path="res://scripts/game_board.gd" id="1_game_board"]
+[ext_resource type="PackedScene" uid="uid://resource_display_001" path="res://scenes/resource_display.tscn" id="1_resource_display"]
 [ext_resource type="Texture2D" uid="uid://dbgrt3fjthdx6" path="res://art/sprites/UI/panels/bg_0.jpg" id="2_sax53"]
 [ext_resource type="Texture2D" uid="uid://dt5a7npbvajtf" path="res://art/sprites/UI/items/smallItem/coin.png" id="3_coin"]
 [ext_resource type="Texture2D" uid="uid://c4m1krf23asjm" path="res://art/sprites/UI/items/smallItem/engery.png" id="4_energy"]
@@ -64,132 +65,13 @@ custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="LeftMargin" type="Control" parent="MainLayout/TopBar" unique_id=77034000]
-custom_minimum_size = Vector2(10, 0)
-layout_mode = 2
-size_flags_horizontal = 0
-
-[node name="EnergyContainer" type="VBoxContainer" parent="MainLayout/TopBar" unique_id=1130546165]
-custom_minimum_size = Vector2(80, 0)
+[node name="ResourceDisplay" parent="MainLayout/TopBar" instance=ExtResource("1_resource_display")]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 2
-
-[node name="EnergyRow" type="HBoxContainer" parent="MainLayout/TopBar/EnergyContainer" unique_id=1130546166]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 4
-
-[node name="EnergyIcon" type="TextureRect" parent="MainLayout/TopBar/EnergyContainer/EnergyRow" unique_id=1298048947]
-custom_minimum_size = Vector2(40, 40)
-layout_mode = 2
-size_flags_vertical = 3
-texture = ExtResource("4_energy")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="EnergyLabel" type="Label" parent="MainLayout/TopBar/EnergyContainer/EnergyRow" unique_id=981737486]
-custom_minimum_size = Vector2(80, 0)
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_font_sizes/font_size = 28
-text = "36/36"
-vertical_alignment = 1
-
-[node name="EnergyBuyBtn" type="Button" parent="MainLayout/TopBar/EnergyContainer" unique_id=1130546167]
-custom_minimum_size = Vector2(60, 25)
-layout_mode = 2
-size_flags_horizontal = 4
-theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
-theme_override_colors/font_hover_color = Color(0.3, 1, 0.3, 1)
-theme_override_font_sizes/font_size = 20
-text = "+"
-flat = true
-
-[node name="EnergyTimer" type="Label" parent="MainLayout/TopBar/EnergyContainer" unique_id=1130546168]
-visible = false
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-theme_override_font_sizes/font_size = 16
-text = "2:00"
-horizontal_alignment = 1
-
-[node name="GoldContainer" type="VBoxContainer" parent="MainLayout/TopBar" unique_id=77034164]
-custom_minimum_size = Vector2(80, 0)
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 2
-
-[node name="GoldRow" type="HBoxContainer" parent="MainLayout/TopBar/GoldContainer" unique_id=77034165]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 4
-
-[node name="GoldIcon" type="TextureRect" parent="MainLayout/TopBar/GoldContainer/GoldRow" unique_id=77034166]
-custom_minimum_size = Vector2(40, 40)
-layout_mode = 2
-size_flags_vertical = 3
-texture = ExtResource("3_coin")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="GoldLabel" type="Label" parent="MainLayout/TopBar/GoldContainer/GoldRow" unique_id=77034167]
-custom_minimum_size = Vector2(80, 0)
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_font_sizes/font_size = 28
-text = "20000"
-vertical_alignment = 1
-
-[node name="GoldBuyBtn" type="Button" parent="MainLayout/TopBar/GoldContainer" unique_id=77034168]
-custom_minimum_size = Vector2(60, 25)
-layout_mode = 2
-size_flags_horizontal = 4
-theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
-theme_override_colors/font_hover_color = Color(0.3, 1, 0.3, 1)
-theme_override_font_sizes/font_size = 20
-text = "+"
-flat = true
-
-[node name="DiamondContainer" type="VBoxContainer" parent="MainLayout/TopBar" unique_id=1234567800]
-custom_minimum_size = Vector2(80, 0)
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 2
-
-[node name="DiamondRow" type="HBoxContainer" parent="MainLayout/TopBar/DiamondContainer" unique_id=1234567801]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 4
-
-[node name="DiamondIcon" type="TextureRect" parent="MainLayout/TopBar/DiamondContainer/DiamondRow" unique_id=1234567802]
-custom_minimum_size = Vector2(40, 40)
-layout_mode = 2
-size_flags_vertical = 3
-texture = ExtResource("9_zuanshi")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="DiamondLabel" type="Label" parent="MainLayout/TopBar/DiamondContainer/DiamondRow" unique_id=1234567803]
-custom_minimum_size = Vector2(60, 0)
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_font_sizes/font_size = 28
-text = "0"
-vertical_alignment = 1
-
-[node name="DiamondBuyBtn" type="Button" parent="MainLayout/TopBar/DiamondContainer" unique_id=1234567804]
-custom_minimum_size = Vector2(60, 25)
-layout_mode = 2
-size_flags_horizontal = 4
-theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
-theme_override_colors/font_hover_color = Color(0.3, 1, 0.3, 1)
-theme_override_font_sizes/font_size = 20
-text = "+"
-flat = true
 
 [node name="Spacer" type="Control" parent="MainLayout/TopBar" unique_id=1825867427]
-layout_mode = 2
+layout_mode = 3
+size_flags_horizontal = 3
 
 [node name="SettingsButton" type="Button" parent="MainLayout/TopBar" unique_id=2027233340]
 custom_minimum_size = Vector2(128, 128)
@@ -201,11 +83,6 @@ theme_override_colors/icon_hover_color = Color(0.8646748, 0.86467534, 0.86467487
 icon = ExtResource("6_setting")
 flat = true
 expand_icon = true
-
-[node name="RightMargin" type="Control" parent="MainLayout/TopBar" unique_id=77034001]
-custom_minimum_size = Vector2(10, 0)
-layout_mode = 2
-size_flags_horizontal = 0
 
 [node name="PanelContainer" type="PanelContainer" parent="MainLayout" unique_id=1215887418]
 self_modulate = Color(1, 1, 1, 0)
@@ -1659,6 +1536,17 @@ layout_mode = 2
 size_flags_vertical = 4
 mouse_filter = 1
 
+[node name="ClickArea" type="TextureButton" parent="MainLayout/DetailActionBar/BuildButton" unique_id=999999004]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture_normal = ExtResource("15_8auva")
+stretch_mode = 5
+expand_icon = true
+
 [node name="Bg" type="NinePatchRect" parent="MainLayout/DetailActionBar/BuildButton" unique_id=999999002]
 layout_mode = 1
 anchors_preset = 15
@@ -1666,6 +1554,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 0
 texture = ExtResource("22_kuang")
 patch_margin_left = 10
 patch_margin_top = 10
@@ -1685,6 +1574,7 @@ offset_right = 49.5
 offset_bottom = 71.5
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 0
 pivot_offset_ratio = Vector2(0.5, 0.5)
 texture = ExtResource("11_hl2y5")
 expand_mode = 1
