@@ -57,12 +57,14 @@ func _create_tip_ui() -> void:
 	_tip_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	center.add_child(_tip_label)
 
-	# 设置层级，确保在所有面板之上
-	_tip_container.z_index = 200
-	
+	# 使用 CanvasLayer 确保提示始终在屏幕空间（不受 Camera2D 影响）
+	var canvas_layer := CanvasLayer.new()
+	canvas_layer.name = "TipCanvasLayer"
+	canvas_layer.layer = 200
+	canvas_layer.add_child(_tip_container)
+
 	# 添加到根节点 (延迟到场景树准备好)
-	if not _tip_container.get_parent() == get_tree().root:
-		get_tree().root.call_deferred("add_child", _tip_container)
+	get_tree().root.call_deferred("add_child", canvas_layer)
 
 
 ## 显示提示信息（默认1秒后自动隐藏）

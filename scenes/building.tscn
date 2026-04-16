@@ -24,6 +24,7 @@
 [ext_resource type="Texture2D" uid="uid://b44o05gihhc8m" path="res://art/building/b010.png" id="23_b010"]
 [ext_resource type="Script" uid="uid://building_camera_01" path="res://scripts/building_camera.gd" id="24_camera"]
 [ext_resource type="PackedScene" uid="uid://ca42w3tss4qmv" path="res://scenes/encyclopedia_scene.tscn" id="25_encyclopedia"]
+[ext_resource type="PackedScene" uid="uid://resource_display_001" path="res://scenes/resource_display.tscn" id="26_resource_display"]
 
 [node name="RoomRoot" type="Node2D" unique_id=1234567890]
 
@@ -96,6 +97,16 @@ offset_left = -100.0
 offset_top = 20.0
 offset_right = -20.0
 offset_bottom = 60.0
+grow_horizontal = 0
+
+[node name="ResourceDisplay" parent="UILayer" instance=ExtResource("26_resource_display")]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -380.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 90.0
 grow_horizontal = 0
 
 [node name="EncyclopediaScene" parent="UILayer" instance=ExtResource("25_encyclopedia")]

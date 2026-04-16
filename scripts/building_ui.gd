@@ -12,8 +12,10 @@ func _ready() -> void:
 	_connect_grid_manager_signal()
 	_connect_level_up_signal()
 	_connect_exp_changed_signal()
+	_connect_resource_signals()
 	_update_level_display()
 	_update_exp_bar()
+	_update_resource_display()
 
 
 # ================================= 连接 GridManager 的 build_exp_reward 信号 =================================
@@ -37,6 +39,46 @@ func _connect_level_up_signal() -> void:
 func _connect_exp_changed_signal() -> void:
 	TaskManager.exp_changed.connect(_on_exp_changed)
 	print(">>> [BuildingUI] 已连接 TaskManager.exp_changed 信号")
+
+
+func _connect_resource_signals() -> void:
+	if GameManager.has_signal("gold_changed"):
+		GameManager.gold_changed.connect(_on_gold_changed)
+	if GameManager.has_signal("energy_changed"):
+		GameManager.energy_changed.connect(_on_energy_changed)
+	if GameManager.has_signal("diamond_changed"):
+		GameManager.diamond_changed.connect(_on_diamond_changed)
+	print(">>> [BuildingUI] 已连接资源变化信号")
+
+
+func _on_gold_changed(_amount) -> void:
+	_update_resource_display()
+
+
+func _on_energy_changed(_amount) -> void:
+	_update_resource_display()
+
+
+func _on_diamond_changed(_amount) -> void:
+	_update_resource_display()
+
+
+func _update_resource_display() -> void:
+	var energy_label = find_child("EnergyLabel", true, false)
+	if energy_label != null:
+		var current_energy: int = GameManager.get("energy") if GameManager.get("energy") != null else 0
+		var max_energy: int = GameManager.get("max_energy") if GameManager.get("max_energy") != null else 100
+		energy_label.text = "%d/%d" % [current_energy, max_energy]
+
+	var gold_label = find_child("GoldLabel", true, false)
+	if gold_label != null:
+		var gold: int = GameManager.get("gold") if GameManager.get("gold") != null else 0
+		gold_label.text = str(gold)
+
+	var diamond_label = find_child("DiamondLabel", true, false)
+	if diamond_label != null:
+		var diamond: int = GameManager.get("diamond") if GameManager.get("diamond") != null else 0
+		diamond_label.text = str(diamond)
 
 
 # ================================= 加载等级配置 =================================
@@ -90,14 +132,8 @@ func _on_build_completed(build_id: int) -> void:
 # ================================= GridManager 建造经验奖励回调 =================================
 func _on_build_exp_reward(furniture_world_pos: Vector2, exp_amount: int, _build_id: int) -> void:
 	print(">>> [BuildingUI] _on_build_exp_reward: pos=%s, exp=%d" % [furniture_world_pos, exp_amount])
-	# 将世界坐标转换为屏幕坐标
-	var camera := get_viewport().get_camera_2d()
-	var start_pos: Vector2
-	if camera != null:
-		var viewport_size: Vector2 = get_viewport().get_visible_rect().size
-		start_pos = (furniture_world_pos - camera.global_position) * camera.zoom + viewport_size / 2.0
-	else:
-		start_pos = furniture_world_pos
+	# 将世界坐标转换为屏幕坐标（CanvasLayer 子节点使用屏幕空间）
+	var start_pos: Vector2 = get_viewport().get_canvas_transform() * furniture_world_pos
 	var end_pos: Vector2 = _get_exp_bar_center()
 	_play_explosion_then_fly(start_pos, end_pos, exp_amount)
 
@@ -126,7 +162,6 @@ func _play_explosion_then_fly(start_pos: Vector2, end_pos: Vector2, exp_amount: 
 		particle.texture = EXP_ICON
 		particle.scale = Vector2(0.4, 0.4)
 		particle.global_position = start_pos
-		particle.modulate = Color(0.3, 0.8, 1.0, 0.9)
 		particle_container.add_child(particle)
 		particles.append(particle)
 

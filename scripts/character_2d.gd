@@ -114,6 +114,9 @@ func _try_move_to_random_neighbor():
 	# 随机化下次移动间隔（0.8 ~ 1.5秒）
 	move_interval = randf_range(0.8, 1.5)
 
+	# 收集其他角色当前和目标格子位置，避免重叠
+	var occupied_by_chars: Array[Vector2i] = _get_other_character_positions()
+
 	# 四个方向：右、下、左、上（菱形网格的相邻格子）
 	var directions: Array[Vector2i] = [
 		Vector2i(1, 0),   # 右（gx+1, gy）
@@ -124,11 +127,14 @@ func _try_move_to_random_neighbor():
 	directions.shuffle()
 
 	for d in directions:
-		# 随机选择移动距离 1-3 格，优先尝试最远的
-		var max_steps: int = randi_range(1, 3)
-		var best_target: Vector2i = _current_grid
-		for step in range(max_steps, 0, -1):
+		# 完全随机移动距离 1-3 格
+		var steps_to_try: Array[int] = [1, 2, 3]
+		steps_to_try.shuffle()
+		for step in steps_to_try:
 			var candidate: Vector2i = _current_grid + d * step
+			# 检查目标是否被其他角色占用
+			if candidate in occupied_by_chars:
+				continue
 			# 检查路径上所有格子是否可通行
 			var path_clear: bool = true
 			for s in range(1, step + 1):
@@ -142,12 +148,31 @@ func _try_move_to_random_neighbor():
 					path_clear = false
 					break
 			if path_clear:
-				best_target = candidate
-				break
+				_move_to_grid(candidate, d)
+				return
 
-		if best_target != _current_grid:
-			_move_to_grid(best_target, d)
-			return
+
+# ================================= 获取其他角色的当前位置和目标位置 =================================
+func _get_other_character_positions() -> Array[Vector2i]:
+	var positions: Array[Vector2i] = []
+	var parent_node = get_parent()
+	if parent_node == null:
+		return positions
+	for child in parent_node.get_children():
+		if child == self:
+			continue
+		if not child.name.begins_with("CharacterRoot"):
+			continue
+		if not child is Node2D:
+			continue
+		# 获取目标格子（移动中的角色）和当前格子
+		var target = child.get("_target_grid")
+		if target != null:
+			positions.append(target as Vector2i)
+		var current = child.get("_current_grid")
+		if current != null and current != target:
+			positions.append(current as Vector2i)
+	return positions
 
 # ================================= 移动能力检查 =================================
 func _can_move_to(grid: Vector2i) -> bool:
