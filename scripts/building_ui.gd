@@ -134,6 +134,7 @@ func _on_build_exp_reward(furniture_world_pos: Vector2, exp_amount: int, _build_
 	print(">>> [BuildingUI] _on_build_exp_reward: pos=%s, exp=%d" % [furniture_world_pos, exp_amount])
 	# 将世界坐标转换为屏幕坐标（CanvasLayer 子节点使用屏幕空间）
 	var start_pos: Vector2 = get_viewport().get_canvas_transform() * furniture_world_pos
+	print(">>> [BuildingUI] 坐标转换: world=%s → screen=%s, canvas_transform=%s" % [furniture_world_pos, start_pos, get_viewport().get_canvas_transform()])
 	var end_pos: Vector2 = _get_exp_bar_center()
 	_play_explosion_then_fly(start_pos, end_pos, exp_amount)
 

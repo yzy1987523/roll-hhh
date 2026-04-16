@@ -68,9 +68,9 @@ func _ready():
 		grid_occupied.append(row)
 	print(">>> [GridManager] grid_occupied 初始化完成: %d x %d" % [map_height, map_width])
 
-	# 检查场景中是否已有静态地板/墙体（.tscn中手动添加的）
-	var existing_floor_root = find_child("FloorRoot", true, false)
-	var existing_wall_root = find_child("WallRoot", true, false)
+	# 检查场景中是否已有静态地板/墙体（兄弟节点，不是子节点）
+	var existing_floor_root = get_node_or_null("../FloorRoot")
+	var existing_wall_root = get_node_or_null("../WallRoot")
 
 	print(">>> [GridManager] _ready: existing_floor_root=%s, existing_wall_root=%s" % [existing_floor_root, existing_wall_root])
 
@@ -82,12 +82,15 @@ func _ready():
 	wall_root = existing_wall_root
 	print(">>> [GridManager] 使用静态地板和墙体（共 %d 地板）" % floor_list.size())
 
-	# 初始化家具父节点（始终需要）
-	furniture_root = find_child("FurnitureRoot", true, false)
+	# 初始化家具父节点（FurnitureRoot 是兄弟节点，不是子节点）
+	furniture_root = get_node_or_null("../FurnitureRoot")
+	if furniture_root == null:
+		furniture_root = find_child("FurnitureRoot", true, false)
 	if furniture_root == null:
 		furniture_root = Node2D.new()
 		furniture_root.name = "FurnitureRoot"
-		add_child(furniture_root)
+		get_parent().add_child(furniture_root)
+	print(">>> [GridManager] furniture_root=%s, children=%d" % [furniture_root, furniture_root.get_child_count()])
 
 	# 静态墙体边界锁定
 	set_map_border_limit()
@@ -313,7 +316,8 @@ func _get_furniture_world_pos(build_id: int) -> Vector2:
 	var slot_index: int = build_id - 1
 	var furniture_node = furniture_root.get_node_or_null("Furniture_%d" % slot_index)
 	if furniture_node == null:
-		return Vector2(540, 400)  # 回退到屏幕中央
+		print(">>> [GridManager] _get_furniture_world_pos: Furniture_%d 未找到! furniture_root=%s, children=%d" % [slot_index, furniture_root.name, furniture_root.get_child_count()])
+		return Vector2.ZERO
 	if furniture_node is Polygon2D:
 		var points = furniture_node.polygon
 		var poly_center = Vector2.ZERO
@@ -321,7 +325,9 @@ func _get_furniture_world_pos(build_id: int) -> Vector2:
 			poly_center += p
 		if points.size() > 0:
 			poly_center /= points.size()
-		return furniture_node.global_position + poly_center
+		var world_pos = furniture_node.global_position + poly_center
+		print(">>> [GridManager] _get_furniture_world_pos: build_id=%d, global_pos=%s, poly_center=%s, world_pos=%s" % [build_id, furniture_node.global_position, poly_center, world_pos])
+		return world_pos
 	return furniture_node.global_position
 
 # ================================= 推开家具附近的角色 =================================
