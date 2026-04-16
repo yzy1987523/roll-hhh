@@ -640,6 +640,7 @@
         "sprite": "tiliqiu01",
         "type": "energy",
         "energy_value": 1,
+        "next_composite": "3010102",
         "content": "点击获得1能量"
     },
     {
@@ -649,6 +650,7 @@
         "sprite": "tiliqiu02",
         "type": "energy",
         "energy_value": 6,
+        "next_composite": "3010103",
         "content": "点击获得6能量"
     },
     {
@@ -658,6 +660,7 @@
         "sprite": "tiliqiu03",
         "type": "energy",
         "energy_value": 15,
+        "next_composite": "3010104",
         "content": "点击获得15能量"
     },
     {
@@ -667,6 +670,7 @@
         "sprite": "tiliqiu04",
         "type": "energy",
         "energy_value": 40,
+        "next_composite": "3010105",
         "content": "点击获得40能量"
     },
     {
@@ -771,7 +775,8 @@
             0.14,
             0.14
         ],
-        "depleted_product": ""
+        "depleted_product": "",
+        "next_composite": "3030102"
     },
     {
         "id": "3030102",

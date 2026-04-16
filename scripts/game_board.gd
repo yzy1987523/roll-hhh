@@ -9,6 +9,8 @@ const CELL_SELECT_TEXTURE := preload("res://art/sprites/UI/items/smallItem/cell_
 # 金币图标（用于出售按钮）
 const JINBI_ICON := preload("res://art/sprites/UI/icon/jinbi.png")
 const ENERGY_ICON := preload("res://art/sprites/UI/items/smallItem/engery.png")
+# 体力图标（用于消耗体力球粒子特效）
+const POWER_ICON := preload("res://art/sprites/UI/icon/power.png")
 # 锁定状态纹理（运行时加载）
 var CELL_LOCKED_EVEN_TEXTURE: Texture2D
 var CELL_LOCKED_ODD_TEXTURE: Texture2D
@@ -378,7 +380,7 @@ func _on_auto_produced(board_index: int, producer_item_id: int) -> void:
 		return
 	# 从生成器位置飞出
 	var start_pos: Vector2 = cell_panels[board_index].global_position + Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
-	spawn_item(start_pos, produced.id, empty_index)
+	spawn_item(start_pos, produced, empty_index)
 	GameManager._auto_save()
 
 
@@ -1262,14 +1264,14 @@ func play_shake_animation(obj: Control) -> void:
 
 ## 生成物品：从起始坐标飞向目标位置，到达后播放一次颤动动效
 ## 返回是否生成成功（棋盘满时返回false）
-func spawn_item(start_pos: Vector2, item_id: int, target_index: int) -> bool:
+## 注意：直接使用传入的 item 对象（应为独立的副本），不再重复查询缓存
+func spawn_item(start_pos: Vector2, item: DataModels.BoardItemData, target_index: int) -> bool:
 	var bd: BoardData = GameManager.board_data
 	if target_index < 0 or target_index >= BoardData.BOARD_SLOTS:
 		return false
 	if bd.get_item_at_index(target_index) != null:
 		return false
 
-	var item: DataModels.BoardItemData = ItemManager.get_item(item_id)
 	if item == null:
 		return false
 
@@ -1309,13 +1311,14 @@ func spawn_item(start_pos: Vector2, item_id: int, target_index: int) -> bool:
 	var target_cell: Control = cell_panels[target_index]
 	var end_pos: Vector2 = target_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
 
+	# 在 tween 创建前就复制 item（避免闭包引用问题）
+	var captured_item: DataModels.BoardItemData = item.duplicate()
+
 	# 位移动画
 	var tween := create_tween()
 	tween.tween_property(anim_container, "global_position", end_pos - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0), 0.3)\
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
-	# 捕获item引用避免lambda闭包问题
-	var captured_item := item.duplicate()
 	tween.finished.connect(func():
 		anim_container.queue_free()
 		moving_cells.erase(target_index)
@@ -1505,7 +1508,10 @@ func _try_spawn_coin_on_merge(merged: DataModels.BoardItemData, merge_index: int
 	# 获取起始位置并使用 spawn_item 生成金币
 	var start_cell: Control = cell_panels[merge_index]
 	var start_world: Vector2 = start_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
-	spawn_item(start_world, coin_id, empty_index)
+	var coin_item: DataModels.BoardItemData = ItemManager.get_item(coin_id)
+	if coin_item == null:
+		return
+	spawn_item(start_world, coin_item, empty_index)
 
 
 ## 收集金币堆：粒子特效，增加金币
@@ -1592,12 +1598,12 @@ func _play_energy_particle_effect(start_pos: Vector2, end_pos: Vector2, particle
 
 	for i in range(particle_count):
 		var particle := Sprite2D.new()
-		particle.texture = ENERGY_ICON
+		particle.texture = POWER_ICON
 		particle.scale = Vector2(0.4, 0.4)
 		particle.global_position = start_pos + Vector2(
 			randf_range(-20, 20), randf_range(-20, 20)
 		)
-		particle.modulate = Color(0.5, 1.0, 0.5, 0.9)  # 绿色调
+		particle.modulate = Color(1, 1, 1, 0.9)  # 无颜色叠加
 		particle_container.add_child(particle)
 
 		var tween := create_tween()
@@ -1636,30 +1642,32 @@ func _play_coin_particle_effect(start_pos: Vector2, end_pos: Vector2, particle_c
 	for i in range(particle_count):
 		var particle := Sprite2D.new()
 		particle.texture = JINBI_ICON
-		particle.scale = Vector2(0.5, 0.5)  # 缩小到一半
+		particle.scale = Vector2(2.0, 2.0)  # 4倍大小
 		particle.global_position = start_pos + Vector2(
-			randf_range(-20, 20), randf_range(-20, 20)
+			randf_range(-10, 10), randf_range(-10, 10)
 		)
+		particle.rotation = 0.0
 		particle.modulate = Color(1, 1, 1, 0.9)
 		particle_container.add_child(particle)
 
 		# 创建飞向终点的动画
 		var tween := create_tween()
-		var offset := Vector2(randf_range(-30, 30), randf_range(-30, 30))
-		var mid_pos: Vector2 = (start_pos + end_pos) / 2.0 + offset + Vector2(0, -50)  # 弧线上偏移
 
-		# 位置动画：起点 -> 中点(弧线) -> 终点
-		tween.tween_property(particle, "global_position", mid_pos, 0.15)\
-			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tween.tween_property(particle, "global_position", end_pos, 0.25)\
-			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		# 原地旋转一圈动画
+		tween.tween_property(particle, "rotation", TAU, 0.2)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+
+		# 延迟后开始飞行动画（直接飞向终点）
+		tween.parallel()
+		tween.tween_property(particle, "global_position", end_pos, 0.3)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).set_delay(0.25)
 
 		# 缩放动画：从小到大再到正常
-		tween.tween_property(particle, "scale", Vector2(0.8, 0.8), 0.15)
-		tween.tween_property(particle, "scale", Vector2(0.5, 0.5), 0.25)
+		tween.tween_property(particle, "scale", Vector2(3.2, 3.2), 0.15).set_delay(0.25)
+		tween.tween_property(particle, "scale", Vector2(2.0, 2.0), 0.25).set_delay(0.25)
 
 		# 透明度动画：渐隐
-		tween.tween_property(particle, "modulate:a", 0.0, 0.1).set_delay(0.35)
+		tween.tween_property(particle, "modulate:a", 0.0, 0.1).set_delay(0.5)
 
 		# 动画结束后删除粒子和容器
 		tween.finished.connect(func():
@@ -1668,7 +1676,7 @@ func _play_coin_particle_effect(start_pos: Vector2, end_pos: Vector2, particle_c
 		, CONNECT_ONE_SHOT)
 
 	# 延迟清理容器
-	await get_tree().create_timer(0.5).timeout
+	await get_tree().create_timer(0.6).timeout
 	if is_instance_valid(particle_container):
 		particle_container.queue_free()
 
@@ -1677,11 +1685,16 @@ func _play_coin_particle_effect(start_pos: Vector2, end_pos: Vector2, particle_c
 func _get_gold_bar_position() -> Vector2:
 	var gold_icon: Node = get_node_or_null("MainLayout/TopBar/ResourceDisplay/GoldContainer/GoldRow/GoldIcon")
 	if gold_icon != null:
-		return gold_icon.global_position + Vector2(20, 20)  # 图标中心偏移
+		var pos: Vector2 = gold_icon.global_position + Vector2(20, 20)
+		print(">>> [GameBoard] gold_icon global_position: ", gold_icon.global_position, " -> target: ", pos)
+		return pos
 	# 回退到 resource_display 的金币区域
 	var resource_display: Node = get_node_or_null("MainLayout/TopBar/ResourceDisplay")
 	if resource_display != null:
-		return resource_display.global_position + Vector2(200, 30)
+		var pos: Vector2 = resource_display.global_position + Vector2(200, 30)
+		print(">>> [GameBoard] resource_display global_position: ", resource_display.global_position, " -> target: ", pos)
+		return pos
+	print(">>> [GameBoard] gold_bar_position fallback: ", Vector2(300, 50))
 	return Vector2(300, 50)  # 最终回退
 
 
@@ -1726,7 +1739,7 @@ func _play_exp_particle_effect(start_pos: Vector2, exp_amount: int) -> void:
 		particle.global_position = start_pos + Vector2(
 			randf_range(-20, 20), randf_range(-20, 20)
 		)
-		particle.modulate = Color(0.3, 0.8, 1.0, 0.9)  # 蓝色经验特效
+		#particle.modulate = Color(0.3, 0.8, 1.0, 0.9)  # 蓝色经验特效
 		particle_container.add_child(particle)
 
 		# 创建飞向终点的动画
@@ -1845,7 +1858,7 @@ func _try_produce_item(cell_index: int) -> void:
 	var target_index: int = BoardData.pos_to_index(empty_pos)
 
 	# 播放产出动画
-	if not spawn_item(start_pos, produced.id, target_index):
+	if not spawn_item(start_pos, produced, target_index):
 		GameManager.restore_energy(1)
 
 	# 每次棋子操作后自动存档

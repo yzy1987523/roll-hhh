@@ -146,6 +146,14 @@ func unregister_producer(board_index: int) -> bool:
 	return true
 
 
+# ---- 清空所有生成器 ----
+func clear_all_producers() -> void:
+	var indices: Array = _producers.keys()
+	for idx in indices:
+		_producers.erase(idx)
+		producer_unregistered.emit(idx)
+
+
 # ---- 移动生成器到新位置 ----
 func move_producer(from_index: int, to_index: int) -> bool:
 	if not _producers.has(from_index):
@@ -282,7 +290,22 @@ func skip_cooldown(board_index: int) -> bool:
 	var state: ProducerState = _producers[board_index]
 	if state.cooldown_remaining <= 0:
 		return false
+
+	# 计算跳过的冷却时间对应的库存恢复量
+	# 公式: 跳过时间 / recovery_time = 恢复的库存数量
+	var stock_to_restore: int = 0
+	if state.recovery_time > 0 and state.current_count < state.max_count:
+		stock_to_restore = int(state.cooldown_remaining / state.recovery_time)
+
+	# 清零冷却时间
 	state.cooldown_remaining = 0.0
+
+	# 恢复库存
+	if stock_to_restore > 0:
+		state.current_count = mini(state.current_count + stock_to_restore, state.max_count)
+		state.last_recovery_time = Time.get_ticks_msec() / 1000.0
+		stock_changed.emit(board_index, state.current_count, state.max_count)
+
 	cooldown_finished.emit(board_index)
 	return true
 

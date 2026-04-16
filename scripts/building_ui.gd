@@ -13,6 +13,7 @@ func _ready() -> void:
 	_connect_level_up_signal()
 	_connect_exp_changed_signal()
 	_connect_resource_signals()
+	_connect_save_system_signal()
 	_update_level_display()
 	_update_exp_bar()
 	_update_resource_display()
@@ -49,6 +50,19 @@ func _connect_resource_signals() -> void:
 	if GameManager.has_signal("diamond_changed"):
 		GameManager.diamond_changed.connect(_on_diamond_changed)
 	print(">>> [BuildingUI] 已连接资源变化信号")
+
+
+func _connect_save_system_signal() -> void:
+	if SaveSystem.has_signal("save_cleared"):
+		SaveSystem.save_cleared.connect(_on_save_cleared)
+		print(">>> [BuildingUI] 已连接 SaveSystem.save_cleared 信号")
+
+
+func _on_save_cleared() -> void:
+	print(">>> [BuildingUI] 收到清空存档信号，刷新 UI")
+	_update_level_display()
+	_update_exp_bar()
+	_update_resource_display()
 
 
 func _on_gold_changed(_amount) -> void:
@@ -106,9 +120,9 @@ func _on_play_pressed() -> void:
 		var tween := create_tween()
 		tween.set_parallel(true)
 		tween.tween_property(play_btn, "scale", Vector2(1.1, 1.1), 0.15)\
-			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 		tween.tween_property(play_btn, "scale", Vector2(1.0, 1.0), 0.1)\
-			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN).set_delay(0.15)
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN).set_delay(0.1)
 		tween.finished.connect(func(): TransitionManager.change_scene_with_transition("res://scenes/game_board.tscn"))
 	else:
 		TransitionManager.change_scene_with_transition("res://scenes/game_board.tscn")

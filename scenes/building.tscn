@@ -22,9 +22,9 @@
 [ext_resource type="Texture2D" uid="uid://dtsocwtwfeen5" path="res://art/building/b008.png" id="21_b008"]
 [ext_resource type="Texture2D" uid="uid://2cyl5ydwhcss" path="res://art/building/b009.png" id="22_b009"]
 [ext_resource type="Texture2D" uid="uid://b44o05gihhc8m" path="res://art/building/b010.png" id="23_b010"]
-[ext_resource type="Script" uid="uid://building_camera_01" path="res://scripts/building_camera.gd" id="24_camera"]
+[ext_resource type="Script" uid="uid://cvm3xxyng2vae" path="res://scripts/building_camera.gd" id="24_camera"]
 [ext_resource type="PackedScene" uid="uid://ca42w3tss4qmv" path="res://scenes/encyclopedia_scene.tscn" id="25_encyclopedia"]
-[ext_resource type="PackedScene" uid="uid://resource_display_001" path="res://scenes/resource_display.tscn" id="26_resource_display"]
+[ext_resource type="PackedScene" path="res://scenes/resource_display.tscn" id="26_resource_display"]
 
 [node name="RoomRoot" type="Node2D" unique_id=1234567890]
 
@@ -75,26 +75,26 @@ texture_normal = ExtResource("9_build_list")
 
 [node name="BottomLeftUI" type="Control" parent="UILayer" unique_id=1234567908]
 layout_mode = 3
-anchors_preset = 0
-anchor_left = 0.0
+anchors_preset = 2
 anchor_top = 1.0
-anchor_right = 0.0
 anchor_bottom = 1.0
-offset_left = 20.0
-offset_top = -100.0
-offset_right = 100.0
-offset_bottom = 0.0
-grow_horizontal = 0
+offset_left = 70.0
+offset_top = -408.0
+offset_right = 319.0
+offset_bottom = -135.0686
 grow_vertical = 0
 
 [node name="PlayBtn" type="TextureButton" parent="UILayer/BottomLeftUI" unique_id=1234567909]
 custom_minimum_size = Vector2(80, 80)
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-stretch_mode = 0
+grow_horizontal = 2
+pivot_offset_ratio = Vector2(0.5, 0.5)
 texture_normal = ExtResource("8_play")
+ignore_texture_size = true
+stretch_mode = 5
 
 [node name="EncyclopediaBtn" type="Control" parent="UILayer" unique_id=1234567910]
 layout_mode = 3
@@ -107,7 +107,7 @@ offset_right = -20.0
 offset_bottom = 60.0
 grow_horizontal = 0
 
-[node name="ResourceDisplay" parent="UILayer" instance=ExtResource("26_resource_display")]
+[node name="ResourceDisplay" parent="UILayer" unique_id=761890761 instance=ExtResource("26_resource_display")]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
@@ -117,7 +117,7 @@ offset_right = -10.0
 offset_bottom = 90.0
 grow_horizontal = 0
 
-[node name="EncyclopediaScene" parent="UILayer" instance=ExtResource("25_encyclopedia")]
+[node name="EncyclopediaScene" parent="UILayer" unique_id=880218351 instance=ExtResource("25_encyclopedia")]
 visible = false
 
 [node name="GridManager" type="Node2D" parent="." unique_id=1234567892]
@@ -245,7 +245,6 @@ script = ExtResource("5_furniture_icon")
 [node name="CharacterRoot" type="Node2D" parent="." unique_id=1234567894]
 script = ExtResource("11_char")
 frames = Array[Texture2D]([ExtResource("12_player01"), ExtResource("13_player02")])
-initial_grid = Vector2i(2, 2)
 
 [node name="CharacterRoot2" type="Node2D" parent="." unique_id=1234567895]
 script = ExtResource("11_char")

@@ -42,6 +42,18 @@ func save_game() -> void:
 func clear_game_save() -> void:
 	_remove_from_storage(SAVE_KEY)
 	save_encyclopedia()
+	# 重置 GameManager 资源
+	GameManager.gold = GameManager.DEFAULT_GOLD
+	GameManager.energy = GameManager.DEFAULT_MAX_ENERGY
+	GameManager.max_energy = GameManager.DEFAULT_MAX_ENERGY
+	GameManager.gold_changed.emit(GameManager.gold)
+	GameManager.energy_changed.emit(GameManager.energy)
+	GameManager.diamond = 100
+	GameManager.diamond_changed.emit(GameManager.diamond)
+	# 重置 TaskManager 经验和等级
+	TaskManager.exp = 0
+	TaskManager.player_level = 1
+	TaskManager.exp_changed.emit(TaskManager.exp)
 	# 重新从 MapConfig 初始化棋盘
 	_init_board_from_map_config()
 	# 发出信号通知 UI 刷新
@@ -98,6 +110,8 @@ func _init_board_from_map_config() -> void:
 	if not map_loader.load_config():
 		return
 
+	# 清空所有生成器
+	get_node("/root/ProducerManager").clear_all_producers()
 	GameManager.board_data.clear_board()
 
 	# 初始化局外道具

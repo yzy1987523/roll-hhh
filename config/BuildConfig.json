@@ -1,14 +1,14 @@
 {
     "builds": [
-        { "id": 1,  "name": "家具1",     "furnitureId": 3010101, "starCost": 2,  "expReward": 10,  "itemReward": [],       "unlockLevel": 1,  "nextBuildId": 2,  "sprite": "b001" },
-        { "id": 2,  "name": "家具2",     "furnitureId": 3020101, "starCost": 3,  "expReward": 20,  "itemReward": [],       "unlockLevel": 1,  "nextBuildId": 3,  "sprite": "b002" },
-        { "id": 3,  "name": "家具3",     "furnitureId": 3030101, "starCost": 4,  "expReward": 30,  "itemReward": [],       "unlockLevel": 2,  "nextBuildId": 4,  "sprite": "b003" },
-        { "id": 4,  "name": "家具4",     "furnitureId": 3040101, "starCost": 5,  "expReward": 50,  "itemReward": [2010104], "unlockLevel": 3,  "nextBuildId": 5,  "sprite": "b004" },
-        { "id": 5,  "name": "家具5",     "furnitureId": 3010102, "starCost": 6,  "expReward": 80,  "itemReward": [],       "unlockLevel": 4,  "nextBuildId": 6,  "sprite": "b005" },
+        { "id": 1,  "name": "家具1",     "furnitureId": 3010101, "starCost": 2,  "expReward": 100,  "itemReward": [99],       "unlockLevel": 1,  "nextBuildId": 2,  "sprite": "b001" },
+        { "id": 2,  "name": "家具2",     "furnitureId": 3020101, "starCost": 3,  "expReward": 100,  "itemReward": [3040101],       "unlockLevel": 1,  "nextBuildId": 3,  "sprite": "b002" },
+        { "id": 3,  "name": "家具3",     "furnitureId": 3030101, "starCost": 4,  "expReward": 100,  "itemReward": [],       "unlockLevel": 2,  "nextBuildId": 4,  "sprite": "b003" },
+        { "id": 4,  "name": "家具4",     "furnitureId": 3040101, "starCost": 5,  "expReward": 100,  "itemReward": [2010104], "unlockLevel": 3,  "nextBuildId": 5,  "sprite": "b004" },
+        { "id": 5,  "name": "家具5",     "furnitureId": 3010102, "starCost": 6,  "expReward": 100,  "itemReward": [],       "unlockLevel": 4,  "nextBuildId": 6,  "sprite": "b005" },
         { "id": 6,  "name": "家具6",     "furnitureId": 3020102, "starCost": 7,  "expReward": 100, "itemReward": [2020104], "unlockLevel": 5,  "nextBuildId": 7,  "sprite": "b006" },
-        { "id": 7,  "name": "家具7",     "furnitureId": 3050101, "starCost": 8,  "expReward": 150, "itemReward": [],       "unlockLevel": 6,  "nextBuildId": 8,  "sprite": "b007" },
-        { "id": 8,  "name": "家具8",     "furnitureId": 3060101, "starCost": 9,  "expReward": 200, "itemReward": [2030105], "unlockLevel": 7,  "nextBuildId": 9,  "sprite": "b008" },
-        { "id": 9,  "name": "家具9",     "furnitureId": 3070101, "starCost": 10, "expReward": 300, "itemReward": [],       "unlockLevel": 8,  "nextBuildId": 10, "sprite": "b009" },
-        { "id": 10, "name": "家具10",    "furnitureId": 3080101, "starCost": 11, "expReward": 500, "itemReward": [1012501], "unlockLevel": 10, "nextBuildId": -1, "sprite": "b010" }
+        { "id": 7,  "name": "家具7",     "furnitureId": 3050101, "starCost": 8,  "expReward": 100, "itemReward": [],       "unlockLevel": 6,  "nextBuildId": 8,  "sprite": "b007" },
+        { "id": 8,  "name": "家具8",     "furnitureId": 3060101, "starCost": 9,  "expReward": 100, "itemReward": [2030105], "unlockLevel": 7,  "nextBuildId": 9,  "sprite": "b008" },
+        { "id": 9,  "name": "家具9",     "furnitureId": 3070101, "starCost": 10, "expReward": 100, "itemReward": [],       "unlockLevel": 8,  "nextBuildId": 10, "sprite": "b009" },
+        { "id": 10, "name": "家具10",    "furnitureId": 3080101, "starCost": 11, "expReward": 100, "itemReward": [1012501], "unlockLevel": 10, "nextBuildId": -1, "sprite": "b010" }
     ]
 }
