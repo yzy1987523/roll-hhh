@@ -67,8 +67,7 @@ func _update_resource_display() -> void:
 	var energy_label = find_child("EnergyLabel", true, false)
 	if energy_label != null:
 		var current_energy: int = GameManager.get("energy") if GameManager.get("energy") != null else 0
-		var max_energy: int = GameManager.get("max_energy") if GameManager.get("max_energy") != null else 100
-		energy_label.text = "%d/%d" % [current_energy, max_energy]
+		energy_label.text = str(current_energy)
 
 	var gold_label = find_child("GoldLabel", true, false)
 	if gold_label != null:
