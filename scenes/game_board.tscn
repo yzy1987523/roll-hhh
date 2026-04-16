@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://lhfpkjexs7e5"]
 
 [ext_resource type="Script" uid="uid://blsuwfdclth4a" path="res://scripts/game_board.gd" id="1_game_board"]
-[ext_resource type="PackedScene" path="res://scenes/resource_display.tscn" id="1_resource_display"]
+[ext_resource type="PackedScene" uid="uid://ds52tj2hhw28y" path="res://scenes/resource_display.tscn" id="1_resource_display"]
 [ext_resource type="Texture2D" uid="uid://dbgrt3fjthdx6" path="res://art/sprites/UI/panels/bg_0.jpg" id="2_sax53"]
 [ext_resource type="Texture2D" uid="uid://c4m1krf23asjm" path="res://art/sprites/UI/items/smallItem/engery.png" id="4_energy"]
 [ext_resource type="Texture2D" uid="uid://c12x6mkh5bjm2" path="res://art/sprites/UI/items/smallItem/setting.png" id="6_setting"]
@@ -9,14 +9,22 @@
 [ext_resource type="Texture2D" uid="uid://bpt7u5pwxdo06" path="res://art/sprites/UI/items/smallItem/dorm.png" id="8_dorm"]
 [ext_resource type="Texture2D" uid="uid://d31cgiyurr02m" path="res://art/sprites/UI/items/smallItem/Encyclopedia.png" id="9_encyclopedia"]
 [ext_resource type="Texture2D" uid="uid://dv6kfqsd5cu5q" path="res://art/sprites/UI/items/smallItem/close.png" id="10_close"]
+[ext_resource type="Texture2D" uid="uid://ba2sgost7my3x" path="res://addons/gut/images/red.png" id="11_54ie0"]
 [ext_resource type="Texture2D" uid="uid://bnq7sp57ajygp" path="res://art/sprites/UI/icon/exit.png" id="11_hl2y5"]
+[ext_resource type="Texture2D" uid="uid://b1ka5tckp0uo2" path="res://art/sprites/items/bag.png" id="12_840ua"]
 [ext_resource type="Texture2D" uid="uid://bn8pnsxuaaic8" path="res://art/sprites/UI/items/smallItem/spawner0.png" id="13_cac7a"]
 [ext_resource type="Texture2D" uid="uid://b8gclh8yid0dx" path="res://art/sprites/UI/items/smallItem/spawner1.png" id="14_8auva"]
 [ext_resource type="Texture2D" uid="uid://o0tum65hgxsa" path="res://art/sprites/UI/items/smallItem/cell_0.png" id="15_8auva"]
 [ext_resource type="Texture2D" uid="uid://cvnvs18vrpswm" path="res://art/sprites/UI/items/smallItem/spawner2.png" id="15_hrnlr"]
+[ext_resource type="Texture2D" uid="uid://cuf3fqaytwrxx" path="res://art/sprites/UI/icon/btn2.png" id="16_btn2"]
 [ext_resource type="Texture2D" uid="uid://lsv1d0fexgsh" path="res://art/sprites/UI/panels/panel.png" id="17_hrnlr"]
+[ext_resource type="Texture2D" uid="uid://cp3oe1vry0fck" path="res://art/sprites/UI/icon/jinbi.png" id="19_2sbk6"]
+[ext_resource type="Texture2D" uid="uid://cro705l4rtvho" path="res://art/sprites/UI/icon/5.png" id="20_54ie0"]
 [ext_resource type="Script" uid="uid://blnan5mbyv8wn" path="res://scripts/bottom_hud.gd" id="20_bottom_hud"]
+[ext_resource type="Texture2D" uid="uid://d4h75nhvow8nw" path="res://art/sprites/UI/icon/daojishi.png" id="21_840ua"]
+[ext_resource type="Texture2D" uid="uid://dmoatwoc27vyk" path="res://art/sprites/UI/icon/star.png" id="21_star"]
 [ext_resource type="Texture2D" uid="uid://c6o6t7qmkt8ry" path="res://art/sprites/UI/panels/kuang.png" id="22_kuang"]
+[ext_resource type="Texture2D" uid="uid://cqm34kbad7jq0" path="res://art/sprites/UI/icon/zuanshi.png" id="22_nupcc"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_detailpanel"]
 
@@ -58,21 +66,29 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 4
 
-[node name="TopBar" type="HBoxContainer" parent="MainLayout" unique_id=1882207637]
+[node name="TopBar" type="Control" parent="MainLayout" unique_id=712462426]
 custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
-theme_override_constants/separation = 12
 
 [node name="ResourceDisplay" parent="MainLayout/TopBar" unique_id=484052423 instance=ExtResource("1_resource_display")]
-layout_mode = 2
+layout_mode = 1
+offset_top = 35.0
+offset_bottom = -2015.0
 
 [node name="Spacer" type="Control" parent="MainLayout/TopBar" unique_id=1825867427]
-layout_mode = 2
+visible = false
+anchors_preset = 0
+offset_left = 452.0
+offset_right = 920.0
+offset_bottom = 128.0
 size_flags_horizontal = 3
 
 [node name="SettingsButton" type="Button" parent="MainLayout/TopBar" unique_id=2027233340]
 custom_minimum_size = Vector2(128, 128)
-layout_mode = 2
+layout_mode = 0
+offset_left = 932.0
+offset_right = 1060.0
+offset_bottom = 128.0
 size_flags_horizontal = 0
 size_flags_vertical = 3
 theme_override_colors/icon_pressed_color = Color(0.76240367, 0.76240367, 0.76240367, 1)
@@ -83,7 +99,7 @@ expand_icon = true
 
 [node name="PanelContainer" type="PanelContainer" parent="MainLayout" unique_id=1215887418]
 self_modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(0, 100)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 
 [node name="RelicBar" type="HBoxContainer" parent="MainLayout" unique_id=308367481]
@@ -214,135 +230,312 @@ size_flags_horizontal = 3
 theme_override_constants/separation = 16
 
 [node name="ZoneA" type="PanelContainer" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox" unique_id=1530287672]
+self_modulate = Color(1, 1, 1, 0)
 custom_minimum_size = Vector2(150, 130)
 layout_mode = 2
 size_flags_vertical = 4
 
-[node name="PanelBgA" type="NinePatchRect" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneA" unique_id=1675312850]
+[node name="VBoxA" type="Control" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneA" unique_id=329681568]
 layout_mode = 2
-texture = ExtResource("17_hrnlr")
+
+[node name="PanelBgA" type="NinePatchRect" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneA/VBoxA" unique_id=1675312850]
+layout_mode = 0
+offset_top = 1.0
+offset_right = 150.0
+offset_bottom = 130.0
+texture = ExtResource("22_kuang")
 patch_margin_left = 20
 patch_margin_top = 20
 patch_margin_right = 20
 patch_margin_bottom = 20
 
-[node name="VBoxA" type="VBoxContainer" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneA" unique_id=1491640982]
-layout_mode = 2
-theme_override_constants/separation = 8
-
 [node name="TitleLabel" type="Label" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneA/VBoxA" unique_id=388776478]
-layout_mode = 2
+visible = false
+layout_mode = 0
 theme_override_colors/font_color = Color(0.9, 0.8, 0.6, 1)
 theme_override_font_sizes/font_size = 20
 text = "建造清单"
 horizontal_alignment = 1
 
 [node name="BuildListBtn" type="Button" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneA/VBoxA" unique_id=1576851397]
-visible = false
 custom_minimum_size = Vector2(100, 60)
-layout_mode = 2
-text = "展开"
+layout_mode = 0
+offset_left = -1.0
+offset_top = -2.0
+offset_right = 156.0
+offset_bottom = 132.0
+flat = true
+
+[node name="StarHBox" type="Control" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneA/VBoxA/BuildListBtn" unique_id=1700696808]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -40.0
+offset_top = -20.0
+offset_right = 40.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="StarIcon" type="TextureRect" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneA/VBoxA/BuildListBtn/StarHBox" unique_id=999999102]
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 0
+offset_left = -26.5
+offset_top = -6.5
+offset_right = 23.5
+offset_bottom = 43.5
+texture = ExtResource("21_star")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="StarLabel" type="Label" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneA/VBoxA/BuildListBtn/StarHBox" unique_id=999999103]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 37.5
+offset_top = -10.5
+offset_right = 51.5
+offset_bottom = 12.5
+grow_vertical = 2
+pivot_offset_ratio = Vector2(0, 0.5)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.37254903, 0.49019608, 0.02745098, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 30
+text = "88"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="ZoneB" type="PanelContainer" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox" unique_id=146688394]
-custom_minimum_size = Vector2(200, 130)
+self_modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(150, 130)
 layout_mode = 2
 size_flags_vertical = 4
 
 [node name="PanelBgB" type="NinePatchRect" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneB" unique_id=1552251539]
 layout_mode = 2
-texture = ExtResource("17_hrnlr")
+texture = ExtResource("22_kuang")
 patch_margin_left = 20
 patch_margin_top = 20
 patch_margin_right = 20
 patch_margin_bottom = 20
 
-[node name="VBoxB" type="VBoxContainer" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneB" unique_id=1788424830]
+[node name="VBoxB" type="Control" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneB" unique_id=1214004411]
 layout_mode = 2
-theme_override_constants/separation = 4
 
 [node name="ItemsTitleLabel" type="Label" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneB/VBoxB" unique_id=1096171399]
-layout_mode = 2
+visible = false
+layout_mode = 0
+offset_top = -1.0
+offset_right = 150.0
+offset_bottom = 17.375
 theme_override_colors/font_color = Color(0.9, 0.8, 0.6, 1)
 theme_override_font_sizes/font_size = 18
 text = "局外道具"
 horizontal_alignment = 1
 
 [node name="ItemsStack" type="VBoxContainer" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneB/VBoxB" unique_id=1054115285]
-layout_mode = 2
+visible = false
+layout_mode = 0
+offset_right = 150.0
+offset_bottom = 130.0
 size_flags_vertical = 3
 theme_override_constants/separation = -30
 
-[node name="ItemsCountLabel" type="Label" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneB" unique_id=785765259]
+[node name="ItemsImage" type="TextureRect" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneB/VBoxB" unique_id=1293426566]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -49.0
+offset_top = -49.0
+offset_right = 49.0
+offset_bottom = 49.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset_ratio = Vector2(0.5, 0.5)
+texture = ExtResource("12_840ua")
+
+[node name="Control" type="Control" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneB" unique_id=1162778381]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
-theme_override_font_sizes/font_size = 20
-text = "0"
-horizontal_alignment = 2
+mouse_filter = 2
+
+[node name="HongDian" type="TextureRect" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneB/Control" unique_id=1557142085]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -28.0
+offset_right = 2.0
+offset_bottom = 30.0
+grow_horizontal = 0
+pivot_offset_ratio = Vector2(1, 0)
+mouse_filter = 2
+texture = ExtResource("11_54ie0")
+
+[node name="ItemsCountLabel" type="Label" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneB/Control" unique_id=785765259]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 32.0
+offset_top = -58.0
+offset_right = 93.0
+offset_bottom = -37.583336
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset_ratio = Vector2(0.5, 0.5)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.5294118, 0.37254903, 0.2, 1)
+theme_override_constants/outline_size = 1
+theme_override_font_sizes/font_size = 15
+text = "55"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="ZoneC" type="PanelContainer" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox" unique_id=1039958508]
+self_modulate = Color(1, 1, 1, 0)
 custom_minimum_size = Vector2(280, 130)
 layout_mode = 2
 size_flags_vertical = 4
 
 [node name="PanelBgC" type="NinePatchRect" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC" unique_id=1316899183]
 layout_mode = 2
-texture = ExtResource("17_hrnlr")
+texture = ExtResource("22_kuang")
 patch_margin_left = 20
 patch_margin_top = 20
 patch_margin_right = 20
 patch_margin_bottom = 20
 
-[node name="TaskHBox" type="HBoxContainer" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC" unique_id=1379994438]
+[node name="TaskHBox" type="Control" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC" unique_id=247023537]
 layout_mode = 2
-theme_override_constants/separation = 12
 
 [node name="TaskItemIcon" type="TextureRect" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC/TaskHBox" unique_id=463888036]
 custom_minimum_size = Vector2(60, 60)
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -30.0
+offset_top = -65.0
+offset_right = 30.0
+offset_bottom = 65.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset_ratio = Vector2(0.5, 0.5)
+texture = ExtResource("12_840ua")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="TaskVBox" type="VBoxContainer" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC/TaskHBox" unique_id=353012067]
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -76.0
+offset_top = 17.0
+offset_right = 78.0
+offset_bottom = 67.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset_ratio = Vector2(0.5, 0.5)
 size_flags_horizontal = 3
 theme_override_constants/separation = 4
 
 [node name="TaskCountLabel" type="Label" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC/TaskHBox/TaskVBox" unique_id=1107514071]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.2, 0.2, 0.2, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.5294118, 0.37254903, 0.2, 1)
+theme_override_constants/outline_size = 5
 theme_override_font_sizes/font_size = 22
 text = "0/1"
+horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="TaskProgressBar" type="ProgressBar" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC/TaskHBox/TaskVBox" unique_id=234905525]
+visible = false
 custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
 max_value = 1.0
 step = 1.0
 show_percentage = false
 
-[node name="TaskStarHBox" type="HBoxContainer" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC/TaskHBox" unique_id=259547958]
-layout_mode = 2
+[node name="TaskStarHBox" type="Control" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC/TaskHBox" unique_id=1212584132]
+anchors_preset = 0
+offset_left = 6.0
+offset_top = 4.0
+offset_right = 48.0
+offset_bottom = 24.0
 size_flags_vertical = 4
-theme_override_constants/separation = 4
 
 [node name="TaskStarIcon" type="TextureRect" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC/TaskHBox/TaskStarHBox" unique_id=993253304]
 custom_minimum_size = Vector2(20, 20)
-layout_mode = 2
+layout_mode = 0
+offset_left = -2.0
+offset_top = -5.0
+offset_right = 28.0
+offset_bottom = 25.0
+texture = ExtResource("21_star")
+expand_mode = 1
 stretch_mode = 5
 
 [node name="TaskStarLabel" type="Label" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC/TaskHBox/TaskStarHBox" unique_id=891380508]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.8, 0.1, 1)
-theme_override_font_sizes/font_size = 18
-text = "+1"
+layout_mode = 0
+offset_left = 28.0
+offset_top = 1.0
+offset_right = 69.0
+offset_bottom = 21.416666
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.5294118, 0.37254903, 0.2, 1)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 20
+text = "11111"
 vertical_alignment = 1
 
-[node name="SubmitBtnContainer" type="Control" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC/TaskHBox" unique_id=771401221]
-visible = false
-custom_minimum_size = Vector2(140, 70)
+[node name="SubmitBtnContainer" type="Control" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC" unique_id=771401221]
+custom_minimum_size = Vector2(120, 60)
 layout_mode = 2
-mouse_filter = 2
+
+[node name="SubmitButton" type="TextureButton" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC/SubmitBtnContainer" unique_id=1336014589]
+z_index = 10
+custom_minimum_size = Vector2(120, 50)
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.6
+anchor_right = 0.5
+anchor_bottom = 0.6
+offset_left = -74.0
+offset_top = -32.0
+offset_right = 70.0
+offset_bottom = 43.0
+pivot_offset_ratio = Vector2(0.5, 0.5)
+mouse_filter = 1
+texture_normal = ExtResource("16_btn2")
+
+[node name="Label" type="Label" parent="MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC/SubmitBtnContainer/SubmitButton" unique_id=1823148580]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
+theme_override_font_sizes/font_size = 22
+text = "完成"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="BoardCenter" type="CenterContainer" parent="MainLayout" unique_id=277718230]
 layout_mode = 2
@@ -1627,15 +1820,14 @@ custom_minimum_size = Vector2(0, 45)
 layout_mode = 2
 
 [node name="SacrificeButton" type="TextureButton" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox" unique_id=945550919]
-self_modulate = Color(0.9765156, 0.82241404, 0.24030715, 1)
 custom_minimum_size = Vector2(100, 100)
 layout_mode = 2
 size_flags_vertical = 4
-texture_normal = ExtResource("15_8auva")
+texture_normal = ExtResource("16_btn2")
 ignore_texture_size = true
 stretch_mode = 0
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton" unique_id=720163956]
+[node name="VBoxContainer" type="Control" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton" unique_id=1255188987]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -1648,33 +1840,56 @@ offset_right = 50.0
 offset_bottom = 29.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 10
+mouse_filter = 2
 
 [node name="Label2" type="Label" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton/VBoxContainer" unique_id=642871016]
-layout_mode = 2
+layout_mode = 0
+offset_left = -3.0
+offset_top = -25.0
+offset_right = 97.0
+offset_bottom = 3.583334
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.5529412)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_colors/font_outline_color = Color(0.4627451, 0.16078432, 0.015686275, 1)
+theme_override_constants/outline_size = 5
 theme_override_font_sizes/font_size = 28
-text = "回收"
+text = "出售"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton/VBoxContainer" unique_id=2074880709]
+[node name="HBoxContainer" type="Control" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton/VBoxContainer" unique_id=1102782299]
 custom_minimum_size = Vector2(100, 0)
-layout_mode = 2
+anchors_preset = 0
+offset_left = 21.0
+offset_top = 6.0
+offset_right = 124.0
+offset_bottom = 55.0
 size_flags_horizontal = 4
-alignment = 1
+mouse_filter = 2
 
 [node name="EnergyIcon" type="TextureRect" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton/VBoxContainer/HBoxContainer" unique_id=945550932]
 custom_minimum_size = Vector2(30, 0)
-layout_mode = 2
-texture = ExtResource("4_energy")
-expand_mode = 1
+layout_mode = 0
+offset_right = 51.0
+offset_bottom = 49.0
+mouse_filter = 2
+texture = ExtResource("19_2sbk6")
 stretch_mode = 5
 
 [node name="Label" type="Label" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton/VBoxContainer/HBoxContainer" unique_id=945550931]
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -50.5
+offset_top = 13.500038
+offset_right = -2.5
+offset_bottom = 33.916702
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset_ratio = Vector2(0.5, 0.5)
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.5529412)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -1683,15 +1898,129 @@ text = "2048"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Control" type="Control" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton" unique_id=786720930]
+[node name="SpeedupButton" type="TextureButton" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox" unique_id=123456789]
+visible = false
+custom_minimum_size = Vector2(100, 100)
+layout_mode = 2
+size_flags_vertical = 4
+texture_normal = ExtResource("16_btn2")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="VBoxContainer" type="Control" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SpeedupButton" unique_id=380952487]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -50.0
+offset_top = -29.0
+offset_right = 50.0
+offset_bottom = 59.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Icon2" type="TextureRect" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SpeedupButton/VBoxContainer" unique_id=1832835156]
+self_modulate = Color(0.98039216, 0.3647059, 0.38039216, 1)
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 0
+offset_left = 5.0
+offset_top = -23.0
+offset_right = 96.0
+offset_bottom = -4.0
+mouse_filter = 2
+texture = ExtResource("20_54ie0")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Icon1" type="TextureRect" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SpeedupButton/VBoxContainer" unique_id=1248504011]
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 0
+offset_left = -7.0
+offset_top = -24.0
+offset_right = 23.0
+offset_bottom = -4.0
+mouse_filter = 2
+texture = ExtResource("21_840ua")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Label2" type="Label" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SpeedupButton/VBoxContainer" unique_id=123456791]
+visible = false
+layout_mode = 0
+offset_left = -2.0
+offset_top = -25.0
+offset_right = 98.0
+offset_bottom = 3.583334
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.5529412)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 28
+text = "加速"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TimeLabel" type="Label" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SpeedupButton/VBoxContainer" unique_id=123456792]
+layout_mode = 0
+offset_left = 3.0
+offset_top = -23.0
+offset_right = 103.0
+offset_bottom = -2.583334
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.5529412)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 18
+text = "00:00"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HBoxContainer" type="Control" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SpeedupButton/VBoxContainer" unique_id=704849052]
+custom_minimum_size = Vector2(100, 0)
 anchors_preset = 0
 offset_left = 5.0
-offset_top = 15.0
-offset_right = 45.0
+offset_top = 35.0
+offset_right = 105.0
 offset_bottom = 55.0
+size_flags_horizontal = 4
+mouse_filter = 2
+
+[node name="DiamondIcon" type="TextureRect" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SpeedupButton/VBoxContainer/HBoxContainer" unique_id=123456794]
+custom_minimum_size = Vector2(30, 0)
+layout_mode = 0
+offset_left = 18.0
+offset_top = -37.0
+offset_right = 69.0
+offset_bottom = 14.0
+mouse_filter = 2
+texture = ExtResource("22_nupcc")
+stretch_mode = 5
+
+[node name="CostLabel" type="Label" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox/SpeedupButton/VBoxContainer/HBoxContainer" unique_id=123456795]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -25.0
+offset_top = -5.99996
+offset_right = 20.0
+offset_bottom = 14.416706
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset_ratio = Vector2(0.5, 0.5)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.5529412)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 20
+text = "01111"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="MarginContainer3" type="MarginContainer" parent="MainLayout/DetailActionBar/DetailPanel/MainHBox" unique_id=849178955]
-custom_minimum_size = Vector2(80, 10)
+custom_minimum_size = Vector2(20, 10)
 layout_mode = 2
 
 [node name="EndTurnButton" type="TextureButton" parent="MainLayout/DetailActionBar" unique_id=945550920]
@@ -1715,7 +2044,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="MarginContainer" type="MarginContainer" parent="MainLayout" unique_id=714316466]
-custom_minimum_size = Vector2(0, 20)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 
 [node name="SettingsBackdrop" type="ColorRect" parent="." unique_id=1089472690]

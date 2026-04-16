@@ -1,112 +1,224 @@
-[gd_scene format=3 uid="uid://resource_display_001"]
+[gd_scene format=3 uid="uid://ds52tj2hhw28y"]
 
-[ext_resource type="Texture2D" uid="uid://cimhkfb5qgsea" path="res://art/sprites/UI/icon/power.png" id="1_energy"]
-[ext_resource type="Texture2D" uid="uid://x4yg0g26r063" path="res://art/sprites/UI/icon/jinbi.png" id="2_coin"]
-[ext_resource type="Texture2D" uid="uid://zuanshi001" path="res://art/sprites/UI/icon/zuanshi.png" id="3_zuanshi"]
+[ext_resource type="Texture2D" uid="uid://db6o0qspw5an7" path="res://art/sprites/UI/panels/detailPanel.png" id="1_0gqjx"]
+[ext_resource type="Texture2D" uid="uid://vkcfeurhhteg" path="res://art/sprites/UI/icon/power.png" id="1_energy"]
+[ext_resource type="Texture2D" uid="uid://cp3oe1vry0fck" path="res://art/sprites/UI/icon/jinbi.png" id="2_coin"]
+[ext_resource type="Texture2D" uid="uid://bo4cq87fs8wr6" path="res://art/sprites/UI/icon/add.png" id="3_0gqjx"]
+[ext_resource type="Texture2D" uid="uid://cqm34kbad7jq0" path="res://art/sprites/UI/icon/zuanshi.png" id="3_zuanshi"]
 
-[node name="ResourceDisplay" type="HBoxContainer"]
+[node name="ResourceDisplay" type="HBoxContainer" unique_id=685832685]
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 35.0
+offset_left = -220.0
+offset_top = 30.0
+offset_right = 380.0
+offset_bottom = -67120.0
+grow_horizontal = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 12
+theme_override_constants/separation = 100
 
-[node name="EnergyContainer" type="VBoxContainer" parent="."]
+[node name="EnergyContainer" type="Control" parent="." unique_id=1576583452]
 custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 2
 
-[node name="EnergyRow" type="HBoxContainer" parent="EnergyContainer"]
+[node name="EnergyRow" type="HBoxContainer" parent="EnergyContainer" unique_id=1269407938]
+layout_mode = 0
+offset_right = 131.0
+offset_bottom = 51.0
 size_flags_vertical = 3
 theme_override_constants/separation = 4
 
-[node name="EnergyIcon" type="TextureRect" parent="EnergyContainer/EnergyRow"]
+[node name="Control" type="Control" parent="EnergyContainer/EnergyRow" unique_id=331911070]
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="EnergyContainer/EnergyRow/Control" unique_id=137623503]
+layout_mode = 0
+offset_left = 20.0
+offset_right = 139.0
+offset_bottom = 44.0
+texture = ExtResource("1_0gqjx")
+
+[node name="EnergyIcon" type="TextureRect" parent="EnergyContainer/EnergyRow" unique_id=1424818347]
 custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
 size_flags_vertical = 3
 texture = ExtResource("1_energy")
-expand_mode = 1
 stretch_mode = 5
 
-[node name="EnergyLabel" type="Label" parent="EnergyContainer/EnergyRow"]
+[node name="EnergyLabel" type="Label" parent="EnergyContainer/EnergyRow" unique_id=1361859361]
 custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
 size_flags_vertical = 3
-theme_override_font_sizes/font_size = 28
-text = "36/36"
+theme_override_colors/font_color = Color(0.5294118, 0.37254903, 0.2, 1)
+theme_override_font_sizes/font_size = 18
+text = "100011111"
+horizontal_alignment = 1
 vertical_alignment = 1
+autowrap_mode = 3
+text_overrun_behavior = 5
 
-[node name="EnergyBuyBtn" type="Button" parent="EnergyContainer"]
-custom_minimum_size = Vector2(60, 25)
+[node name="EnergyBuyBtn" type="Button" parent="EnergyContainer" unique_id=1009429455]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.000008
+offset_top = 2.0
+offset_right = 9.55555
+offset_bottom = 30.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset_ratio = Vector2(0.5, 0.5)
 size_flags_horizontal = 4
-theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
-theme_override_colors/font_hover_color = Color(0.3, 1, 0.3, 1)
-theme_override_font_sizes/font_size = 20
-text = "+"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(0.82517505, 1, 0.8109716, 1)
+theme_override_font_sizes/font_size = 30
+icon = ExtResource("3_0gqjx")
 flat = true
+icon_alignment = 1
+expand_icon = true
 
-[node name="EnergyTimer" type="Label" parent="EnergyContainer"]
+[node name="EnergyTimer" type="Label" parent="EnergyContainer" unique_id=1206426612]
 visible = false
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+layout_mode = 0
+offset_left = 18.0
+offset_top = 38.0
+offset_right = 149.0
+offset_bottom = 54.333336
+theme_override_colors/font_color = Color(0.9685319, 0.9038798, 0.6100823, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
 theme_override_font_sizes/font_size = 16
 text = "2:00"
 horizontal_alignment = 1
 
-[node name="GoldContainer" type="VBoxContainer" parent="."]
+[node name="GoldContainer" type="Control" parent="." unique_id=927526661]
 custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 2
 
-[node name="GoldRow" type="HBoxContainer" parent="GoldContainer"]
+[node name="GoldRow" type="HBoxContainer" parent="GoldContainer" unique_id=2036727364]
+layout_mode = 0
+offset_right = 131.0
+offset_bottom = 51.0
 size_flags_vertical = 3
 theme_override_constants/separation = 4
 
-[node name="GoldIcon" type="TextureRect" parent="GoldContainer/GoldRow"]
+[node name="Control" type="Control" parent="GoldContainer/GoldRow" unique_id=242927977]
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="GoldContainer/GoldRow/Control" unique_id=589924615]
+layout_mode = 0
+offset_left = 20.0
+offset_right = 139.0
+offset_bottom = 44.0
+texture = ExtResource("1_0gqjx")
+
+[node name="GoldIcon" type="TextureRect" parent="GoldContainer/GoldRow" unique_id=575122649]
 custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
 size_flags_vertical = 3
 texture = ExtResource("2_coin")
-expand_mode = 1
 stretch_mode = 5
 
-[node name="GoldLabel" type="Label" parent="GoldContainer/GoldRow"]
+[node name="GoldLabel" type="Label" parent="GoldContainer/GoldRow" unique_id=1639860719]
 custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
 size_flags_vertical = 3
-theme_override_font_sizes/font_size = 28
-text = "20000"
+theme_override_colors/font_color = Color(0.5294118, 0.37254903, 0.2, 1)
+theme_override_font_sizes/font_size = 18
+text = "9999999"
+horizontal_alignment = 1
 vertical_alignment = 1
+autowrap_mode = 2
 
-[node name="GoldBuyBtn" type="Button" parent="GoldContainer"]
-custom_minimum_size = Vector2(60, 25)
+[node name="GoldBuyBtn" type="Button" parent="GoldContainer" unique_id=161104113]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -6.0
+offset_top = 1.0
+offset_right = 23.555557
+offset_bottom = 29.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset_ratio = Vector2(0.5, 0.5)
 size_flags_horizontal = 4
-theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
-theme_override_colors/font_hover_color = Color(0.3, 1, 0.3, 1)
-theme_override_font_sizes/font_size = 20
-text = "+"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(0.82517505, 1, 0.8109716, 1)
+theme_override_font_sizes/font_size = 30
+icon = ExtResource("3_0gqjx")
 flat = true
+icon_alignment = 1
+expand_icon = true
 
-[node name="DiamondContainer" type="VBoxContainer" parent="."]
+[node name="DiamondContainer" type="Control" parent="." unique_id=2091486993]
 custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 2
 
-[node name="DiamondRow" type="HBoxContainer" parent="DiamondContainer"]
+[node name="DiamondRow" type="HBoxContainer" parent="DiamondContainer" unique_id=880574678]
+layout_mode = 0
+offset_right = 131.0
+offset_bottom = 51.0
 size_flags_vertical = 3
 theme_override_constants/separation = 4
 
-[node name="DiamondIcon" type="TextureRect" parent="DiamondContainer/DiamondRow"]
+[node name="Control" type="Control" parent="DiamondContainer/DiamondRow" unique_id=1593901993]
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="DiamondContainer/DiamondRow/Control" unique_id=963654387]
+layout_mode = 0
+offset_left = 20.0
+offset_right = 139.0
+offset_bottom = 44.0
+texture = ExtResource("1_0gqjx")
+
+[node name="DiamondIcon" type="TextureRect" parent="DiamondContainer/DiamondRow" unique_id=2005797388]
 custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
 size_flags_vertical = 3
 texture = ExtResource("3_zuanshi")
-expand_mode = 1
 stretch_mode = 5
 
-[node name="DiamondLabel" type="Label" parent="DiamondContainer/DiamondRow"]
-custom_minimum_size = Vector2(60, 0)
+[node name="DiamondLabel" type="Label" parent="DiamondContainer/DiamondRow" unique_id=852142822]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
 size_flags_vertical = 3
-theme_override_font_sizes/font_size = 28
-text = "0"
+theme_override_colors/font_color = Color(0.5294118, 0.37254903, 0.2, 1)
+theme_override_font_sizes/font_size = 18
+text = "9999999"
+horizontal_alignment = 1
 vertical_alignment = 1
+autowrap_mode = 2
 
-[node name="DiamondBuyBtn" type="Button" parent="DiamondContainer"]
-custom_minimum_size = Vector2(60, 25)
+[node name="DiamondBuyBtn" type="Button" parent="DiamondContainer" unique_id=1412372934]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -11.0
+offset_top = 2.0
+offset_right = 18.555542
+offset_bottom = 30.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset_ratio = Vector2(0.5, 0.5)
 size_flags_horizontal = 4
-theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
-theme_override_colors/font_hover_color = Color(0.3, 1, 0.3, 1)
-theme_override_font_sizes/font_size = 20
-text = "+"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(0.82517505, 1, 0.8109716, 1)
+theme_override_font_sizes/font_size = 30
+icon = ExtResource("3_0gqjx")
 flat = true
+icon_alignment = 1
+expand_icon = true

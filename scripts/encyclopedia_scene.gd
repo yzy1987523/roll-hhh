@@ -176,15 +176,19 @@ func _create_job_cell(job_id: int, job_name: String, char_type: int) -> Control:
 func _create_job_sprite(job_id: int, level: int, char_type: int) -> TextureRect:
 	# 加载图片
 	var path := "res://art/sprites/chars/char_%02d/char_%02d%02d01.png" % [char_type, char_type, level]
-	var tex: Texture2D = load(path) as Texture2D
+	var tex: Texture2D = null
+	
+	# 检查资源是否存在，避免加载不存在的资源导致错误
+	if ResourceLoader.exists(path):
+		tex = load(path) as Texture2D
 	
 	if tex:
-		var rect := TextureRect.new()
-		rect.texture = tex
-		return rect
+		var result := TextureRect.new()
+		result.texture = tex
+		return result
 	
 	# 加载失败时返回纯色方块
-	print(">>> [Encyclopedia] 无法加载图片: %s" % path)
+	print(">>> [Encyclopedia] 资源文件不存在: %s" % path)
 	var rect := TextureRect.new()
 	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
 	img.fill(JOB_COLORS.get(job_id, Color(0.5, 0.5, 0.5)))

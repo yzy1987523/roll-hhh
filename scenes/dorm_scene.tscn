@@ -1,8 +1,9 @@
 [gd_scene format=3 uid="uid://bj08273nw76du"]
 
 [ext_resource type="Script" uid="uid://cax0q5joxp33h" path="res://scripts/dorm_scene.gd" id="1_dorm"]
-[ext_resource type="Texture2D" uid="uid://d2wku35vuuwpc" path="res://art/sprites/UI/panels/panel.png" id="2_panel"]
-[ext_resource type="Texture2D" uid="uid://x0btk78hil8p" path="res://art/sprites/UI/items/smallItem/close.png" id="3_close"]
+[ext_resource type="Texture2D" uid="uid://c6o6t7qmkt8ry" path="res://art/sprites/UI/panels/kuang.png" id="2_0ytg1"]
+[ext_resource type="Texture2D" uid="uid://bq65nmiwkm2ox" path="res://art/sprites/UI/panels/bar.png" id="3_6v7n3"]
+[ext_resource type="Texture2D" uid="uid://bbg8b5am1xuyg" path="res://art/sprites/UI/icon/close.png" id="4_jep5w"]
 
 [node name="DormScene" type="Control" unique_id=1000001]
 layout_mode = 3
@@ -14,6 +15,7 @@ grow_vertical = 2
 script = ExtResource("1_dorm")
 
 [node name="Backdrop" type="ColorRect" parent="." unique_id=1000002]
+self_modulate = Color(1, 1, 1, 0)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -24,6 +26,7 @@ mouse_filter = 2
 color = Color(0, 0, 0, 0.78431374)
 
 [node name="DormPanel" type="PanelContainer" parent="." unique_id=1000003]
+self_modulate = Color(1, 1, 1, 0)
 z_index = 101
 z_as_relative = false
 layout_mode = 1
@@ -39,12 +42,14 @@ offset_bottom = 500.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="PanelBg" type="TextureRect" parent="DormPanel" unique_id=1000004]
+[node name="PanelBg" type="NinePatchRect" parent="DormPanel" unique_id=2087770309]
 layout_mode = 2
-mouse_filter = 2
-texture = ExtResource("2_panel")
-expand_mode = 1
-stretch_mode = 5
+texture = ExtResource("2_0ytg1")
+region_rect = Rect2(0, 0.5, 239, 89.5)
+patch_margin_left = 34
+patch_margin_top = 11
+patch_margin_right = 30
+patch_margin_bottom = 25
 
 [node name="VBox" type="VBoxContainer" parent="DormPanel" unique_id=1000005]
 layout_mode = 2
@@ -62,12 +67,23 @@ theme_override_constants/margin_top = 50
 theme_override_constants/margin_right = 90
 theme_override_constants/margin_bottom = 10
 
-[node name="TitleBar" type="HBoxContainer" parent="DormPanel/VBox/TitleBarMargin" unique_id=1000007]
+[node name="TitleBar" type="Control" parent="DormPanel/VBox/TitleBarMargin" unique_id=1349661631]
 layout_mode = 2
-theme_override_constants/separation = 16
+
+[node name="TextureRect" type="TextureRect" parent="DormPanel/VBox/TitleBarMargin/TitleBar" unique_id=1375348275]
+layout_mode = 0
+offset_left = -35.0
+offset_top = -83.0
+offset_right = 488.0
+offset_bottom = 23.0
+texture = ExtResource("3_6v7n3")
 
 [node name="Title" type="Label" parent="DormPanel/VBox/TitleBarMargin/TitleBar" unique_id=1000008]
-layout_mode = 2
+visible = false
+layout_mode = 0
+offset_top = 19.0
+offset_right = 444.0
+offset_bottom = 59.833332
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.11213394, 0.5435751, 0.6630175, 1)
 theme_override_font_sizes/font_size = 40
@@ -75,10 +91,27 @@ text = "宿  舍"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="Title2" type="Label" parent="DormPanel/VBox/TitleBarMargin/TitleBar" unique_id=978636826]
+layout_mode = 0
+offset_left = 2.0
+offset_top = -59.0
+offset_right = 446.0
+offset_bottom = -18.166668
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.11213394, 0.5435751, 0.6630175, 1)
+theme_override_font_sizes/font_size = 40
+text = "背 包"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="CloseButton" type="TextureButton" parent="DormPanel/VBox/TitleBarMargin/TitleBar" unique_id=1000009]
 custom_minimum_size = Vector2(80, 80)
-layout_mode = 2
-texture_normal = ExtResource("3_close")
+layout_mode = 0
+offset_left = 524.0
+offset_top = -88.0
+offset_right = 624.0
+offset_bottom = 12.0
+texture_normal = ExtResource("4_jep5w")
 ignore_texture_size = true
 stretch_mode = 5
 

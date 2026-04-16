@@ -282,6 +282,7 @@ class BoardItemData:
 	var item_type: int = 0   # BoardItemType enum
 	var next_composite: int = 0  # 合成后的物品ID (0=不可合成)
 	var count: int = 1      # 叠加数量
+	var content: String = ""   # 物品内容描述
 
 	# 生成器配置 (从 ItemConfig 获取)
 	var max_count: int = 0    # 最大库存 (production 类型)
@@ -334,6 +335,8 @@ class BoardItemData:
 		data.name = cfg.get("name", "")
 		data.level = cfg.get("level", 1)
 		data.sprite = cfg.get("sprite", "")
+		data.content = cfg.get("content", "")
+		print(">>> [DEBUG] from_config: id=%d, name='%s', content='%s'" % [data.id, data.name, data.content])
 		# type 是字符串，需要映射到 BoardItemType enum
 		data.item_type = _parse_item_type(cfg.get("type", ""))
 		# next_composite 可能是字符串或整数，空字符串转为 0
@@ -373,9 +376,11 @@ class BoardItemData:
 		data.item_type = item_type
 		data.next_composite = next_composite
 		data.count = count
+		data.content = content
 		data.max_count = max_count
 		data.recovery_time = recovery_time
 		data.cooldown_time = cooldown_time
+		print(">>> [DEBUG] duplicate: id=%d, name='%s', content='%s' -> '%s'" % [id, name, content, data.content])
 		return data
 
 	# 序列化为字典 (仅包含需要持久化的字段)
@@ -383,7 +388,8 @@ class BoardItemData:
 		return {
 			"id": id, "name": name, "level": level,
 			"sprite": sprite, "item_type": item_type,
-			"next_composite": next_composite, "count": count
+			"next_composite": next_composite, "count": count,
+			"content": content
 		}
 
 	# 从字典反序列化
@@ -396,4 +402,15 @@ class BoardItemData:
 		data.item_type = d.get("item_type", 0)
 		data.next_composite = d.get("next_composite", 0)
 		data.count = d.get("count", 1)
+		data.content = d.get("content", "")
+		
+		# 如果 content 为空（旧存档），从 ItemConfig 补充
+		if data.content.is_empty() and data.id > 0:
+			var im = Engine.get_main_loop().root.get_node_or_null("ItemManager")
+			if im != null:
+				var item_data: BoardItemData = im.get_item(data.id)
+				if item_data != null:
+					data.content = item_data.content
+					print(">>> [DEBUG] from_dict补充content: id=%d, content='%s'" % [data.id, data.content])
+		
 		return data

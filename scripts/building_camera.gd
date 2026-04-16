@@ -4,8 +4,8 @@ extends Camera2D
 ## 支持鼠标滚轮和触屏捏合手势
 
 # 缩放限制
-const ZOOM_MIN: float = 0.8
-const ZOOM_MAX: float = 1.2
+const ZOOM_MIN: float = 1.1
+const ZOOM_MAX: float = 3
 const ZOOM_STEP: float = 0.05
 const ZOOM_TWEEN_DURATION: float = 0.15
 
