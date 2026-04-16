@@ -3,6 +3,9 @@ extends Node
 ## 存档系统
 ## 任务 6.1: LocalStorage 自动存档
 
+# 信号
+signal save_cleared  # 清空存档后发出，用于通知 UI 刷新
+
 # 预加载依赖类 (Autoload 需要显式预加载)
 const BD = preload("res://scripts/board_data.gd")
 const DM = preload("res://scripts/data_models.gd")
@@ -41,6 +44,8 @@ func clear_game_save() -> void:
 	save_encyclopedia()
 	# 重新从 MapConfig 初始化棋盘
 	_init_board_from_map_config()
+	# 发出信号通知 UI 刷新
+	save_cleared.emit()
 
 
 ## 解锁图鉴条目
@@ -95,9 +100,8 @@ func _init_board_from_map_config() -> void:
 
 	GameManager.board_data.clear_board()
 
-	# 初始化局外道具（只有新游戏才包含背包）
+	# 初始化局外道具
 	GameManager.out_items.clear()
-	GameManager.out_items.append(99)  # 背包物品ID
 
 	# 清空背包
 	GameManager.backpack_items.clear()
