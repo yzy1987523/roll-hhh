@@ -84,6 +84,7 @@ offset_bottom = 128.0
 size_flags_horizontal = 3
 
 [node name="SettingsButton" type="Button" parent="MainLayout/TopBar" unique_id=2027233340]
+visible = false
 custom_minimum_size = Vector2(128, 128)
 layout_mode = 0
 offset_left = 932.0
