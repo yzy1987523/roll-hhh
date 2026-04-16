@@ -22,10 +22,13 @@
 [ext_resource type="Texture2D" uid="uid://dtsocwtwfeen5" path="res://art/building/b008.png" id="21_b008"]
 [ext_resource type="Texture2D" uid="uid://2cyl5ydwhcss" path="res://art/building/b009.png" id="22_b009"]
 [ext_resource type="Texture2D" uid="uid://b44o05gihhc8m" path="res://art/building/b010.png" id="23_b010"]
+[ext_resource type="Script" uid="uid://building_camera_01" path="res://scripts/building_camera.gd" id="24_camera"]
+[ext_resource type="PackedScene" uid="uid://ca42w3tss4qmv" path="res://scenes/encyclopedia_scene.tscn" id="25_encyclopedia"]
 
 [node name="RoomRoot" type="Node2D" unique_id=1234567890]
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1234567891]
+script = ExtResource("24_camera")
 
 [node name="BG" type="Sprite2D" parent="." unique_id=1234567901]
 position = Vector2(-51, 68)
@@ -83,6 +86,20 @@ grow_vertical = 0
 custom_minimum_size = Vector2(80, 80)
 layout_mode = 1
 texture_normal = ExtResource("8_play")
+
+[node name="EncyclopediaBtn" type="Control" parent="UILayer" unique_id=1234567910]
+layout_mode = 3
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -100.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 60.0
+grow_horizontal = 0
+
+[node name="EncyclopediaScene" parent="UILayer" instance=ExtResource("25_encyclopedia")]
+visible = false
 
 [node name="GridManager" type="Node2D" parent="." unique_id=1234567892]
 script = ExtResource("1_grid_manager")

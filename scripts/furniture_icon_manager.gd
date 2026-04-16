@@ -109,7 +109,7 @@ func _create_unlock_icon(build_id: int, furniture: Node, config: Dictionary) -> 
 
 	var icon_root_global: Vector2 = icon_root.get_global_position()
 	var local_pos: Vector2 = furniture_visual_center - icon_root_global
-	var btn_pos: Vector2 = local_pos + Vector2(-40, -80)
+	var btn_pos: Vector2 = local_pos + Vector2(-40, -20)
 	print(">>> B: furniture_visual_center=%s" % str(furniture_visual_center))
 	print(">>> B: icon_root_global=" + str(icon_root_global))
 	print(">>> B: btn_pos=" + str(btn_pos))

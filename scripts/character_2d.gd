@@ -111,6 +111,9 @@ func _update_z_index():
 
 # ================================= 尝试随机移动 =================================
 func _try_move_to_random_neighbor():
+	# 随机化下次移动间隔（0.8 ~ 1.5秒）
+	move_interval = randf_range(0.8, 1.5)
+
 	# 四个方向：右、下、左、上（菱形网格的相邻格子）
 	var directions: Array[Vector2i] = [
 		Vector2i(1, 0),   # 右（gx+1, gy）
@@ -121,25 +124,30 @@ func _try_move_to_random_neighbor():
 	directions.shuffle()
 
 	for d in directions:
-		var next_grid = _current_grid + d
-		# 检查目标格子是否可通行
-		if not _can_move_to(next_grid):
-			print(">>> [Character2D] _can_move_to failed for grid=%s" % [next_grid])
-			continue
-		# 检查路径上是否有家具
-		var blocked_grid = _get_path_blocked_by_furniture(_current_grid, next_grid)
-		print(">>> [Character2D] blocked_grid=%s for direction=%s" % [blocked_grid, d])
-		if blocked_grid.x != -999:  # 有阻挡
-			# 停在家具前的格子
-			var stop_before = blocked_grid - d
-			if _can_move_to(stop_before) and stop_before != _current_grid:
-				_move_to_grid(stop_before, d)
-				return
-			else:
-				print(">>> [Character2D] stop_before blocked, continue")
-				continue
-		_move_to_grid(next_grid, d)
-		return
+		# 随机选择移动距离 1-3 格，优先尝试最远的
+		var max_steps: int = randi_range(1, 3)
+		var best_target: Vector2i = _current_grid
+		for step in range(max_steps, 0, -1):
+			var candidate: Vector2i = _current_grid + d * step
+			# 检查路径上所有格子是否可通行
+			var path_clear: bool = true
+			for s in range(1, step + 1):
+				var check_grid: Vector2i = _current_grid + d * s
+				if not _can_move_to(check_grid):
+					path_clear = false
+					break
+				# 检查路径上是否有家具阻挡
+				var blocked_grid = _get_path_blocked_by_furniture(_current_grid, check_grid)
+				if blocked_grid.x != -999:
+					path_clear = false
+					break
+			if path_clear:
+				best_target = candidate
+				break
+
+		if best_target != _current_grid:
+			_move_to_grid(best_target, d)
+			return
 
 # ================================= 移动能力检查 =================================
 func _can_move_to(grid: Vector2i) -> bool:
@@ -241,7 +249,8 @@ func _move_to_grid(target: Vector2i, direction: Vector2i):
 	_update_facing(direction)
 
 	var end_pos = _grid_to_world(target)
-	var duration = 1.0 / move_speed
+	var steps: int = maxi(absi(target.x - _current_grid.x), absi(target.y - _current_grid.y))
+	var duration = float(steps) / move_speed
 
 	_move_tween = create_tween()
 	_move_tween.set_parallel(true)
