@@ -100,7 +100,18 @@ func _load_level_config() -> void:
 func _on_play_pressed() -> void:
 	print(">>> [BuildingUI] 点击播放按钮，进入合成界面")
 	SoundSystem.play_button_click()
-	TransitionManager.change_scene_with_transition("res://scenes/game_board.tscn")
+	# 播放按钮缩放动画
+	var play_btn: TextureButton = find_child("PlayBtn", true, false)
+	if play_btn:
+		var tween := create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(play_btn, "scale", Vector2(1.1, 1.1), 0.15)\
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tween.tween_property(play_btn, "scale", Vector2(1.0, 1.0), 0.1)\
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN).set_delay(0.15)
+		tween.finished.connect(func(): TransitionManager.change_scene_with_transition("res://scenes/game_board.tscn"))
+	else:
+		TransitionManager.change_scene_with_transition("res://scenes/game_board.tscn")
 
 
 # ================================= 建造清单按钮 =================================
