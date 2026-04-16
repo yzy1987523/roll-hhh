@@ -6,8 +6,24 @@ var _build_list_instance: Control = null
 # 等级配置缓存
 var _level_config: Dictionary = {}
 
+# 资源购买按钮
+@onready var _energy_buy_btn: Button = find_child("EnergyBuyBtn", true, false)
+@onready var _gold_buy_btn: Button = find_child("GoldBuyBtn", true, false)
+@onready var _diamond_buy_btn: Button = find_child("DiamondBuyBtn", true, false)
+
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var mouse_pos: Vector2 = event.global_position
+		# 检测是否点在 EnergyBuyBtn 上
+		if _energy_buy_btn != null:
+			var btn_rect = Rect2(_energy_buy_btn.global_position, _energy_buy_btn.size)
+			print(">>> [BuildingUI] mouse_pos=%s, energy_btn_rect=%s, contains=%s" % [mouse_pos, btn_rect, btn_rect.has_point(mouse_pos)])
+
+
 # ================================= 初始化 =================================
 func _ready() -> void:
+	print(">>> [BuildingUI] _ready 开始执行")
 	_load_level_config()
 	_connect_grid_manager_signal()
 	_connect_level_up_signal()
@@ -17,6 +33,11 @@ func _ready() -> void:
 	_update_level_display()
 	_update_exp_bar()
 	_update_resource_display()
+	# 延迟连接购买按钮，等待子场景加载完成
+	await get_tree().process_frame
+	print(">>> [BuildingUI] 延迟后，开始连接购买按钮")
+	_connect_buy_buttons()
+	print(">>> [BuildingUI] _ready 执行完成")
 
 
 # ================================= 连接 GridManager 的 build_exp_reward 信号 =================================
@@ -49,6 +70,8 @@ func _connect_resource_signals() -> void:
 		GameManager.energy_changed.connect(_on_energy_changed)
 	if GameManager.has_signal("diamond_changed"):
 		GameManager.diamond_changed.connect(_on_diamond_changed)
+	# 连接星星数量变化信号
+	TaskManager.stars_changed.connect(_on_stars_changed)
 	print(">>> [BuildingUI] 已连接资源变化信号")
 
 
@@ -63,6 +86,12 @@ func _on_save_cleared() -> void:
 	_update_level_display()
 	_update_exp_bar()
 	_update_resource_display()
+
+
+func _on_stars_changed(_new_stars: int) -> void:
+	var star_label = find_child("StarLabel", true, false)
+	if star_label != null:
+		star_label.text = str(_new_stars)
 
 
 func _on_gold_changed(_amount) -> void:
@@ -93,6 +122,11 @@ func _update_resource_display() -> void:
 		var diamond: int = GameManager.get("diamond") if GameManager.get("diamond") != null else 0
 		diamond_label.text = str(diamond)
 
+	var star_label = find_child("StarLabel", true, false)
+	if star_label != null:
+		var stars: int = TaskManager.get_stars()
+		star_label.text = str(stars)
+
 
 # ================================= 加载等级配置 =================================
 func _load_level_config() -> void:
@@ -108,6 +142,130 @@ func _load_level_config() -> void:
 		return
 	_level_config = json.get_data()
 	print(">>> [BuildingUI] 等级配置加载完成")
+
+
+# ================================= 本地弹窗显示（解决 CanvasLayer 遮挡问题） =================================
+func _show_popup(
+	p_title: String,
+	p_content: String = "",
+	p_description: String = "",
+	p_confirm_text: String = "",
+	p_close_text: String = "",
+	p_on_confirm: Callable = Callable(),
+	p_on_close: Callable = Callable()
+) -> void:
+	# 实例化预制体
+	var popup_scene: PackedScene = ResourceLoader.load("res://scenes/popup_scene.tscn")
+	var popup: Control = popup_scene.instantiate()
+	popup.setup(
+		p_title,
+		p_content,
+		p_description,
+		p_confirm_text,
+		p_close_text,
+		p_on_confirm,
+		p_on_close
+	)
+
+	# 设置弹窗层级高于 CanvasLayer
+	popup.z_index = 3000
+
+	# 添加到当前 CanvasLayer 子节点
+	add_child(popup)
+
+	# 居中到屏幕中央
+	popup.global_position = (get_viewport().get_visible_rect().size - Vector2(800, 600)) / 2
+
+	# 用 lambda 捕获 popup 引用，确保正确关闭
+	popup.confirmed.connect(func(): _close_popup(popup))
+	popup.closed.connect(func(): _close_popup(popup))
+
+
+# ================================= 资源购买按钮连接 =================================
+func _connect_buy_buttons() -> void:
+	print(">>> [BuildingUI] _connect_buy_buttons 开始")
+	print(">>> [BuildingUI] _energy_buy_btn=%s", _energy_buy_btn)
+	print(">>> [BuildingUI] _gold_buy_btn=%s", _gold_buy_btn)
+	print(">>> [BuildingUI] _diamond_buy_btn=%s", _diamond_buy_btn)
+	if _energy_buy_btn:
+		_energy_buy_btn.pressed.connect(_on_energy_buy_pressed)
+		print(">>> [BuildingUI] EnergyBuyBtn 信号已连接")
+	if _gold_buy_btn:
+		_gold_buy_btn.pressed.connect(_on_gold_buy_pressed)
+	if _diamond_buy_btn:
+		_diamond_buy_btn.pressed.connect(_on_diamond_buy_pressed)
+
+
+func _on_energy_buy_pressed() -> void:
+	print(">>> [BuildingUI] 点击体力购买按钮")
+	SoundSystem.play_button_click()
+	var cost: int = GameManager.get_energy_purchase_cost()
+	var cost_text: String = LocalizationSystem.get_text("game_board.buy_energy_confirm", {"cost": cost})
+	_show_popup(
+		LocalizationSystem.get_text("game_board.buy_energy_title"),
+		cost_text,
+		"",  # description
+		LocalizationSystem.get_text("common.confirm"),  # confirm_text
+		LocalizationSystem.get_text("common.close"),  # close_text
+		Callable(self, "_do_energy_buy"),  # on_confirm
+		Callable(self, "_on_popup_close")  # on_close
+	)
+
+
+func _do_energy_buy() -> void:
+	if GameManager.purchase_energy():
+		TipManager.show_tip(LocalizationSystem.get_text("game_board.buy_energy_success"))
+	else:
+		TipManager.show_tip(LocalizationSystem.get_text("game_board.buy_energy_failed"))
+
+
+func _on_popup_close() -> void:
+	pass
+
+
+func _close_popup(popup: Control) -> void:
+	if is_instance_valid(popup):
+		popup.queue_free()
+
+
+func _on_gold_buy_pressed() -> void:
+	print(">>> [BuildingUI] 点击金币购买按钮")
+	SoundSystem.play_button_click()
+	_show_popup(
+		LocalizationSystem.get_text("game_board.gold_buy_title"),
+		LocalizationSystem.get_text("game_board.gold_buy_desc"),
+		"",  # description
+		LocalizationSystem.get_text("common.confirm"),  # confirm_text
+		LocalizationSystem.get_text("common.close"),  # close_text
+		Callable(self, "_do_gold_buy"),  # on_confirm
+		Callable(self, "_on_popup_close")  # on_close
+	)
+
+
+func _do_gold_buy() -> void:
+	# 直接增加1000金币
+	GameManager.add_gold(1000)
+	TipManager.show_tip("获得 1000 金币！")
+
+
+func _on_diamond_buy_pressed() -> void:
+	print(">>> [BuildingUI] 点击钻石购买按钮")
+	SoundSystem.play_button_click()
+	_show_popup(
+		LocalizationSystem.get_text("game_board.diamond_buy_title"),
+		LocalizationSystem.get_text("game_board.diamond_buy_desc"),
+		"",  # description
+		LocalizationSystem.get_text("common.confirm"),  # confirm_text
+		LocalizationSystem.get_text("common.close"),  # close_text
+		Callable(self, "_do_diamond_buy"),  # on_confirm
+		Callable(self, "_on_popup_close")  # on_close
+	)
+
+
+func _do_diamond_buy() -> void:
+	# 直接增加1000钻石
+	GameManager.add_diamond(1000)
+	TipManager.show_tip("获得 1000 钻石！")
 
 
 # ================================= Play按钮 =================================
@@ -185,7 +343,7 @@ func _play_explosion_then_fly(start_pos: Vector2, end_pos: Vector2, exp_amount: 
 	for i in range(particle_count):
 		var particle := Sprite2D.new()
 		particle.texture = EXP_ICON
-		particle.scale = Vector2(0.4, 0.4)
+		particle.scale = Vector2(0.8, 0.8)
 		particle.global_position = start_pos
 		particle_container.add_child(particle)
 		particles.append(particle)
@@ -196,7 +354,7 @@ func _play_explosion_then_fly(start_pos: Vector2, end_pos: Vector2, exp_amount: 
 
 		var scatter_tween := create_tween()
 		scatter_tween.tween_property(particle, "global_position", scatter_pos, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		scatter_tween.tween_property(particle, "scale", Vector2(0.6, 0.6), 0.3)
+		scatter_tween.tween_property(particle, "scale", Vector2(1.2, 1.2), 0.3)
 
 	# Phase 2: 收束飞向经验条 (0.4s) - 延迟 0.3s 后开始
 	await get_tree().create_timer(0.3).timeout
@@ -206,7 +364,7 @@ func _play_explosion_then_fly(start_pos: Vector2, end_pos: Vector2, exp_amount: 
 		var fly_tween := create_tween()
 		var random_offset := Vector2(randf_range(-15, 15), randf_range(-15, 15))
 		fly_tween.tween_property(particle, "global_position", end_pos + random_offset, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		fly_tween.parallel().tween_property(particle, "scale", Vector2(0.3, 0.3), 0.4)
+		fly_tween.parallel().tween_property(particle, "scale", Vector2(0.6, 0.6), 0.4)
 		fly_tween.tween_property(particle, "modulate:a", 0.0, 0.1)
 
 	# Phase 3: 粒子到达后添加经验

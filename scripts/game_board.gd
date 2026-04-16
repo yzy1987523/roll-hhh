@@ -72,11 +72,11 @@ var bottom_hud_container: Control
 @onready var sacrifice_button: TextureButton = $MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton
 @onready var sacrifice_icon: TextureRect = $MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton/VBoxContainer/HBoxContainer/EnergyIcon
 @onready var sacrifice_label: Label = $MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton/VBoxContainer/HBoxContainer/Label
+@onready var speedup_button: TextureButton = $MainLayout/DetailActionBar/DetailPanel/MainHBox/SpeedupButton
+@onready var speedup_time_label: Label = $MainLayout/DetailActionBar/DetailPanel/MainHBox/SpeedupButton/VBoxContainer/TimeLabel
+@onready var speedup_cost_label: Label = $MainLayout/DetailActionBar/DetailPanel/MainHBox/SpeedupButton/VBoxContainer/HBoxContainer/CostLabel
 
-# ---- 冷却加速按钮（动态创建） ----
-var _speedup_btn: TextureButton = null
-var _speedup_label: Label = null
-var _speedup_cost_label: Label = null
+# ---- 冷却加速按钮Timer ----
 var _speedup_timer: Timer = null
 
 # ---- 设置面板节点 ----
@@ -116,7 +116,7 @@ var cell_state_overlays: Array = []  # TextureRect 状态叠加层（锁定/灰�
 var cell_producer_fx: Array = []  # TextureRect 生成器特效 fx02（作为物品sprite的子级）
 var cell_task_icons: Array = []  # TextureRect 任务物品图标（左下角标记）
 var cell_cooldown_timers: Array = []  # TextureProgressBar 冷却倒计时（右上角）
-var cell_cooldown_bgs: Array = []  # TextureRect 冷却倒计时背景层
+var cell_cooldown_bgs: Array = []  # TextureProgressBar 冷却倒计时背景层
 
 # ---- 背包面板 ----
 var _backpack_scene_instance: Control = null  # 背包场景实例
@@ -280,8 +280,12 @@ func _connect_signals() -> void:
 	if shop_button:
 		shop_button.pressed.connect(_on_shop_pressed)
 	settings_button.pressed.connect(_on_settings_pressed)
+	print(">>> [GameBoard] energy_buy_btn=%s" % energy_buy_btn)
+	print(">>> [GameBoard] gold_buy_btn=%s" % gold_buy_btn)
+	print(">>> [GameBoard] diamond_buy_btn=%s" % diamond_buy_btn)
 	if energy_buy_btn:
 		energy_buy_btn.pressed.connect(_on_energy_buy_pressed)
+		print(">>> [GameBoard] EnergyBuyBtn 信号已连接")
 	if gold_buy_btn:
 		gold_buy_btn.pressed.connect(_on_gold_buy_pressed)
 	if diamond_buy_btn:
@@ -349,11 +353,13 @@ func _on_producer_stock_changed(board_index: int, _new_stock: int) -> void:
 func _on_producer_cooldown_started(board_index: int, _cooldown_duration: float) -> void:
 	_hide_producer_fx(board_index)
 	_show_cooldown_timer(board_index)
+	_update_character_detail_panel()
 
 
 func _on_producer_cooldown_finished(board_index: int) -> void:
 	_update_producer_fx_visibility(board_index)
 	_hide_cooldown_timer(board_index)
+	_update_character_detail_panel()
 
 
 func _on_producer_registered(board_index: int, _state: ProducerManager.ProducerState) -> void:
@@ -399,6 +405,7 @@ func _on_stock_depleted(board_index: int, depleted_product_id: int) -> void:
 			bd.place_item(new_item.duplicate(), pos)
 	GameManager.board_items_changed.emit()
 	_refresh_board_display()
+	_update_character_detail_panel()
 	GameManager._auto_save()
 
 
@@ -494,7 +501,11 @@ func _process_cooldown_timers() -> void:
 		var total_cd: float = ProducerManager.get_cooldown_total(i)
 		var remaining: float = ProducerManager.get_cooldown_remaining(i)
 		if total_cd > 0 and remaining > 0:
-			cd_progress.value = remaining / total_cd
+			var new_value: float = remaining / total_cd
+			cd_progress.value = new_value
+			# 调试：每0.5秒打印一次（避免日志刷屏）
+			if Engine.get_frames_drawn() % 30 == 0:
+				print(">>> [Cooldown] index=%d, total=%.1f, remaining=%.1f, value=%.2f" % [i, total_cd, remaining, new_value])
 		else:
 			_hide_cooldown_timer(i)
 
@@ -504,10 +515,11 @@ func _show_cooldown_timer(board_index: int) -> void:
 	if board_index < 0 or board_index >= cell_cooldown_timers.size():
 		return
 	var cd_progress: TextureProgressBar = cell_cooldown_timers[board_index]
-	var cd_bg: TextureRect = cell_cooldown_bgs[board_index]
+	var cd_bg: TextureProgressBar = cell_cooldown_bgs[board_index]
 	if is_instance_valid(cd_progress):
 		cd_progress.visible = true
 		cd_progress.value = 1.0
+		print(">>> [Cooldown] 显示冷却图标 index=%d, texture=%s" % [board_index, cd_progress.texture_progress])
 	if is_instance_valid(cd_bg):
 		cd_bg.visible = true
 
@@ -517,7 +529,7 @@ func _hide_cooldown_timer(board_index: int) -> void:
 	if board_index < 0 or board_index >= cell_cooldown_timers.size():
 		return
 	var cd_progress: TextureProgressBar = cell_cooldown_timers[board_index]
-	var cd_bg: TextureRect = cell_cooldown_bgs[board_index]
+	var cd_bg: TextureProgressBar = cell_cooldown_bgs[board_index]
 	if is_instance_valid(cd_progress):
 		cd_progress.visible = false
 	if is_instance_valid(cd_bg):
@@ -694,53 +706,58 @@ func _setup_board_ui() -> void:
 		sprite_container.add_child(task_icon)
 		cell_task_icons.append(task_icon)
 
-		# 动态创建冷却倒计时（右上角，2层：背景圆 + 前景TextureProgressBar）
+		# 动态创建冷却倒计时（右上角，2层：daojishi底图 + 黑色半透明遮罩）
 		var cd_size: float = 36.0
-		# 背景层（灰色半透明圆底）
-		var cd_bg := TextureRect.new()
+		var cd_margin: float = 2.0  # 距离边缘的间距
+
+		# 底层：daojishi.png 倒计时图标底（TextureProgressBar，始终显示完整图片）
+		var cd_bg := TextureProgressBar.new()
 		cd_bg.name = "CooldownBg"
 		cd_bg.custom_minimum_size = Vector2(cd_size, cd_size)
-		cd_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		cd_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		cd_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		cd_bg.anchor_left = 1.0
-		cd_bg.anchor_top = 0.0
-		cd_bg.anchor_right = 1.0
-		cd_bg.anchor_bottom = 0.0
-		cd_bg.offset_left = -cd_size - 2.0
-		cd_bg.offset_top = 2.0
-		cd_bg.offset_right = -2.0
-		cd_bg.offset_bottom = cd_size + 2.0
+		cd_bg.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		cd_bg.offset_left = -cd_size - cd_margin
+		cd_bg.offset_top = cd_margin
+		cd_bg.offset_right = -cd_margin
+		cd_bg.offset_bottom = cd_size + cd_margin
+		cd_bg.fill_mode = TextureProgressBar.FILL_CLOCKWISE
+		cd_bg.radial_initial_angle = 0.0
+		cd_bg.radial_fill_degrees = 360.0
+		cd_bg.min_value = 0.0
+		cd_bg.max_value = 1.0
+		cd_bg.step = 0.001
+		cd_bg.value = 1.0  # 始终显示完整图片
 		cd_bg.visible = false
 		cd_bg.z_index = 16
-		cd_bg.modulate = Color(0.3, 0.3, 0.3, 0.7)
+		# 使用 daojishi.png 作为纹理
+		if ResourceLoader.exists("res://art/sprites/UI/icon/daojishi.png"):
+			cd_bg.texture_progress = load("res://art/sprites/UI/icon/daojishi.png")
 		cell.add_child(cd_bg)
 		cell_cooldown_bgs.append(cd_bg)
 
-		# 前景层（TextureProgressBar，360度Filled模式）
+		# 上层：黑色半透明遮罩，radial fill，从1倒数到0
 		var cd_progress := TextureProgressBar.new()
 		cd_progress.name = "CooldownTimer"
 		cd_progress.custom_minimum_size = Vector2(cd_size, cd_size)
 		cd_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		cd_progress.anchor_left = 1.0
-		cd_progress.anchor_top = 0.0
-		cd_progress.anchor_right = 1.0
-		cd_progress.anchor_bottom = 0.0
-		cd_progress.offset_left = -cd_size - 2.0
-		cd_progress.offset_top = 2.0
-		cd_progress.offset_right = -2.0
-		cd_progress.offset_bottom = cd_size + 2.0
+		cd_progress.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		cd_progress.offset_left = -cd_size - cd_margin
+		cd_progress.offset_top = cd_margin
+		cd_progress.offset_right = -cd_margin
+		cd_progress.offset_bottom = cd_size + cd_margin
 		cd_progress.fill_mode = TextureProgressBar.FILL_CLOCKWISE
-		cd_progress.radial_initial_angle = 0.0  # 从顶部开始
-		cd_progress.radial_fill_degrees = 360.0  # 完整圆形填充
+		cd_progress.radial_initial_angle = 0.0
+		cd_progress.radial_fill_degrees = 360.0
 		cd_progress.min_value = 0.0
 		cd_progress.max_value = 1.0
+		cd_progress.step = 0.001
 		cd_progress.value = 1.0
 		cd_progress.visible = false
 		cd_progress.z_index = 17
-		# 使用 bar1 作为进度纹理（白色）
-		if ResourceLoader.exists("res://art/sprites/UI/icon/bar1.png"):
-			cd_progress.texture_progress = load("res://art/sprites/UI/icon/bar1.png")
+		# 使用 daojishi.png 作为纹理，设置为黑色半透明
+		if ResourceLoader.exists("res://art/sprites/UI/icon/daojishi.png"):
+			cd_progress.texture_progress = load("res://art/sprites/UI/icon/daojishi.png")
+		cd_progress.modulate = Color(0, 0, 0, 0.7)  # 黑色半透明
 		cell.add_child(cd_progress)
 		cell_cooldown_timers.append(cd_progress)
 
@@ -776,9 +793,22 @@ func _update_character_detail_panel() -> void:
 		var bd: BoardData = GameManager.board_data
 		var ch: DataModels.BoardItemData = bd.get_item_at_index(selected_index)
 		if ch != null:
-			# 显示角色信息
-			name_label.text = ch.name
-			detail_label.text = "Lv.%d" % ch.level
+			# 检查是否为Dusty状态
+			var grid_state: int = bd.get_grid_state(selected_index)
+			if grid_state == BoardData.GridState.DUSTY:
+				# Dusty状态：显示名字，不显示出售按钮，修改详情文本
+				name_label.text = "%s Lv.%d" % [ch.name, ch.level]
+				detail_label.text = "要通过合成来解锁物品"
+				hint_label.text = ""
+				sacrifice_button.modulate.a = 0.0
+				sacrifice_button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				return
+			
+			# 显示角色信息：名字 + 等级
+			name_label.text = "%s Lv.%d" % [ch.name, ch.level]
+			# 显示内容描述
+			print(">>> [DEBUG] _update_character_detail_panel: id=%d, name='%s', content='%s'" % [ch.id, ch.name, ch.content])
+			detail_label.text = ch.content
 			hint_label.text = ""
 
 			# 检查是否是冷却中的生成器，显示加速按钮
@@ -818,71 +848,10 @@ func _update_character_detail_panel() -> void:
 	sacrifice_button.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
-## 初始化冷却加速按钮（动态创建，添加到详情面板）
+## 初始化冷却加速按钮（Timer初始化，按钮已在场景中）
 func _init_speedup_button() -> void:
-	var main_hbox = detail_panel.find_child("MainHBox", true, false)
-	if main_hbox == null:
-		return
-
-	var btn := TextureButton.new()
-	btn.name = "SpeedupButton"
-	btn.custom_minimum_size = Vector2(100, 80)
-	btn.mouse_filter = Control.MOUSE_FILTER_STOP
-	btn.visible = false
-
-	# 加载按钮纹理
-	var tex_path := "res://art/sprites/UI/icon/btn.png"
-	if ResourceLoader.exists(tex_path):
-		btn.texture_normal = load(tex_path)
-
-	# 内部布局: VBox -> [倒计时Label, HBox(钻石图标+费用)]
-	var vbox := VBoxContainer.new()
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 2)
-	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	var time_label := Label.new()
-	time_label.name = "TimeLabel"
-	time_label.text = "00:00"
-	time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	time_label.add_theme_font_size_override("font_size", 16)
-	time_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	time_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(time_label)
-
-	var cost_hbox := HBoxContainer.new()
-	cost_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	cost_hbox.add_theme_constant_override("separation", 4)
-	cost_hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	var diamond_icon := TextureRect.new()
-	diamond_icon.custom_minimum_size = Vector2(20, 20)
-	diamond_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
-	diamond_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	var diamond_tex_path := "res://art/sprites/UI/icon/diamond.png"
-	if ResourceLoader.exists(diamond_tex_path):
-		diamond_icon.texture = load(diamond_tex_path)
-	diamond_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	cost_hbox.add_child(diamond_icon)
-
-	var cost_label := Label.new()
-	cost_label.name = "CostLabel"
-	cost_label.text = "1"
-	cost_label.add_theme_font_size_override("font_size", 18)
-	cost_label.add_theme_color_override("font_color", Color(0.5, 0.8, 1.0, 1))
-	cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	cost_hbox.add_child(cost_label)
-
-	vbox.add_child(cost_hbox)
-	btn.add_child(vbox)
-
-	btn.pressed.connect(_on_speedup_pressed)
-	main_hbox.add_child(btn)
-
-	_speedup_btn = btn
-	_speedup_label = time_label
-	_speedup_cost_label = cost_label
+	if speedup_button:
+		speedup_button.pressed.connect(_on_speedup_pressed)
 
 	# 创建更新Timer（每0.5秒刷新一次倒计时显示）
 	var timer := Timer.new()
@@ -897,10 +866,8 @@ func _init_speedup_button() -> void:
 
 ## 显示加速按钮
 func _show_speedup_button(board_index: int) -> void:
-	if _speedup_btn == null:
-		return
-	_speedup_btn.visible = true
-	_speedup_btn.set_meta("board_index", board_index)
+	speedup_button.visible = true
+	speedup_button.set_meta("board_index", board_index)
 	_update_speedup_display(board_index)
 	if _speedup_timer:
 		_speedup_timer.start()
@@ -908,8 +875,7 @@ func _show_speedup_button(board_index: int) -> void:
 
 ## 隐藏加速按钮
 func _hide_speedup_button() -> void:
-	if _speedup_btn != null:
-		_speedup_btn.visible = false
+	speedup_button.visible = false
 	if _speedup_timer != null:
 		_speedup_timer.stop()
 
@@ -925,20 +891,17 @@ func _update_speedup_display(board_index: int) -> void:
 	# 格式化倒计时 mm:ss
 	var mins: int = int(remaining) / 60
 	var secs: int = int(remaining) % 60
-	if _speedup_label:
-		_speedup_label.text = "%02d:%02d" % [mins, secs]
+	speedup_time_label.text = "%02d:%02d" % [mins, secs]
 
 	# 费用: max(1, remaining/600)
 	var cost: int = ProducerManager.get_skip_cooldown_cost(board_index)
-	if _speedup_cost_label:
-		_speedup_cost_label.text = str(cost)
-
+	speedup_cost_label.text = str(cost)
 
 ## Timer回调：定期刷新加速按钮显示
 func _on_speedup_timer_tick() -> void:
-	if _speedup_btn == null or not _speedup_btn.visible:
+	if not speedup_button.visible:
 		return
-	var board_index: int = _speedup_btn.get_meta("board_index", -1)
+	var board_index: int = speedup_button.get_meta("board_index", -1)
 	if board_index < 0:
 		return
 	_update_speedup_display(board_index)
@@ -946,9 +909,7 @@ func _on_speedup_timer_tick() -> void:
 
 ## 加速按钮点击
 func _on_speedup_pressed() -> void:
-	if _speedup_btn == null:
-		return
-	var board_index: int = _speedup_btn.get_meta("board_index", -1)
+	var board_index: int = speedup_button.get_meta("board_index", -1)
 	if board_index < 0:
 		return
 
@@ -967,9 +928,9 @@ func _on_speedup_pressed() -> void:
 	# 播放点击动效
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(_speedup_btn, "scale", Vector2(1.1, 1.1), 0.15)\
+	tween.tween_property(speedup_button, "scale", Vector2(1.1, 1.1), 0.15)\
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
-	tween.tween_property(_speedup_btn, "scale", Vector2(1.0, 1.0), 0.1)\
+	tween.tween_property(speedup_button, "scale", Vector2(1.0, 1.0), 0.1)\
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN).set_delay(0.1)
 
 	# 刷新显示
@@ -1612,20 +1573,20 @@ func _play_energy_particle_effect(start_pos: Vector2, end_pos: Vector2, particle
 	for i in range(particle_count):
 		var particle := Sprite2D.new()
 		particle.texture = POWER_ICON
-		particle.scale = Vector2(0.4, 0.4)
+		particle.scale = Vector2(0.8, 0.8)
 		particle.modulate = Color(1, 1, 1, 0.9)
 		particle_container.add_child(particle)
 		particle.global_position = start_pos
 		particles.append(particle)
 
 		var angle: float = TAU * float(i) / float(particle_count) + randf_range(-0.2, 0.2)
-		var scatter_dist: float = randf_range(25, 50)
+		var scatter_dist: float = randf_range(40, 60)
 		var scatter_pos: Vector2 = start_pos + Vector2(cos(angle), sin(angle)) * scatter_dist
 
 		var scatter_tween := create_tween()
 		scatter_tween.tween_property(particle, "global_position", scatter_pos, 0.3)\
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		scatter_tween.parallel().tween_property(particle, "scale", Vector2(0.6, 0.6), 0.3)
+		scatter_tween.parallel().tween_property(particle, "scale", Vector2(1.2, 1.2), 0.3)
 
 	# Phase 2: 收束飞向体力条 (0.4s)
 	await get_tree().create_timer(0.3).timeout
@@ -1636,7 +1597,7 @@ func _play_energy_particle_effect(start_pos: Vector2, end_pos: Vector2, particle
 		var random_offset := Vector2(randf_range(-10, 10), randf_range(-10, 10))
 		fly_tween.tween_property(particle, "global_position", end_pos + random_offset, 0.4)\
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		fly_tween.parallel().tween_property(particle, "scale", Vector2(0.3, 0.3), 0.4)
+		fly_tween.parallel().tween_property(particle, "scale", Vector2(0.6, 0.6), 0.4)
 		fly_tween.tween_property(particle, "modulate:a", 0.0, 0.1)
 
 	# 清理
@@ -1658,20 +1619,20 @@ func _play_coin_particle_effect(start_pos: Vector2, end_pos: Vector2, particle_c
 	for i in range(particle_count):
 		var particle := Sprite2D.new()
 		particle.texture = JINBI_ICON
-		particle.scale = Vector2(0.5, 0.5)
+		particle.scale = Vector2(1.0, 1.0)
 		particle.modulate = Color(1, 1, 1, 0.9)
 		particle_container.add_child(particle)
 		particle.global_position = start_pos
 		particles.append(particle)
 
 		var angle: float = TAU * float(i) / float(particle_count) + randf_range(-0.2, 0.2)
-		var scatter_dist: float = randf_range(25, 50)
+		var scatter_dist: float = randf_range(40, 60)
 		var scatter_pos: Vector2 = start_pos + Vector2(cos(angle), sin(angle)) * scatter_dist
 
 		var scatter_tween := create_tween()
 		scatter_tween.tween_property(particle, "global_position", scatter_pos, 0.3)\
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		scatter_tween.parallel().tween_property(particle, "scale", Vector2(0.7, 0.7), 0.3)
+		scatter_tween.parallel().tween_property(particle, "scale", Vector2(1.4, 1.4), 0.3)
 
 	# Phase 2: 收束飞向金币栏 (0.4s)
 	await get_tree().create_timer(0.3).timeout
@@ -1682,7 +1643,7 @@ func _play_coin_particle_effect(start_pos: Vector2, end_pos: Vector2, particle_c
 		var random_offset := Vector2(randf_range(-10, 10), randf_range(-10, 10))
 		fly_tween.tween_property(particle, "global_position", end_pos + random_offset, 0.4)\
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		fly_tween.parallel().tween_property(particle, "scale", Vector2(0.3, 0.3), 0.4)
+		fly_tween.parallel().tween_property(particle, "scale", Vector2(0.6, 0.6), 0.4)
 		fly_tween.tween_property(particle, "modulate:a", 0.0, 0.1)
 
 	# 清理
@@ -1746,19 +1707,19 @@ func _play_exp_particle_effect(start_pos: Vector2, exp_amount: int) -> void:
 	for i in range(particle_count):
 		var particle := Sprite2D.new()
 		particle.texture = EXP_ICON
-		particle.scale = Vector2(0.4, 0.4)
+		particle.scale = Vector2(0.8, 0.8)
 		particle_container.add_child(particle)
 		particle.global_position = start_pos
 		particles.append(particle)
 
 		var angle: float = TAU * float(i) / float(particle_count) + randf_range(-0.2, 0.2)
-		var scatter_dist: float = randf_range(25, 50)
+		var scatter_dist: float = randf_range(40, 60)
 		var scatter_pos: Vector2 = start_pos + Vector2(cos(angle), sin(angle)) * scatter_dist
 
 		var scatter_tween := create_tween()
 		scatter_tween.tween_property(particle, "global_position", scatter_pos, 0.3)\
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		scatter_tween.parallel().tween_property(particle, "scale", Vector2(0.6, 0.6), 0.3)
+		scatter_tween.parallel().tween_property(particle, "scale", Vector2(1.2, 1.2), 0.3)
 
 	# Phase 2: 收束飞向经验条 (0.4s)
 	await get_tree().create_timer(0.3).timeout
@@ -1769,7 +1730,7 @@ func _play_exp_particle_effect(start_pos: Vector2, exp_amount: int) -> void:
 		var random_offset := Vector2(randf_range(-10, 10), randf_range(-10, 10))
 		fly_tween.tween_property(particle, "global_position", exp_bar_pos + random_offset, 0.4)\
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		fly_tween.parallel().tween_property(particle, "scale", Vector2(0.3, 0.3), 0.4)
+		fly_tween.parallel().tween_property(particle, "scale", Vector2(0.6, 0.6), 0.4)
 		fly_tween.tween_property(particle, "modulate:a", 0.0, 0.1)
 
 	# 清理
@@ -1831,6 +1792,21 @@ func _try_produce_item(cell_index: int) -> void:
 	if ItemManager.is_autoproduction(item.id):
 		return
 
+	# 检查是否在冷却中
+	if ProducerManager.is_in_cooldown(cell_index):
+		return
+
+	# 检查是否有空位（必须在produce_item之前检查，避免冷却已启动但棋盘已满）
+	var empty_pos: Vector2i = Vector2i(-1, -1)
+	for i in range(BoardData.BOARD_SLOTS):
+		if bd.get_item_at_index(i) == null:
+			empty_pos = BoardData.index_to_pos(i)
+			break
+
+	if empty_pos == Vector2i(-1, -1):
+		TipManager.show_tip(LocalizationSystem.get_text("game_board.board_full"))
+		return
+
 	# 检查能量是否足够
 	if not GameManager.spend_energy(1):
 		TipManager.show_tip(LocalizationSystem.get_text("game_board.energy_insufficient"))
@@ -1841,19 +1817,6 @@ func _try_produce_item(cell_index: int) -> void:
 	if produced == null:
 		# 生产失败，返还能量
 		GameManager.restore_energy(1)
-		return
-
-	# 找到空位放置
-	var empty_pos: Vector2i = Vector2i(-1, -1)
-	for i in range(BoardData.BOARD_SLOTS):
-		if bd.get_item_at_index(i) == null:
-			empty_pos = BoardData.index_to_pos(i)
-			break
-
-	if empty_pos == Vector2i(-1, -1):
-		# 棋盘已满，返还能量
-		GameManager.restore_energy(1)
-		TipManager.show_tip(LocalizationSystem.get_text("game_board.board_full"))
 		return
 
 	# 播放生产成功音效
@@ -3298,7 +3261,10 @@ func _find_control_at_position(pos: Vector2) -> Control:
 				return child
 	return null
 
-func _input(event: InputEvent) -> void:
+func _unhandled_input(event: InputEvent) -> void:
+	# _unhandled_input 只接收未被 UI 元素处理的事件
+	# 所以按钮、滑动条等会自动接收它们的事件，无需手动处理
+
 	# 处理鼠标点击/移动 - 手动路由到正确的格子以解决 gui_input 信号不触发的问题
 	if event is InputEventMouseButton or event is InputEventMouseMotion:
 		var mouse_pos: Vector2 = event.global_position
@@ -3360,8 +3326,15 @@ func _on_out_item_clicked(item_id: int) -> void:
 	if target_index < 0:
 		TipManager.show_tip("棋盘已满，无法放置道具")
 		return
-	# 获取目标格子位置
+	# 【关键修复】先放置物品到数据层，避免连续点击选中同一个格子
 	var target_pos: Vector2i = BoardData.index_to_pos(target_index)
+	var placed_item: DataModels.BoardItemData = item.duplicate()
+	GameManager.board_data.place_item(placed_item, target_pos)
+	GameManager.board_data.set_grid_state(target_index, BoardData.GridState.OCCUPIED)
+	# 标记格子为移动中（隐藏棋盘上的显示）
+	moving_cells.append(target_index)
+	_refresh_board_display()
+	# 获取目标格子位置
 	var end_pos: Vector2 = grid_container.get_global_position() + Vector2(
 		target_pos.x * CELL_SIZE + CELL_SIZE / 2,
 		target_pos.y * CELL_SIZE + CELL_SIZE / 2
@@ -3396,11 +3369,12 @@ func _on_out_item_clicked(item_id: int) -> void:
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.finished.connect(func():
 		anim_sprite.queue_free()
-		# 放置物品到棋盘
-		GameManager.board_data.place_item(item, target_pos)
-		GameManager.board_items_changed.emit()
+		moving_cells.erase(target_index)
 		_refresh_board_display()
 		_play_land_animation(target_index)
+		# 如果放置的是生成器（箱子），注册生成器并显示特效
+		if ItemManager.is_producer(placed_item.id):
+			ProducerManager.register_producer(target_index, placed_item.id)
 	)
 
 
@@ -3581,6 +3555,7 @@ func _finish_task_submission_new() -> void:
 
 
 func _on_energy_buy_pressed() -> void:
+	print(">>> [GameBoard] _on_energy_buy_pressed 被调用!")
 	SoundSystem.play_button_click()
 	var cost: int = GameManager.get_energy_purchase_cost()
 	var cost_text: String = LocalizationSystem.get_text("game_board.buy_energy_confirm", {"cost": cost})
@@ -3589,7 +3564,7 @@ func _on_energy_buy_pressed() -> void:
 		cost_text,
 		"",  # description
 		LocalizationSystem.get_text("common.confirm"),  # confirm_text
-		"",  # close_text
+		LocalizationSystem.get_text("common.close"),  # close_text
 		Callable(self, "_do_energy_buy"),  # on_confirm
 		Callable(self, "_on_popup_close")  # on_close
 	)
@@ -3609,7 +3584,7 @@ func _on_gold_buy_pressed() -> void:
 		LocalizationSystem.get_text("game_board.gold_buy_desc"),
 		"",  # description
 		LocalizationSystem.get_text("game_board.watch_ad"),  # confirm_text
-		"",  # close_text
+		LocalizationSystem.get_text("common.close"),  # close_text
 		Callable(self, "_do_gold_buy"),  # on_confirm
 		Callable(self, "_on_popup_close")  # on_close
 	)
@@ -3627,7 +3602,7 @@ func _on_diamond_buy_pressed() -> void:
 		LocalizationSystem.get_text("game_board.diamond_buy_desc"),
 		"",  # description
 		LocalizationSystem.get_text("game_board.watch_ad"),  # confirm_text
-		"",  # close_text
+		LocalizationSystem.get_text("common.close"),  # close_text
 		Callable(self, "_do_diamond_buy"),  # on_confirm
 		Callable(self, "_on_popup_close")  # on_close
 	)
