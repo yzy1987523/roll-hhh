@@ -7,7 +7,7 @@
 [ext_resource type="Script" uid="uid://cjm6biu3u1nly" path="res://scripts/furniture_icon_manager.gd" id="5_furniture_icon"]
 [ext_resource type="Texture2D" uid="uid://cmkkhd8ab1go3" path="res://art/sprites/UI/panels/bg.png" id="6_bg"]
 [ext_resource type="Texture2D" uid="uid://dkghgukxcdawu" path="res://art/sprites/UI/icon/level_icon.png" id="7_level"]
-[ext_resource type="Texture2D" uid="uid://b0uxqkihyiajx" path="res://art/sprites/UI/button/play_btn.png" id="8_play"]
+[ext_resource type="Texture2D" uid="uid://c06qcv7h0wgx2" path="res://art/sprites/UI/icon/play.png" id="8_play"]
 [ext_resource type="Texture2D" uid="uid://uoxic7e2tsii" path="res://art/sprites/UI/button/build_list_btn.png" id="9_build_list"]
 [ext_resource type="Texture2D" uid="uid://cdclyme6yn7e" path="res://art/building/b002.png" id="10_jc16f"]
 [ext_resource type="Script" uid="uid://dbnbhm3mr3o0l" path="res://scripts/building_ui.gd" id="10_ui"]
