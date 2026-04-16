@@ -179,7 +179,25 @@ func is_producer(item_id: int) -> bool:
 	if cfg.is_empty():
 		return false
 	var item_type: String = cfg.get("type", "")
-	return item_type == "production" or item_type == "maxproduction"
+	return item_type == "production" or item_type == "maxproduction" or item_type == "autoproduction" or item_type == "stockproduction"
+
+
+## 检查物品是否为自动生产器
+func is_autoproduction(item_id: int) -> bool:
+	var cfg: Dictionary = _config_loader.get_item(item_id)
+	if cfg.is_empty():
+		return false
+	var item_type: String = cfg.get("type", "")
+	return item_type == "autoproduction"
+
+
+## 检查物品是否为库存生产器
+func is_stockproduction(item_id: int) -> bool:
+	var cfg: Dictionary = _config_loader.get_item(item_id)
+	if cfg.is_empty():
+		return false
+	var item_type: String = cfg.get("type", "")
+	return item_type == "stockproduction"
 
 
 ## 检查物品是否为背包
@@ -203,6 +221,32 @@ func get_coinpile_value(level: int) -> int:
 	if level < 1:
 		return 0
 	return int(roundf(pow(2.5, level - 1)))
+
+
+## 检查物品是否为体力球
+func is_energy(item_id: int) -> bool:
+	var cfg: Dictionary = _config_loader.get_item(item_id)
+	if cfg.is_empty():
+		return false
+	var item_type: String = cfg.get("type", "")
+	return item_type == "energy"
+
+
+## 获取体力球的体力价值
+## 优先读取配置的energy_value字段，未配置则使用公式 round(2^(n-1))
+func get_energy_value(item_id: int, level: int) -> int:
+	if level < 1:
+		return 0
+	var cfg: Dictionary = _config_loader.get_item(item_id)
+	if not cfg.is_empty():
+		var energy_val = cfg.get("energy_value", -1)
+		if energy_val is int and energy_val >= 0:
+			return energy_val
+		if energy_val is float and energy_val >= 0:
+			return int(energy_val)
+		if energy_val is String and energy_val.is_valid_int():
+			return int(energy_val)
+	return int(roundf(pow(2, level - 1)))
 
 
 ## 获取物品出售价格

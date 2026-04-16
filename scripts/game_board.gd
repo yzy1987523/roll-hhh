@@ -71,6 +71,12 @@ var bottom_hud_container: Control
 @onready var sacrifice_icon: TextureRect = $MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton/VBoxContainer/HBoxContainer/EnergyIcon
 @onready var sacrifice_label: Label = $MainLayout/DetailActionBar/DetailPanel/MainHBox/SacrificeButton/VBoxContainer/HBoxContainer/Label
 
+# ---- 冷却加速按钮（动态创建） ----
+var _speedup_btn: TextureButton = null
+var _speedup_label: Label = null
+var _speedup_cost_label: Label = null
+var _speedup_timer: Timer = null
+
 # ---- 设置面板节点 ----
 @onready var settings_backdrop: ColorRect = $SettingsBackdrop
 @onready var settings_panel: PanelContainer = $SettingsPanel
@@ -266,6 +272,7 @@ func _connect_signals() -> void:
 		end_turn_button.pressed.connect(_on_end_turn_pressed)
 	if sacrifice_button:
 		sacrifice_button.pressed.connect(_on_sacrifice_button_pressed)
+	_init_speedup_button()
 	if dorm_button:
 		dorm_button.pressed.connect(_on_dorm_pressed)
 	if shop_button:
@@ -324,6 +331,8 @@ func _connect_producer_signals() -> void:
 	ProducerManager.cooldown_finished.connect(_on_producer_cooldown_finished)
 	ProducerManager.producer_registered.connect(_on_producer_registered)
 	ProducerManager.producer_unregistered.connect(_on_producer_unregistered)
+	ProducerManager.auto_produced.connect(_on_auto_produced)
+	ProducerManager.stock_depleted.connect(_on_stock_depleted)
 
 
 ## 生成器信号处理
@@ -349,6 +358,44 @@ func _on_producer_unregistered(board_index: int) -> void:
 	_hide_producer_fx(board_index)
 
 
+## 自动生成器产出回调
+func _on_auto_produced(board_index: int, producer_item_id: int) -> void:
+	var bd: BoardData = GameManager.board_data
+	var produced: DataModels.BoardItemData = ItemManager.produce_item(producer_item_id)
+	if produced == null:
+		return
+	# 找空位
+	var empty_index: int = -1
+	for i in range(BoardData.BOARD_SLOTS):
+		if bd.get_item_at_index(i) == null:
+			empty_index = i
+			break
+	if empty_index < 0:
+		return
+	# 从生成器位置飞出
+	var start_pos: Vector2 = cell_panels[board_index].global_position + Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
+	spawn_item(start_pos, produced.id, empty_index)
+	GameManager._auto_save()
+
+
+## 库存型生成器耗尽回调：替换为depleted_product
+func _on_stock_depleted(board_index: int, depleted_product_id: int) -> void:
+	var bd: BoardData = GameManager.board_data
+	# 注销生成器
+	ProducerManager.unregister_producer(board_index)
+	# 移除当前物品
+	var pos: Vector2i = BoardData.index_to_pos(board_index)
+	bd.remove_item(pos)
+	# 如果有depleted_product，放置替代品
+	if depleted_product_id > 0:
+		var new_item: DataModels.BoardItemData = ItemManager.get_item(depleted_product_id)
+		if new_item != null:
+			bd.place_item(new_item.duplicate(), pos)
+	GameManager.board_items_changed.emit()
+	_refresh_board_display()
+	GameManager._auto_save()
+
+
 ## 更新生成器特效可见性
 func _update_producer_fx_visibility(board_index: int) -> void:
 	if board_index < 0 or board_index >= BoardData.BOARD_SLOTS:
@@ -369,6 +416,11 @@ func _update_producer_fx_visibility(board_index: int) -> void:
 	# 使用 ItemManager 检查是否是生成器
 	var is_prod: bool = ItemManager.is_producer(item.id)
 	if not is_prod:
+		return
+
+	# autoproduction 不显示生产特效（自动生产，无需点击）
+	if ItemManager.is_autoproduction(item.id):
+		_hide_producer_fx(board_index)
 		return
 
 	var can_prod: bool = ProducerManager.can_produce(board_index)
@@ -709,6 +761,9 @@ func _setup_settings_panel() -> void:
 
 
 func _update_character_detail_panel() -> void:
+	# 默认隐藏加速按钮
+	_hide_speedup_button()
+
 	if selected_index >= 0:
 		var bd: BoardData = GameManager.board_data
 		var ch: DataModels.BoardItemData = bd.get_item_at_index(selected_index)
@@ -717,6 +772,10 @@ func _update_character_detail_panel() -> void:
 			name_label.text = ch.name
 			detail_label.text = "Lv.%d" % ch.level
 			hint_label.text = ""
+
+			# 检查是否是冷却中的生成器，显示加速按钮
+			if ItemManager.is_producer(ch.id) and ProducerManager.is_in_cooldown(selected_index):
+				_show_speedup_button(selected_index)
 
 			# 根据物品类型决定是否显示出售按钮
 			if ItemManager.is_sellable(ch.id):
@@ -749,6 +808,165 @@ func _update_character_detail_panel() -> void:
 	# 性能优化：使用透明度而非visible，避免HBoxContainer重布局
 	sacrifice_button.modulate.a = 0.0
 	sacrifice_button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+## 初始化冷却加速按钮（动态创建，添加到详情面板）
+func _init_speedup_button() -> void:
+	var main_hbox = detail_panel.find_child("MainHBox", true, false)
+	if main_hbox == null:
+		return
+
+	var btn := TextureButton.new()
+	btn.name = "SpeedupButton"
+	btn.custom_minimum_size = Vector2(100, 80)
+	btn.mouse_filter = Control.MOUSE_FILTER_STOP
+	btn.visible = false
+
+	# 加载按钮纹理
+	var tex_path := "res://art/sprites/UI/icon/btn.png"
+	if ResourceLoader.exists(tex_path):
+		btn.texture_normal = load(tex_path)
+
+	# 内部布局: VBox -> [倒计时Label, HBox(钻石图标+费用)]
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 2)
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var time_label := Label.new()
+	time_label.name = "TimeLabel"
+	time_label.text = "00:00"
+	time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	time_label.add_theme_font_size_override("font_size", 16)
+	time_label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	time_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(time_label)
+
+	var cost_hbox := HBoxContainer.new()
+	cost_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	cost_hbox.add_theme_constant_override("separation", 4)
+	cost_hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var diamond_icon := TextureRect.new()
+	diamond_icon.custom_minimum_size = Vector2(20, 20)
+	diamond_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+	diamond_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	var diamond_tex_path := "res://art/sprites/UI/icon/diamond.png"
+	if ResourceLoader.exists(diamond_tex_path):
+		diamond_icon.texture = load(diamond_tex_path)
+	diamond_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cost_hbox.add_child(diamond_icon)
+
+	var cost_label := Label.new()
+	cost_label.name = "CostLabel"
+	cost_label.text = "1"
+	cost_label.add_theme_font_size_override("font_size", 18)
+	cost_label.add_theme_color_override("font_color", Color(0.5, 0.8, 1.0, 1))
+	cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cost_hbox.add_child(cost_label)
+
+	vbox.add_child(cost_hbox)
+	btn.add_child(vbox)
+
+	btn.pressed.connect(_on_speedup_pressed)
+	main_hbox.add_child(btn)
+
+	_speedup_btn = btn
+	_speedup_label = time_label
+	_speedup_cost_label = cost_label
+
+	# 创建更新Timer（每0.5秒刷新一次倒计时显示）
+	var timer := Timer.new()
+	timer.name = "SpeedupTimer"
+	timer.wait_time = 0.5
+	timer.one_shot = false
+	timer.autostart = false
+	timer.timeout.connect(_on_speedup_timer_tick)
+	add_child(timer)
+	_speedup_timer = timer
+
+
+## 显示加速按钮
+func _show_speedup_button(board_index: int) -> void:
+	if _speedup_btn == null:
+		return
+	_speedup_btn.visible = true
+	_speedup_btn.set_meta("board_index", board_index)
+	_update_speedup_display(board_index)
+	if _speedup_timer:
+		_speedup_timer.start()
+
+
+## 隐藏加速按钮
+func _hide_speedup_button() -> void:
+	if _speedup_btn != null:
+		_speedup_btn.visible = false
+	if _speedup_timer != null:
+		_speedup_timer.stop()
+
+
+## 更新加速按钮显示（倒计时+费用）
+func _update_speedup_display(board_index: int) -> void:
+	var remaining: float = ProducerManager.get_cooldown_remaining(board_index)
+	if remaining <= 0:
+		_hide_speedup_button()
+		_update_producer_fx_visibility(board_index)
+		return
+
+	# 格式化倒计时 mm:ss
+	var mins: int = int(remaining) / 60
+	var secs: int = int(remaining) % 60
+	if _speedup_label:
+		_speedup_label.text = "%02d:%02d" % [mins, secs]
+
+	# 费用: max(1, remaining/600)
+	var cost: int = ProducerManager.get_skip_cooldown_cost(board_index)
+	if _speedup_cost_label:
+		_speedup_cost_label.text = str(cost)
+
+
+## Timer回调：定期刷新加速按钮显示
+func _on_speedup_timer_tick() -> void:
+	if _speedup_btn == null or not _speedup_btn.visible:
+		return
+	var board_index: int = _speedup_btn.get_meta("board_index", -1)
+	if board_index < 0:
+		return
+	_update_speedup_display(board_index)
+
+
+## 加速按钮点击
+func _on_speedup_pressed() -> void:
+	if _speedup_btn == null:
+		return
+	var board_index: int = _speedup_btn.get_meta("board_index", -1)
+	if board_index < 0:
+		return
+
+	var cost: int = ProducerManager.get_skip_cooldown_cost(board_index)
+	if GameManager.diamond < cost:
+		TipManager.show_tip(LocalizationSystem.get_text("game_board.not_enough_diamond"))
+		return
+
+	# 扣除钻石
+	GameManager.diamond -= cost
+	GameManager.diamond_changed.emit(GameManager.diamond)
+
+	# 跳过冷却
+	ProducerManager.skip_cooldown(board_index)
+
+	# 播放点击动效
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(_speedup_btn, "scale", Vector2(1.1, 1.1), 0.15)
+	tween.tween_property(_speedup_btn, "scale", Vector2(1.0, 1.0), 0.15).set_delay(0.15)
+
+	# 刷新显示
+	_hide_speedup_button()
+	_update_producer_fx_visibility(board_index)
+	_update_character_detail_panel()
+	GameManager._auto_save()
 
 
 func _on_sacrifice_button_pressed() -> void:
@@ -825,6 +1043,9 @@ func _on_cell_gui_input(event: InputEvent, cell_index: int) -> void:
 							elif ItemManager.is_coinpile(ch.id):
 								# 金币堆：移动到金币栏，增加金币
 								_collect_coinpile(cell_index)
+							elif ItemManager.is_energy(ch.id):
+								# 体力球：点击消耗，增加体力
+								_collect_energy_ball(cell_index)
 							else:
 								_update_character_detail_panel()
 						else:
@@ -952,6 +1173,7 @@ func _play_swap_animation(src_index: int, tgt_index: int) -> void:
 			anim_sprite.queue_free()
 			moving_cells.erase(src_index)
 			_refresh_board_display()
+			_refresh_producer_fx_all()
 			_play_land_animation(src_index)
 		, CONNECT_ONE_SHOT)
 
@@ -1049,27 +1271,33 @@ func spawn_item(start_pos: Vector2, item_id: int, target_index: int) -> bool:
 	moving_cells.append(target_index)
 	_refresh_board_display()
 
-	# 创建飞行动画精灵（参考 _create_drag_preview 的方式）
-	var anim_sprite := Control.new()
-	anim_sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
-	anim_sprite.z_index = 10
-	anim_sprite.z_as_relative = false
-	anim_sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	# 创建 Sprite 节点
-	var sprite := TextureRect.new()
-	sprite.set_anchors_preset(Control.PRESET_FULL_RECT)
-	sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	sprite.custom_minimum_size = Vector2(CHAR_SIZE, CHAR_SIZE)
-	sprite.z_index = 0
+	# 获取物品纹理以确定原始尺寸
 	var sprite_path: String = item.get_sprite_path()
+	var item_tex: Texture2D = null
 	if ResourceLoader.exists(sprite_path):
-		sprite.texture = load(sprite_path)
+		item_tex = load(sprite_path)
+	var item_size: Vector2 = item_tex.get_size() if item_tex else Vector2(CHAR_SIZE, CHAR_SIZE)
 
-	anim_sprite.add_child(sprite)
-	add_child(anim_sprite)
-	anim_sprite.global_position = start_pos - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+	# 创建飞行动画精灵（使用board_item预制体）
+	var anim_container: Control = preload("res://scenes/board_item.tscn").instantiate()
+	anim_container.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
+	anim_container.z_index = 10
+	anim_container.z_as_relative = false
+	anim_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	# 获取Sprite节点并设置纹理
+	var sprite: TextureRect = anim_container.get_node_or_null("Sprite")
+	if sprite == null and anim_container.get_child_count() > 0:
+		var first: Node = anim_container.get_child(0)
+		if first is TextureRect:
+			sprite = first
+	if sprite != null:
+		sprite.custom_minimum_size = item_size
+		if item_tex != null:
+			sprite.texture = item_tex
+
+	add_child(anim_container)
+	anim_container.global_position = start_pos - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
 
 	# 目标格子中心世界坐标
 	var target_cell: Control = cell_panels[target_index]
@@ -1077,17 +1305,17 @@ func spawn_item(start_pos: Vector2, item_id: int, target_index: int) -> bool:
 
 	# 位移动画
 	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(anim_sprite, "global_position", end_pos - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0), 0.3)\
+	tween.tween_property(anim_container, "global_position", end_pos - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0), 0.3)\
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
+	# 捕获item引用避免lambda闭包问题
+	var captured_item := item.duplicate()
 	tween.finished.connect(func():
-		anim_sprite.queue_free()
+		anim_container.queue_free()
 		moving_cells.erase(target_index)
 		# 放置物品到目标格子
 		var tgt_pos: Vector2i = BoardData.index_to_pos(target_index)
-		var placed_item: DataModels.BoardItemData = item.duplicate()
-		bd.place_item(placed_item, tgt_pos)
+		bd.place_item(captured_item, tgt_pos)
 		bd.set_grid_state(target_index, BoardData.GridState.OCCUPIED)
 		GameManager.board_items_changed.emit()
 		_refresh_board_display()
@@ -1308,6 +1536,85 @@ func _collect_coinpile(cell_index: int) -> void:
 	_update_character_detail_panel()
 
 
+## 体力球：点击消耗，增加体力，播放粒子飞向体力条
+func _collect_energy_ball(cell_index: int) -> void:
+	var bd: BoardData = GameManager.board_data
+	var energy_item: DataModels.BoardItemData = bd.get_item_at_index(cell_index)
+	if energy_item == null:
+		return
+
+	# 计算体力值
+	var energy_value: int = ItemManager.get_energy_value(energy_item.id, energy_item.level)
+	if energy_value <= 0:
+		energy_value = 1
+
+	# 获取位置用于粒子特效
+	var start_cell: Control = cell_panels[cell_index]
+	var start_pos: Vector2 = start_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+	var energy_bar_pos: Vector2 = energy_label.global_position + Vector2(energy_label.size.x / 2.0, energy_label.size.y / 2.0)
+
+	# 隐藏体力球sprite
+	cell_sprites[cell_index].visible = false
+	cell_containers[cell_index].visible = false
+
+	# 播放体力粒子特效（绿色能量球飞向体力条）
+	_play_energy_particle_effect(start_pos, energy_bar_pos, 8)
+
+	# 从棋盘移除体力球
+	bd.remove_item(BoardData.index_to_pos(cell_index))
+	GameManager.board_items_changed.emit()
+
+	# 增加体力
+	GameManager.restore_energy(energy_value)
+
+	# 取消选中
+	selected_index = -1
+	_update_character_detail_panel()
+	_refresh_board_display()
+	GameManager._auto_save()
+
+
+## 体力粒子特效：从起点飞向体力条位置
+func _play_energy_particle_effect(start_pos: Vector2, end_pos: Vector2, particle_count: int = 8) -> void:
+	var particle_container := Node2D.new()
+	particle_container.global_position = start_pos
+	particle_container.z_index = 15
+	add_child(particle_container)
+
+	for i in range(particle_count):
+		var particle := Sprite2D.new()
+		particle.texture = ENERGY_ICON
+		particle.scale = Vector2(0.4, 0.4)
+		particle.global_position = start_pos + Vector2(
+			randf_range(-20, 20), randf_range(-20, 20)
+		)
+		particle.modulate = Color(0.5, 1.0, 0.5, 0.9)  # 绿色调
+		particle_container.add_child(particle)
+
+		var tween := create_tween()
+		var offset := Vector2(randf_range(-30, 30), randf_range(-30, 30))
+		var mid_pos: Vector2 = (start_pos + end_pos) / 2.0 + offset + Vector2(0, -50)
+
+		tween.tween_property(particle, "global_position", mid_pos, 0.15)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(particle, "global_position", end_pos, 0.25)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+		tween.tween_property(particle, "scale", Vector2(0.6, 0.6), 0.15)
+		tween.tween_property(particle, "scale", Vector2(0.3, 0.3), 0.25)
+
+		tween.tween_property(particle, "modulate:a", 0.0, 0.1).set_delay(0.35)
+
+		tween.finished.connect(func():
+			if is_instance_valid(particle):
+				particle.queue_free()
+		, CONNECT_ONE_SHOT)
+
+	await get_tree().create_timer(0.5).timeout
+	if is_instance_valid(particle_container):
+		particle_container.queue_free()
+
+
 ## 金币粒子特效：从起点飞向终点
 func _play_coin_particle_effect(start_pos: Vector2, end_pos: Vector2, particle_count: int = 10) -> void:
 	# 创建粒子节点
@@ -1468,13 +1775,17 @@ func _try_produce_item(cell_index: int) -> void:
 	if item == null:
 		return
 
+	# autoproduction不需要点击
+	if ItemManager.is_autoproduction(item.id):
+		return
+
 	# 检查能量是否足够
 	if not GameManager.spend_energy(1):
 		TipManager.show_tip(LocalizationSystem.get_text("game_board.energy_insufficient"))
 		return
 
-	# 尝试生产物品
-	var produced: DataModels.BoardItemData = ItemManager.produce_item(item.id)
+	# 尝试生产物品（传入board_index以消耗库存）
+	var produced: DataModels.BoardItemData = ItemManager.produce_item(item.id, cell_index)
 	if produced == null:
 		# 生产失败，返还能量
 		GameManager.restore_energy(1)
@@ -2706,8 +3017,8 @@ func _on_backpack_items_taken(marked_indices: Array[int]) -> void:
 
 	var bd: BoardData = GameManager.board_data
 
-	# 获取背包面板中心位置（必须在关闭面板之前获取）
-	var backpack_center: Vector2 = _get_backpack_panel_center()
+	# 获取背包物品在棋盘上的位置（用于动画起点）
+	var backpack_cell_pos: Vector2 = _get_backpack_cell_center()
 
 	# 收集要移出的物品
 	var sorted_indices: Array = marked_indices.duplicate()
@@ -2745,10 +3056,21 @@ func _on_backpack_items_taken(marked_indices: Array[int]) -> void:
 
 	# 播放动画
 	if moved_count > 0:
-		_play_backpack_to_board_animation(moved_data, backpack_center)
+		_play_backpack_to_board_animation(moved_data, backpack_cell_pos)
 		TipManager.show_tip("已移出 %d 个物品到棋盘" % moved_count)
 		# 每次棋子操作后自动存档
 		GameManager._auto_save()
+
+
+## 获取背包物品在棋盘上的格子中心位置
+func _get_backpack_cell_center() -> Vector2:
+	var bd: BoardData = GameManager.board_data
+	for i in range(BoardData.BOARD_SLOTS):
+		var ch: DataModels.BoardItemData = bd.get_item_at_index(i)
+		if ch != null and ch.id == 99:  # 背包物品ID
+			return cell_panels[i].global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+	# 找不到背包格子，使用面板中心
+	return _get_backpack_panel_center()
 
 
 ## 获取背包面板中心位置

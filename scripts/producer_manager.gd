@@ -21,6 +21,8 @@ class ProducerState:
 	var cooldown_time: float = 0.0  # 冷却时间（秒）
 	var cooldown_remaining: float = 0.0  # 剩余冷却时间（秒）
 	var last_recovery_time: float = 0.0  # 上次恢复库存的时间（秒，绝对时间）
+	var producer_type: String = ""       # 生产器类型
+	var depleted_product: int = 0        # stockproduction 耗尽时发出的产品ID
 
 	func _to_string() -> String:
 		return "ProducerState(board=%d, id=%d, count=%d/%d, cd=%.1f)" % [board_index, item_id, current_count, max_count, cooldown_remaining]
@@ -36,6 +38,8 @@ signal cooldown_started(board_index: int, cooldown_duration: float)
 signal cooldown_finished(board_index: int)
 signal producer_registered(board_index: int, state: ProducerState)
 signal producer_unregistered(board_index: int)
+signal stock_depleted(board_index: int, depleted_product_id: int)
+signal auto_produced(board_index: int, item_id: int)
 
 func _ready() -> void:
 	_config_loader.load_config()
@@ -76,7 +80,8 @@ func _update_single_producer(state: ProducerState, delta: float) -> void:
 	# 处理库存恢复（库存没满就执行，冷却期间也执行）
 	# recovery_time: 每恢复1个库存需要的时间（秒）
 	# 库存耗尽后开始恢复计时，每 recovery_time 秒恢复1个
-	if state.current_count < state.max_count:
+	# stockproduction 不自动恢复库存
+	if state.producer_type != "stockproduction" and state.current_count < state.max_count:
 		var elapsed: float = current_time - state.last_recovery_time
 		var recovered: int = int(elapsed / state.recovery_time)
 		if recovered > 0:
@@ -84,6 +89,14 @@ func _update_single_producer(state: ProducerState, delta: float) -> void:
 			# 更新时间点（余数用于下次计算）
 			state.last_recovery_time = current_time - (elapsed - float(recovered) * state.recovery_time)
 			stock_changed.emit(state.board_index, state.current_count, state.max_count)
+
+	# autoproduction: 库存>=1 且不在冷却时自动消耗并生产
+	if state.producer_type == "autoproduction" and state.current_count >= 1 and state.cooldown_remaining <= 0:
+		state.current_count -= 1
+		auto_produced.emit(state.board_index, state.item_id)
+		stock_changed.emit(state.board_index, state.current_count, state.max_count)
+		state.cooldown_remaining = state.cooldown_time
+		cooldown_started.emit(state.board_index, state.cooldown_time)
 
 
 # ---- 注册生成器 ----
@@ -98,18 +111,26 @@ func register_producer(board_index: int, item_id: int) -> bool:
 		return false
 
 	var item_type: String = cfg.get("type", "")
-	if item_type != "production" and item_type != "maxproduction":
+	if item_type != "production" and item_type != "maxproduction" and item_type != "autoproduction" and item_type != "stockproduction":
 		return false
 
 	var state := ProducerState.new()
 	state.board_index = board_index
 	state.item_id = item_id
 	state.max_count = cfg.get("maxCount", 20)
-	state.current_count = state.max_count  # 初始满库存
 	state.recovery_time = cfg.get("recovery_time", 60.0)
 	state.cooldown_time = cfg.get("cooldown_time", 120.0)
 	state.cooldown_remaining = 0.0
 	state.last_recovery_time = Time.get_ticks_msec() / 1000.0
+	state.producer_type = item_type
+
+	if item_type == "autoproduction":
+		state.current_count = 0  # 自动生产初始库存为0
+	elif item_type == "stockproduction":
+		state.current_count = state.max_count  # 初始满库存
+		state.depleted_product = int(cfg.get("depleted_product", 0))
+	else:
+		state.current_count = state.max_count  # 初始满库存
 
 	_producers[board_index] = state
 	producer_registered.emit(board_index, state)
@@ -176,7 +197,9 @@ func consume_stock(board_index: int) -> bool:
 	state.current_count -= 1
 	stock_changed.emit(board_index, state.current_count, state.max_count)
 
-	if state.current_count <= 0:
+	if state.producer_type == "stockproduction" and state.current_count <= 0:
+		stock_depleted.emit(board_index, state.depleted_product)
+	elif state.current_count <= 0:
 		state.cooldown_remaining = state.cooldown_time
 		cooldown_started.emit(board_index, state.cooldown_time)
 
@@ -250,3 +273,25 @@ func restore_producer_state(board_index: int, current_count: int, cooldown_remai
 	state.cooldown_remaining = cooldown_remaining
 	state.last_recovery_time = last_recovery_time
 	stock_changed.emit(board_index, state.current_count, state.max_count)
+
+
+# ---- 跳过冷却 ----
+func skip_cooldown(board_index: int) -> bool:
+	if not _producers.has(board_index):
+		return false
+	var state: ProducerState = _producers[board_index]
+	if state.cooldown_remaining <= 0:
+		return false
+	state.cooldown_remaining = 0.0
+	cooldown_finished.emit(board_index)
+	return true
+
+
+# ---- 获取跳过冷却花费 ----
+func get_skip_cooldown_cost(board_index: int) -> int:
+	if not _producers.has(board_index):
+		return 0
+	var state: ProducerState = _producers[board_index]
+	if state.cooldown_remaining <= 0:
+		return 0
+	return maxi(1, int(state.cooldown_remaining / 600.0))
