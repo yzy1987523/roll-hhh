@@ -44,9 +44,9 @@
         "line": 1,
         "type": "production",
         "next_composite": "1010105",
-        "maxCount": 6,
-        "recovery_time": 4.5,
-        "cooldown_time": 0,
+        "maxCount": 10,
+        "recovery_time": 60,
+        "cooldown_time": 360,
         "production_items": [
             "1020101",
             "1020201"
@@ -65,9 +65,9 @@
         "line": 1,
         "type": "production",
         "next_composite": "1010106",
-        "maxCount": 6,
-        "recovery_time": 4.0,
-        "cooldown_time": 0,
+        "maxCount": 10,
+        "recovery_time": 60,
+        "cooldown_time": 360,
         "production_items": [
             "1020101",
             "1020201"
@@ -86,9 +86,9 @@
         "line": 1,
         "type": "production",
         "next_composite": "1010107",
-        "maxCount": 7,
-        "recovery_time": 3.5,
-        "cooldown_time": 0,
+        "maxCount": 10,
+        "recovery_time": 60,
+        "cooldown_time": 360,
         "production_items": [
             "1020101",
             "1020201"
@@ -107,9 +107,9 @@
         "line": 1,
         "type": "production",
         "next_composite": "1010108",
-        "maxCount": 7,
-        "recovery_time": 3.0,
-        "cooldown_time": 0,
+        "maxCount": 10,
+        "recovery_time": 60,
+        "cooldown_time": 360,
         "production_items": [
             "1020101",
             "1020102",
@@ -130,9 +130,9 @@
         "line": 1,
         "type": "production",
         "next_composite": "1010109",
-        "maxCount": 8,
-        "recovery_time": 3.0,
-        "cooldown_time": 0,
+        "maxCount": 10,
+        "recovery_time": 60,
+        "cooldown_time": 360,
         "production_items": [
             "1020101",
             "1020102",
@@ -155,9 +155,9 @@
         "line": 1,
         "type": "production",
         "next_composite": "1010110",
-        "maxCount": 9,
-        "recovery_time": 2.5,
-        "cooldown_time": 0,
+        "maxCount": 10,
+        "recovery_time": 60,
+        "cooldown_time": 360,
         "production_items": [
             "1020101",
             "1020102",
@@ -181,8 +181,8 @@
         "type": "production",
         "next_composite": "1010111",
         "maxCount": 10,
-        "recovery_time": 2.5,
-        "cooldown_time": 0,
+        "recovery_time": 60,
+        "cooldown_time": 360,
         "production_items": [
             "1020101",
             "1020102",
@@ -206,8 +206,8 @@
         "type": "production",
         "next_composite": "",
         "maxCount": 12,
-        "recovery_time": 2.0,
-        "cooldown_time": 0,
+        "recovery_time": 60,
+        "cooldown_time": 360,
         "production_items": [
             "1020101",
             "1020102",
@@ -444,8 +444,8 @@
         "type": "production",
         "next_composite": "2010107",
         "maxCount": 7,
-        "recovery_time": 4.0,
-        "cooldown_time": 0,
+        "recovery_time": 60,
+        "cooldown_time": 360,
         "production_items": [
             "2030101",
             "2030102"
@@ -465,8 +465,8 @@
         "type": "production",
         "next_composite": "2010108",
         "maxCount": 8,
-        "recovery_time": 3.5,
-        "cooldown_time": 0,
+        "recovery_time": 60,
+        "cooldown_time": 360,
         "production_items": [
             "2030101",
             "2030102"
@@ -486,8 +486,8 @@
         "type": "production",
         "next_composite": "2010109",
         "maxCount": 8,
-        "recovery_time": 3.5,
-        "cooldown_time": 0,
+        "recovery_time": 60,
+        "cooldown_time": 360,
         "production_items": [
             "2030102",
             "2030103"
@@ -507,8 +507,8 @@
         "type": "production",
         "next_composite": "",
         "maxCount": 9,
-        "recovery_time": 3.0,
-        "cooldown_time": 0,
+        "recovery_time": 60,
+        "cooldown_time": 360,
         "production_items": [
             "2030102",
             "2030103"
@@ -550,7 +550,7 @@
         "next_composite": "",
         "content": "点击产出1种物品",
         "max_level": true,
-        "maxCount": 5,
+        "maxCount": 12,
         "recovery_time": 1.5,
         "cooldown_time": 0,
         "production_items": [
@@ -750,7 +750,7 @@
         "sprite": "fenxiangzi01",
         "type": "stockproduction",
         "content": "点击产出7种物品",
-        "maxCount": 1,
+        "maxCount": 12,
         "recovery_time": 0,
         "cooldown_time": 0,
         "production_items": [
@@ -780,7 +780,7 @@
         "sprite": "fenxiangzi02",
         "type": "stockproduction",
         "content": "点击产出9种物品",
-        "maxCount": 1,
+        "maxCount": 24,
         "recovery_time": 0,
         "cooldown_time": 0,
         "production_items": [
@@ -815,7 +815,7 @@
         "type": "stockproduction",
         "energy_value": 50,
         "content": "点击产出3种物品",
-        "maxCount": 1,
+        "maxCount": 5,
         "recovery_time": 0,
         "cooldown_time": 0,
         "production_items": [
@@ -827,7 +827,7 @@
             0.33,
             0.33,
             0.33
-        ],
+        ],        
         "depleted_product": ""
     },
     {
@@ -887,16 +887,16 @@
         "line": 2,
         "type": "autoproduction",
         "next_composite": "",
-        "maxCount": 10,
-        "recovery_time": 6.0,
-        "cooldown_time": 0,
+        "maxCount": 2,
+        "recovery_time": 600,
+        "cooldown_time": 800,
         "production_items": [
             "4050101"
         ],
         "production_random": [
             1.0
         ],
-        "content": "点击产出1种物品",
+        "content": "生成蜗牛",
         "max_level": true,
         "sprite": "10406"
     },
