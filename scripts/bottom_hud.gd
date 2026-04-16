@@ -279,6 +279,11 @@ func _init_submit_button_overlay(zone_c: PanelContainer) -> void:
 	_submit_btn = btn
 
 
+## 刷新任务栏显示（公开方法，供外部调用）
+func refresh_task_display() -> void:
+	_update_task_display()
+
+
 ## 更新任务栏显示
 func _update_task_display() -> void:
 	var current_task: Dictionary = TaskManager.get_current_task()

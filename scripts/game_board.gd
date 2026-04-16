@@ -323,6 +323,10 @@ func _connect_signals() -> void:
 	# 启动 idle 提示计时器
 	_start_idle_hint_timer()
 
+	# 刷新任务面板显示（从building返回后需要重新加载物品图片）
+	if bottom_hud_container and bottom_hud_container.has_method("refresh_task_display"):
+		bottom_hud_container.refresh_task_display()
+
 
 ## 连接生成器相关信号
 func _connect_producer_signals() -> void:
