@@ -309,12 +309,17 @@ func _update_task_display() -> void:
 	# 显示任务物品图标（取第一个）
 	var task_item_icon: TextureRect = find_child("TaskItemIcon", true, false)
 	if task_item_icon and not need_items.is_empty():
-		var item_id: int = need_items[0]
+		var item_id: int = int(need_items[0])
 		var sprite_path: String = ItemManager.get_sprite_path(item_id)
 		if not sprite_path.is_empty() and ResourceLoader.exists(sprite_path):
 			task_item_icon.texture = load(sprite_path)
 			task_item_icon.modulate = Color.WHITE
 		else:
+			# 调试：打印加载失败信息
+			if sprite_path.is_empty():
+				print(">>> [BottomHUD] 物品%d的sprite_path为空" % item_id)
+			elif not ResourceLoader.exists(sprite_path):
+				print(">>> [BottomHUD] 物品%d的sprite不存在: %s" % [item_id, sprite_path])
 			task_item_icon.modulate = Color(0.5, 0.5, 0.5, 0.5)
 
 	# 进度显示
