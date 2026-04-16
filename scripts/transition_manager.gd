@@ -30,7 +30,7 @@ func transition_in() -> void:
 	backdrop.position.y = -screen_size.y
 
 	# 动画：从上往下滑入
-	var tween := create_tween()
+	var tween := transition_instance.create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(backdrop, "position:y", 0.0, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 	await tween.finished
@@ -47,7 +47,7 @@ func transition_out() -> void:
 	var screen_height := DisplayServer.window_get_size(0).y
 
 	# 动画：从当前位置往上滑出
-	var tween := create_tween()
+	var tween := transition_instance.create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(backdrop, "position:y", -screen_height, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 	await tween.finished
@@ -66,7 +66,9 @@ func change_scene_with_transition(path: String) -> void:
 	# 切换场景
 	get_tree().change_scene_to_file(path)
 
-	# 等待一帧让新场景完全加载
+	# 等待足够时间让新场景完全加载（WASM需要更多时间）
+	await get_tree().process_frame
+	await get_tree().process_frame
 	await get_tree().process_frame
 
 	# 退出过渡（滑出）
