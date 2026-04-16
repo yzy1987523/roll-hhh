@@ -959,8 +959,10 @@ func _on_speedup_pressed() -> void:
 	# 播放点击动效
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(_speedup_btn, "scale", Vector2(1.1, 1.1), 0.15)
-	tween.tween_property(_speedup_btn, "scale", Vector2(1.0, 1.0), 0.15).set_delay(0.15)
+	tween.tween_property(_speedup_btn, "scale", Vector2(1.1, 1.1), 0.15)\
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	tween.tween_property(_speedup_btn, "scale", Vector2(1.0, 1.0), 0.1)\
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN).set_delay(0.1)
 
 	# 刷新显示
 	_hide_speedup_button()
@@ -3593,9 +3595,9 @@ func _on_build_button_pressed() -> void:
 	if icon:
 		var tween := create_tween()
 		tween.tween_property(icon, "scale", Vector2(1.1, 1.1), 0.15)\
-			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 		tween.tween_property(icon, "scale", Vector2(1.0, 1.0), 0.1)\
-			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN).set_delay(0.15)
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN).set_delay(0.1)
 		tween.finished.connect(_on_build_button_animation_complete)
 	else:
 		# 没有Icon时直接切换
