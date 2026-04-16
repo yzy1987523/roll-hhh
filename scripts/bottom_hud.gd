@@ -19,8 +19,14 @@ const PATH_TASK_PANEL := "ScrollContainer/ContentHBox/ZoneC"
 var _submit_btn: TextureButton = null
 # 局外道具图标引用
 var _out_items_icons: Array[TextureRect] = []
+# 任务栏节点引用（避免find_child找到旧节点）
+var _task_item_icon: TextureRect = null
+var _task_star_label: Label = null
+var _task_count_label: Label = null
+var _task_progress_bar: ProgressBar = null
 
 func _ready() -> void:
+	print(">>> [BottomHUD] _ready 开始执行")
 	var build_list_btn: Button = get_node(PATH_BUILD_LIST_BTN)
 	build_list_btn.pressed.connect(_on_build_list_pressed)
 	TaskManager.stars_changed.connect(_on_stars_changed)
@@ -29,10 +35,18 @@ func _ready() -> void:
 	GameManager.out_items_changed.connect(_on_out_items_changed)
 	# 初始化任务栏（重建ZoneC内容）
 	_rebuild_task_panel()
-	_update_task_display()
 	_update_build_list_btn()
 	# 初始化局外道具显示
 	_refresh_out_items()
+	# 监听ItemManager加载完成信号，确保物品配置加载后再刷新任务显示
+	print(">>> [BottomHUD] 检查ItemManager.is_loaded=%s" % ItemManager.is_loaded)
+	# 始终先连接信号（防止后续加载完成时错过）
+	ItemManager.items_loaded.connect(_update_task_display)
+	# 如果已加载，立即调用一次（使用call_deferred确保_rebuild_task_panel完成）
+	if ItemManager.is_loaded:
+		print(">>> [BottomHUD] ItemManager已加载，延迟调用_update_task_display")
+		call_deferred("_update_task_display")
+	print(">>> [BottomHUD] _ready 执行完成")
 
 
 func _on_out_items_changed() -> void:
@@ -192,6 +206,7 @@ func _rebuild_task_panel() -> void:
 	star_label.add_theme_color_override("font_color", Color(0.9, 0.8, 0.1, 1))
 	star_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	star_row.add_child(star_label)
+	_task_star_label = star_label  # 保存引用
 
 	# 第2行：物品图标（居中）
 	var item_center := CenterContainer.new()
@@ -207,6 +222,7 @@ func _rebuild_task_panel() -> void:
 	item_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	item_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	item_center.add_child(item_icon)
+	_task_item_icon = item_icon  # 保存引用
 
 	# 第3行：进度（物品下方）
 	var progress_vbox := VBoxContainer.new()
@@ -224,6 +240,7 @@ func _rebuild_task_panel() -> void:
 	count_label.add_theme_color_override("font_color", Color(0.3, 0.3, 0.3, 1))
 	count_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	progress_vbox.add_child(count_label)
+	_task_count_label = count_label  # 保存引用
 
 	var progress_bar := ProgressBar.new()
 	progress_bar.name = "TaskProgressBar"
@@ -233,6 +250,7 @@ func _rebuild_task_panel() -> void:
 	progress_bar.show_percentage = false
 	progress_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	progress_vbox.add_child(progress_bar)
+	_task_progress_bar = progress_bar  # 保存引用
 
 	# 叠加层：完成按钮（覆盖在任务单中心偏下）
 	_init_submit_button_overlay(zone_c)
@@ -286,10 +304,24 @@ func refresh_task_display() -> void:
 
 ## 更新任务栏显示
 func _update_task_display() -> void:
+	print(">>> [BottomHUD] _update_task_display 开始执行")
+	print(">>> [BottomHUD] ItemManager.is_loaded=%s, all_items.size=%d" % [ItemManager.is_loaded, ItemManager.all_items.size()])
+	
+	# 如果ItemManager未加载，延迟重试
+	if not ItemManager.is_loaded:
+		print(">>> [BottomHUD] ItemManager未加载，延迟0.1秒后重试")
+		await get_tree().create_timer(0.1).timeout
+		if not ItemManager.is_loaded:
+			print(">>> [BottomHUD] ItemManager仍未加载，放弃更新")
+			return
+	
 	var current_task: Dictionary = TaskManager.get_current_task()
+	print(">>> [BottomHUD] current_task=%s" % current_task)
+	
 	var task_panel: PanelContainer = get_node(PATH_TASK_PANEL)
 
 	if current_task.is_empty():
+		print(">>> [BottomHUD] current_task为空，隐藏task_panel")
 		task_panel.visible = false
 		return
 
@@ -300,39 +332,51 @@ func _update_task_display() -> void:
 	var reward: Dictionary = current_task.get("reward", {})
 	var star_reward: int = reward.get("star", 0)
 	var progress: float = TaskManager.get_current_task_progress()
+	
+	print(">>> [BottomHUD] need_items=%s, star_reward=%d, progress=%.2f" % [need_items, star_reward, progress])
 
-	# 使用 find_child 查找动态创建的节点
-	var task_star_label: Label = find_child("TaskStarLabel", true, false)
-	if task_star_label:
-		task_star_label.text = "+%d" % star_reward
+	# 使用保存的引用（而非find_child）
+	if _task_star_label:
+		_task_star_label.text = "+%d" % star_reward
 
 	# 显示任务物品图标（取第一个）
-	var task_item_icon: TextureRect = find_child("TaskItemIcon", true, false)
-	if task_item_icon and not need_items.is_empty():
+	print(">>> [BottomHUD] _task_item_icon=%s, need_items.size=%d" % [_task_item_icon, need_items.size()])
+	
+	if _task_item_icon and not need_items.is_empty():
 		var item_id: int = int(need_items[0])
+		print(">>> [BottomHUD] 准备加载物品图标，item_id=%d" % item_id)
+		
+		# 调试：检查节点初始状态
+		print(">>> [BottomHUD] 设置前: visible=%s, size=%s, texture=%s" % [_task_item_icon.visible, _task_item_icon.size, _task_item_icon.texture])
+		
 		var sprite_path: String = ItemManager.get_sprite_path(item_id)
+		print(">>> [BottomHUD] sprite_path='%s'" % sprite_path)
+		
 		if not sprite_path.is_empty() and ResourceLoader.exists(sprite_path):
-			task_item_icon.texture = load(sprite_path)
-			task_item_icon.modulate = Color.WHITE
+			print(">>> [BottomHUD] 加载纹理: %s" % sprite_path)
+			var tex: Texture2D = load(sprite_path)
+			_task_item_icon.texture = tex
+			_task_item_icon.modulate = Color.WHITE
+			# 调试：检查设置后状态
+			print(">>> [BottomHUD] 设置后: visible=%s, size=%s, texture=%s, parent=%s" % [_task_item_icon.visible, _task_item_icon.size, _task_item_icon.texture, _task_item_icon.get_parent()])
+			print(">>> [BottomHUD] ✅ 物品图标加载成功")
 		else:
 			# 调试：打印加载失败信息
 			if sprite_path.is_empty():
-				print(">>> [BottomHUD] 物品%d的sprite_path为空" % item_id)
+				print(">>> [BottomHUD] ❌ 物品%d的sprite_path为空" % item_id)
 			elif not ResourceLoader.exists(sprite_path):
-				print(">>> [BottomHUD] 物品%d的sprite不存在: %s" % [item_id, sprite_path])
-			task_item_icon.modulate = Color(0.5, 0.5, 0.5, 0.5)
+				print(">>> [BottomHUD] ❌ 物品%d的sprite不存在: %s" % [item_id, sprite_path])
+			_task_item_icon.modulate = Color(0.5, 0.5, 0.5, 0.5)
 
 	# 进度显示
 	var require_count: int = need_items.size()
 	var current_count: int = int(progress * require_count)
-	var task_count_label: Label = find_child("TaskCountLabel", true, false)
-	if task_count_label:
-		task_count_label.text = "%d/%d" % [current_count, require_count]
+	if _task_count_label:
+		_task_count_label.text = "%d/%d" % [current_count, require_count]
 
-	var task_progress_bar: ProgressBar = find_child("TaskProgressBar", true, false)
-	if task_progress_bar:
-		task_progress_bar.max_value = require_count
-		task_progress_bar.value = current_count
+	if _task_progress_bar:
+		_task_progress_bar.max_value = require_count
+		_task_progress_bar.value = current_count
 
 	# 任务满足时显示提交按钮（叠加在任务单上）
 	if _submit_btn != null:

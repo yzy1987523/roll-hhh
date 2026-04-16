@@ -731,6 +731,8 @@ func _setup_board_ui() -> void:
 		cd_progress.offset_right = -2.0
 		cd_progress.offset_bottom = cd_size + 2.0
 		cd_progress.fill_mode = TextureProgressBar.FILL_CLOCKWISE
+		cd_progress.radial_initial_angle = 0.0  # 从顶部开始
+		cd_progress.radial_fill_degrees = 360.0  # 完整圆形填充
 		cd_progress.min_value = 0.0
 		cd_progress.max_value = 1.0
 		cd_progress.value = 1.0
@@ -1169,8 +1171,8 @@ func _play_swap_animation(src_index: int, tgt_index: int) -> void:
 		var end_world: Vector2 = end_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
 
 		var anim_sprite := _create_flying_sprite(tgt_ch)
+		get_tree().root.add_child(anim_sprite)
 		anim_sprite.global_position = start_world - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
-		add_child(anim_sprite)
 
 		var tween := create_tween()
 		tween.set_parallel(true)
@@ -1195,8 +1197,8 @@ func _play_swap_animation(src_index: int, tgt_index: int) -> void:
 func _create_flying_sprite(ch: DataModels.BoardItemData) -> Control:
 	var anim_sprite := Control.new()
 	anim_sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
-	anim_sprite.z_index = 10
-	anim_sprite.z_as_relative = false
+	anim_sprite.z_index = 50  # 飞行时层级与拖拽预览相同，确保在所有棋盘元素之上
+	anim_sprite.z_as_relative = false  # 使用全局层级
 	anim_sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var sprite := TextureRect.new()
@@ -1204,7 +1206,7 @@ func _create_flying_sprite(ch: DataModels.BoardItemData) -> Control:
 	sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	sprite.custom_minimum_size = Vector2(CHAR_SIZE, CHAR_SIZE)
-	sprite.z_index = 0
+	sprite.z_index = 0  # 相对于anim_sprite的层级
 	var sprite_path: String = ch.get_sprite_path()
 	if ResourceLoader.exists(sprite_path):
 		sprite.texture = load(sprite_path)
@@ -1265,6 +1267,7 @@ func play_shake_animation(obj: Control) -> void:
 ## 生成物品：从起始坐标飞向目标位置，到达后播放一次颤动动效
 ## 返回是否生成成功（棋盘满时返回false）
 ## 注意：直接使用传入的 item 对象（应为独立的副本），不再重复查询缓存
+## 关键：在动画开始前就先在数据层放置物品，避免连续点击时重复选中同一格子
 func spawn_item(start_pos: Vector2, item: DataModels.BoardItemData, target_index: int) -> bool:
 	var bd: BoardData = GameManager.board_data
 	if target_index < 0 or target_index >= BoardData.BOARD_SLOTS:
@@ -1275,7 +1278,14 @@ func spawn_item(start_pos: Vector2, item: DataModels.BoardItemData, target_index
 	if item == null:
 		return false
 
-	# 标记目标格子为移动中
+	# 【关键修复】立即在数据层放置物品，占用目标格子
+	# 这样后续的生成请求会找其他空格子，避免重复选中
+	var tgt_pos: Vector2i = BoardData.index_to_pos(target_index)
+	var placed_item: DataModels.BoardItemData = item.duplicate()
+	bd.place_item(placed_item, tgt_pos)
+	bd.set_grid_state(target_index, BoardData.GridState.OCCUPIED)
+	
+	# 标记目标格子为移动中（隐藏棋盘上的显示，使用飞行精灵代替）
 	moving_cells.append(target_index)
 	_refresh_board_display()
 
@@ -1289,8 +1299,8 @@ func spawn_item(start_pos: Vector2, item: DataModels.BoardItemData, target_index
 	# 创建飞行动画精灵（使用board_item预制体）
 	var anim_container: Control = preload("res://scenes/board_item.tscn").instantiate()
 	anim_container.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
-	anim_container.z_index = 10
-	anim_container.z_as_relative = false
+	anim_container.z_index = 50  # 飞行时层级与拖拽预览相同，确保在所有棋盘元素之上
+	anim_container.z_as_relative = false  # 使用全局层级
 	anim_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# 获取Sprite节点并设置纹理
@@ -1304,15 +1314,13 @@ func spawn_item(start_pos: Vector2, item: DataModels.BoardItemData, target_index
 		if item_tex != null:
 			sprite.texture = item_tex
 
-	add_child(anim_container)
+	# 添加到root确保全局层级生效（避免被game_board内部的元素遮挡）
+	get_tree().root.add_child(anim_container)
 	anim_container.global_position = start_pos - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
 
 	# 目标格子中心世界坐标
 	var target_cell: Control = cell_panels[target_index]
 	var end_pos: Vector2 = target_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
-
-	# 在 tween 创建前就复制 item（避免闭包引用问题）
-	var captured_item: DataModels.BoardItemData = item.duplicate()
 
 	# 位移动画
 	var tween := create_tween()
@@ -1322,10 +1330,7 @@ func spawn_item(start_pos: Vector2, item: DataModels.BoardItemData, target_index
 	tween.finished.connect(func():
 		anim_container.queue_free()
 		moving_cells.erase(target_index)
-		# 放置物品到目标格子
-		var tgt_pos: Vector2i = BoardData.index_to_pos(target_index)
-		bd.place_item(captured_item, tgt_pos)
-		bd.set_grid_state(target_index, BoardData.GridState.OCCUPIED)
+		# 物品已在动画开始前放置，这里只需刷新显示
 		GameManager.board_items_changed.emit()
 		_refresh_board_display()
 		# 落地后播放颤动动效
@@ -1362,8 +1367,8 @@ func _play_displace_to_empty_animation(src_index: int, tgt_index: int, empty_ind
 		var end_world: Vector2 = end_cell.global_position + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
 
 		var anim_sprite := _create_flying_sprite(displaced_ch)
+		get_tree().root.add_child(anim_sprite)
 		anim_sprite.global_position = start_world - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
-		add_child(anim_sprite)
 
 		# 飞行动画（0.25秒，平滑过渡）
 		var tween := create_tween()
@@ -1470,6 +1475,11 @@ func _merge_at(src_index: int, tgt_index: int) -> void:
 
 	# 合成后目标位置变为 OCCUPIED
 	bd.set_grid_state(tgt_index, BoardData.GridState.OCCUPIED)
+	
+	# 检查合成后的物品是否是生成器，如果是则注册到ProducerManager
+	if ItemManager.is_producer(merged.id):
+		ProducerManager.register_producer(tgt_index, merged.id)
+		_update_producer_fx_visibility(tgt_index)
 
 	# 合成位置上下左右的 LOCKED 格子 → 切换为 DUSTY
 	bd.trigger_merge_unlock(tgt_index)
@@ -2734,8 +2744,8 @@ func _play_spawn_animation(ch: DataModels.BoardItemData, start_pos: Vector2, end
 	# 创建动画精灵
 	var anim_sprite := Control.new()
 	anim_sprite.custom_minimum_size = item_size
-	anim_sprite.z_index = 10
-	anim_sprite.z_as_relative = false
+	anim_sprite.z_index = 50  # 飞行时层级与拖拽预览相同
+	anim_sprite.z_as_relative = false  # 使用全局层级
 	anim_sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# 创建 Sprite 节点
@@ -2744,12 +2754,12 @@ func _play_spawn_animation(ch: DataModels.BoardItemData, start_pos: Vector2, end
 	sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	sprite.custom_minimum_size = item_size
-	sprite.z_index = 0
+	sprite.z_index = 0  # 相对于anim_sprite的层级
 	if item_tex != null:
 		sprite.texture = item_tex
 
 	anim_sprite.add_child(sprite)
-	add_child(anim_sprite)
+	get_tree().root.add_child(anim_sprite)
 	anim_sprite.global_position = start_pos - item_size / 2
 	# 不再使用scale动画，物品直接以原始尺寸飞行
 
@@ -2869,14 +2879,15 @@ func _play_dorm_to_board_animation(moved_data: Array, start_pos: Vector2) -> voi
 		anim_sprite.custom_minimum_size = Vector2(CHAR_SIZE, CHAR_SIZE)
 		anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		anim_sprite.z_index = 15  # 宿舍动画层级（低于弹窗）
+		anim_sprite.z_index = 50  # 飞行时层级与拖拽预览相同
+		anim_sprite.z_as_relative = false  # 使用全局层级
 		
 		# 加载精灵图
 		var sprite_path: String = ch.get_sprite_path()
 		if ResourceLoader.exists(sprite_path):
 			anim_sprite.texture = load(sprite_path)
 
-		add_child(anim_sprite)
+		get_tree().root.add_child(anim_sprite)
 		anim_sprite.global_position = start_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
 		anim_sprite.scale = Vector2(0.8, 0.8)
 		
@@ -3159,14 +3170,15 @@ func _play_backpack_to_board_animation(moved_data: Array, start_pos: Vector2) ->
 		anim_sprite.custom_minimum_size = Vector2(CHAR_SIZE, CHAR_SIZE)
 		anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		anim_sprite.z_index = 15  # 动画层级（低于弹窗）
+		anim_sprite.z_index = 50  # 飞行时层级与拖拽预览相同
+		anim_sprite.z_as_relative = false  # 使用全局层级
 
 		# 加载精灵图
 		var sprite_path: String = item.get_sprite_path()
 		if ResourceLoader.exists(sprite_path):
 			anim_sprite.texture = load(sprite_path)
 
-		add_child(anim_sprite)
+		get_tree().root.add_child(anim_sprite)
 		anim_sprite.global_position = start_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
 		anim_sprite.scale = Vector2(0.8, 0.8)
 
@@ -3375,7 +3387,8 @@ func _on_out_item_clicked(item_id: int) -> void:
 	anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	anim_sprite.global_position = start_pos - item_size / 2
-	anim_sprite.z_index = 10
+	anim_sprite.z_index = 50  # 飞行时层级与拖拽预览相同
+	anim_sprite.z_as_relative = false  # 使用全局层级
 	if item_tex != null:
 		anim_sprite.texture = item_tex
 	get_tree().root.add_child(anim_sprite)
@@ -3435,7 +3448,8 @@ func _on_submit_requested() -> void:
 		anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		anim_sprite.global_position = start_pos - Vector2(30, 30)
-		anim_sprite.z_index = 10
+		anim_sprite.z_index = 50  # 飞行时层级与拖拽预览相同
+		anim_sprite.z_as_relative = false  # 使用全局层级
 		var sprite_path: String = item_data.get("sprite_path", "")
 		if not sprite_path.is_empty() and ResourceLoader.exists(sprite_path):
 			anim_sprite.texture = load(sprite_path)
