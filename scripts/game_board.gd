@@ -3603,8 +3603,8 @@ func _on_build_button_pressed() -> void:
 
 
 func _on_build_button_animation_complete() -> void:
-	# 动画完成后切换到Building场景
-	get_tree().change_scene_to_file("res://scenes/building.tscn")
+	# 动画完成后使用挡板过渡切换到Building场景
+	TransitionManager.change_scene_with_transition("res://scenes/building.tscn")
 
 
 func _on_shop_pressed() -> void:
