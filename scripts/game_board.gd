@@ -1589,94 +1589,94 @@ func _collect_energy_ball(cell_index: int) -> void:
 	GameManager._auto_save()
 
 
-## 体力粒子特效：从起点飞向体力条位置
+## 体力粒子特效：爆炸散开 + 收束飞向体力条（参考经验粒子特效）
 func _play_energy_particle_effect(start_pos: Vector2, end_pos: Vector2, particle_count: int = 8) -> void:
 	var particle_container := Node2D.new()
-	particle_container.global_position = start_pos
 	particle_container.z_index = 15
 	add_child(particle_container)
+	particle_container.global_position = start_pos
 
+	var particles: Array[Sprite2D] = []
+
+	# Phase 1: 爆炸散开 (0.3s)
 	for i in range(particle_count):
 		var particle := Sprite2D.new()
 		particle.texture = POWER_ICON
 		particle.scale = Vector2(0.4, 0.4)
-		particle.global_position = start_pos + Vector2(
-			randf_range(-20, 20), randf_range(-20, 20)
-		)
-		particle.modulate = Color(1, 1, 1, 0.9)  # 无颜色叠加
+		particle.modulate = Color(1, 1, 1, 0.9)
 		particle_container.add_child(particle)
+		particle.global_position = start_pos
+		particles.append(particle)
 
-		var tween := create_tween()
-		var offset := Vector2(randf_range(-30, 30), randf_range(-30, 30))
-		var mid_pos: Vector2 = (start_pos + end_pos) / 2.0 + offset + Vector2(0, -50)
+		var angle: float = TAU * float(i) / float(particle_count) + randf_range(-0.2, 0.2)
+		var scatter_dist: float = randf_range(25, 50)
+		var scatter_pos: Vector2 = start_pos + Vector2(cos(angle), sin(angle)) * scatter_dist
 
-		tween.tween_property(particle, "global_position", mid_pos, 0.15)\
+		var scatter_tween := create_tween()
+		scatter_tween.tween_property(particle, "global_position", scatter_pos, 0.3)\
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tween.tween_property(particle, "global_position", end_pos, 0.25)\
+		scatter_tween.parallel().tween_property(particle, "scale", Vector2(0.6, 0.6), 0.3)
+
+	# Phase 2: 收束飞向体力条 (0.4s)
+	await get_tree().create_timer(0.3).timeout
+	for particle in particles:
+		if not is_instance_valid(particle):
+			continue
+		var fly_tween := create_tween()
+		var random_offset := Vector2(randf_range(-10, 10), randf_range(-10, 10))
+		fly_tween.tween_property(particle, "global_position", end_pos + random_offset, 0.4)\
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		fly_tween.parallel().tween_property(particle, "scale", Vector2(0.3, 0.3), 0.4)
+		fly_tween.tween_property(particle, "modulate:a", 0.0, 0.1)
 
-		tween.tween_property(particle, "scale", Vector2(0.6, 0.6), 0.15)
-		tween.tween_property(particle, "scale", Vector2(0.3, 0.3), 0.25)
-
-		tween.tween_property(particle, "modulate:a", 0.0, 0.1).set_delay(0.35)
-
-		tween.finished.connect(func():
-			if is_instance_valid(particle):
-				particle.queue_free()
-		, CONNECT_ONE_SHOT)
-
+	# 清理
 	await get_tree().create_timer(0.5).timeout
 	if is_instance_valid(particle_container):
 		particle_container.queue_free()
 
 
-## 金币粒子特效：从起点飞向终点
+## 金币粒子特效：爆炸散开 + 收束飞向金币栏（参考经验粒子特效）
 func _play_coin_particle_effect(start_pos: Vector2, end_pos: Vector2, particle_count: int = 10) -> void:
-	# 创建粒子节点
 	var particle_container := Node2D.new()
-	particle_container.global_position = start_pos
-	particle_container.z_index = 15  # 高于飞行动画
+	particle_container.z_index = 15
 	add_child(particle_container)
+	particle_container.global_position = start_pos
 
-	# 为每个粒子创建精灵并设置初始位置
+	var particles: Array[Sprite2D] = []
+
+	# Phase 1: 爆炸散开 (0.3s)
 	for i in range(particle_count):
 		var particle := Sprite2D.new()
 		particle.texture = JINBI_ICON
-		particle.scale = Vector2(2.0, 2.0)  # 4倍大小
-		particle.global_position = start_pos + Vector2(
-			randf_range(-10, 10), randf_range(-10, 10)
-		)
-		particle.rotation = 0.0
+		particle.scale = Vector2(0.5, 0.5)
 		particle.modulate = Color(1, 1, 1, 0.9)
 		particle_container.add_child(particle)
+		particle.global_position = start_pos
+		particles.append(particle)
 
-		# 创建飞向终点的动画
-		var tween := create_tween()
+		var angle: float = TAU * float(i) / float(particle_count) + randf_range(-0.2, 0.2)
+		var scatter_dist: float = randf_range(25, 50)
+		var scatter_pos: Vector2 = start_pos + Vector2(cos(angle), sin(angle)) * scatter_dist
 
-		# 原地旋转一圈动画
-		tween.tween_property(particle, "rotation", TAU, 0.2)\
-			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+		var scatter_tween := create_tween()
+		scatter_tween.tween_property(particle, "global_position", scatter_pos, 0.3)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		scatter_tween.parallel().tween_property(particle, "scale", Vector2(0.7, 0.7), 0.3)
 
-		# 延迟后开始飞行动画（直接飞向终点）
-		tween.parallel()
-		tween.tween_property(particle, "global_position", end_pos, 0.3)\
-			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).set_delay(0.25)
+	# Phase 2: 收束飞向金币栏 (0.4s)
+	await get_tree().create_timer(0.3).timeout
+	for particle in particles:
+		if not is_instance_valid(particle):
+			continue
+		var fly_tween := create_tween()
+		var random_offset := Vector2(randf_range(-10, 10), randf_range(-10, 10))
+		fly_tween.tween_property(particle, "global_position", end_pos + random_offset, 0.4)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		fly_tween.parallel().tween_property(particle, "scale", Vector2(0.3, 0.3), 0.4)
+		fly_tween.tween_property(particle, "modulate:a", 0.0, 0.1)
 
-		# 缩放动画：从小到大再到正常
-		tween.tween_property(particle, "scale", Vector2(3.2, 3.2), 0.15).set_delay(0.25)
-		tween.tween_property(particle, "scale", Vector2(2.0, 2.0), 0.25).set_delay(0.25)
-
-		# 透明度动画：渐隐
-		tween.tween_property(particle, "modulate:a", 0.0, 0.1).set_delay(0.5)
-
-		# 动画结束后删除粒子和容器
-		tween.finished.connect(func():
-			if is_instance_valid(particle):
-				particle.queue_free()
-		, CONNECT_ONE_SHOT)
-
-	# 延迟清理容器
-	await get_tree().create_timer(0.6).timeout
+	# 清理
+	await get_tree().create_timer(0.5).timeout
 	if is_instance_valid(particle_container):
 		particle_container.queue_free()
 
@@ -1710,7 +1710,7 @@ func _get_energy_bar_position() -> Vector2:
 	return Vector2(100, 50)  # 最终回退
 
 
-## 经验粒子特效：从起点飞向等级条位置
+## 经验粒子特效：爆炸散开 + 收束飞向等级条位置（与 building_ui 一致）
 func _play_exp_particle_effect(start_pos: Vector2, exp_amount: int) -> void:
 	# 查找等级条位置（TopBar/ResourceDisplay区域）
 	var exp_bar_pos: Vector2 = Vector2(400, 50)  # 默认位置，会动态获取
@@ -1721,52 +1721,48 @@ func _play_exp_particle_effect(start_pos: Vector2, exp_amount: int) -> void:
 
 	# 创建粒子节点
 	var particle_container := Node2D.new()
-	particle_container.global_position = start_pos
 	particle_container.z_index = 15
 	add_child(particle_container)
+	particle_container.global_position = start_pos
 
 	# 经验图标
 	var EXP_ICON := preload("res://art/sprites/UI/icon/jingyan.png")
 
 	# 粒子数量根据经验值调整（每50点一个粒子，最多10个）
 	var particle_count := mini(maxi(exp_amount / 50, 1), 10)
+	var particles: Array[Sprite2D] = []
 
-	# 为每个粒子创建精灵并设置初始位置
+	# Phase 1: 爆炸散开 (0.3s)
 	for i in range(particle_count):
 		var particle := Sprite2D.new()
 		particle.texture = EXP_ICON
-		particle.scale = Vector2(0.5, 0.5)
-		particle.global_position = start_pos + Vector2(
-			randf_range(-20, 20), randf_range(-20, 20)
-		)
-		#particle.modulate = Color(0.3, 0.8, 1.0, 0.9)  # 蓝色经验特效
+		particle.scale = Vector2(0.4, 0.4)
 		particle_container.add_child(particle)
+		particle.global_position = start_pos
+		particles.append(particle)
 
-		# 创建飞向终点的动画
-		var tween := create_tween()
-		var offset := Vector2(randf_range(-30, 30), randf_range(-30, 30))
-		var mid_pos: Vector2 = (start_pos + exp_bar_pos) / 2.0 + offset + Vector2(0, -50)
+		var angle: float = TAU * float(i) / float(particle_count) + randf_range(-0.2, 0.2)
+		var scatter_dist: float = randf_range(25, 50)
+		var scatter_pos: Vector2 = start_pos + Vector2(cos(angle), sin(angle)) * scatter_dist
 
-		# 位置动画：起点 -> 中点(弧线) -> 终点
-		tween.tween_property(particle, "global_position", mid_pos, 0.15)\
+		var scatter_tween := create_tween()
+		scatter_tween.tween_property(particle, "global_position", scatter_pos, 0.3)\
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tween.tween_property(particle, "global_position", exp_bar_pos, 0.25)\
+		scatter_tween.parallel().tween_property(particle, "scale", Vector2(0.6, 0.6), 0.3)
+
+	# Phase 2: 收束飞向经验条 (0.4s)
+	await get_tree().create_timer(0.3).timeout
+	for particle in particles:
+		if not is_instance_valid(particle):
+			continue
+		var fly_tween := create_tween()
+		var random_offset := Vector2(randf_range(-10, 10), randf_range(-10, 10))
+		fly_tween.tween_property(particle, "global_position", exp_bar_pos + random_offset, 0.4)\
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		fly_tween.parallel().tween_property(particle, "scale", Vector2(0.3, 0.3), 0.4)
+		fly_tween.tween_property(particle, "modulate:a", 0.0, 0.1)
 
-		# 缩放动画：从小到大再到正常
-		tween.tween_property(particle, "scale", Vector2(0.8, 0.8), 0.15)
-		tween.tween_property(particle, "scale", Vector2(0.5, 0.5), 0.25)
-
-		# 透明度动画：渐隐
-		tween.tween_property(particle, "modulate:a", 0.0, 0.1).set_delay(0.35)
-
-		# 动画结束后删除粒子
-		tween.finished.connect(func():
-			if is_instance_valid(particle):
-				particle.queue_free()
-		, CONNECT_ONE_SHOT)
-
-	# 延迟清理容器
+	# 清理
 	await get_tree().create_timer(0.5).timeout
 	if is_instance_valid(particle_container):
 		particle_container.queue_free()
