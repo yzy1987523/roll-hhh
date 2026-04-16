@@ -476,8 +476,26 @@ func is_in_map(x: int, y: int) -> bool:
 
 func refresh_furniture_sort():
 	for item in furniture_root.get_children():
-		if item is CanvasItem:
-			item.z_index = -int(item.global_position.y)
+		if item is Polygon2D:
+			# 使用多边形视觉中心的 Y 坐标排序（Y 越大越靠前，与角色 z_index 一致）
+			var visual_center_y = get_furniture_visual_center_y(item)
+			item.z_index = int(visual_center_y)
+		elif item is CanvasItem:
+			item.z_index = int(item.global_position.y)
+
+# ================================= 获取家具视觉中心（世界坐标）=================================
+func get_furniture_visual_center(poly: Polygon2D) -> Vector2:
+	var points = poly.polygon
+	if points.size() == 0:
+		return poly.global_position
+	var center = Vector2.ZERO
+	for p in points:
+		center += p
+	center /= points.size()
+	return poly.global_position + center
+
+func get_furniture_visual_center_y(poly: Polygon2D) -> float:
+	return get_furniture_visual_center(poly).y
 
 # ================================= 模式控制 =================================
 func toggle_edit_mode():

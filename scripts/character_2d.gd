@@ -25,25 +25,25 @@ var _move_tween: Tween
 var _move_timer: float = 0.0
 
 # ================================= 地板范围（基于 Floor_0_0 的实际世界坐标）=======================
-# Floor_0_0 position = (-97, 26), 实际覆盖约 x: -430~224, y: -12~362
-var _floor_bounds: Rect2 = Rect2(-430, -12, 654, 374)  # x, y, width, height
+# Floor_0_0 position = (-97, 26), polygon 点: (-7,-38),(321,147),(-11,336),(-337,148)
+# 转换为世界坐标后的菱形多边形
+var _floor_polygon: PackedVector2Array = PackedVector2Array([
+	Vector2(-97 + -7, 26 + -38),    # 顶 (-104, -12)
+	Vector2(-97 + 321, 26 + 147),   # 右 (224, 173)
+	Vector2(-97 + -11, 26 + 336),   # 底 (-108, 362)
+	Vector2(-97 + -337, 26 + 148)   # 左 (-434, 174)
+])
 
 func _is_point_on_floor(world_pos: Vector2) -> bool:
-	# 使用地板的实际边界做简单检测
-	# Floor_0_0 世界坐标: (-97, 26)
-	# polygon 点: (-7, -38), (321, 147), (-11, 336), (-337, 148)
-	# 对角两点 (-337, -38) 和 (321, 336) 确定包围盒
-	var p1 = Vector2(-97 + -337, 26 + -38)  # 左上
-	var p2 = Vector2(-97 + 321, 26 + 336)    # 右下
-	var floor_rect = Rect2(p1, p2 - p1)
-	return floor_rect.has_point(world_pos)
+	# 使用实际地板多边形做精确检测（菱形，而非矩形）
+	return Geometry2D.is_point_in_polygon(world_pos, _floor_polygon)
 
 func _ready():
 	_init_sprite()
 	_init_position()
 	_init_grid_manager()
 	_move_timer = move_interval  # 首次等待时间
-	print(">>> [Character2D] _floor_bounds check: p1=%s, p2=%s" % [Vector2(-97 + -337, 26 + -38), Vector2(-97 + 321, 26 + 336)])
+	print(">>> [Character2D] 使用多边形地板边界检测，顶点数=%d" % _floor_polygon.size())
 
 # ================================= 格子尺寸（需与 GridManager 一致）=======================
 var _cell_size: Vector2 = Vector2(128, 64)
@@ -106,9 +106,8 @@ func _update_animation(delta: float):
 
 # ================================= 动态 Z 轴更新 =================================
 func _update_z_index():
-	var base_z: int = 100
-	var dynamic_z: int = int(position.y) + base_z
-	sprite.z_index = dynamic_z
+	# 设置在角色节点上，与家具共用 Y 坐标排序（Y 越大越靠前）
+	z_index = int(position.y)
 
 # ================================= 尝试随机移动 =================================
 func _try_move_to_random_neighbor():
@@ -155,14 +154,45 @@ func _can_move_to(grid: Vector2i) -> bool:
 	if grid.x < 1 or grid.x > 9 or grid.y < 1 or grid.y > 7:
 		return false
 
-	# 检查家具占用
+	# 检查家具占用（grid_occupied）
 	if grid_manager != null:
 		var occupied = grid_manager.get("grid_occupied")
 		if occupied != null and occupied.size() > grid.y:
 			if occupied[grid.y].size() > grid.x:
 				if occupied[grid.y][grid.x] == true:
 					return false
+
+	# 检查是否与可见家具的视觉中心过近（距离阻挡）
+	if _is_blocked_by_visible_furniture(world_pos):
+		return false
+
 	return true
+
+# ================================= 检查目标点是否被可见家具阻挡 =================================
+func _is_blocked_by_visible_furniture(world_pos: Vector2) -> bool:
+	var furniture_root_node = get_node_or_null("../FurnitureRoot")
+	if furniture_root_node == null:
+		return false
+	var threshold: float = 50.0  # 家具视觉中心的阻挡半径
+	for fur in furniture_root_node.get_children():
+		if not fur.visible:
+			continue
+		if fur is Polygon2D:
+			var visual_center = _get_polygon_visual_center(fur)
+			if world_pos.distance_to(visual_center) < threshold:
+				return true
+	return false
+
+# ================================= 获取 Polygon2D 的视觉中心（世界坐标）=================================
+func _get_polygon_visual_center(poly: Polygon2D) -> Vector2:
+	var points = poly.polygon
+	if points.size() == 0:
+		return poly.global_position
+	var center = Vector2.ZERO
+	for p in points:
+		center += p
+	center /= points.size()
+	return poly.global_position + center
 
 # ================================= 点是否在多边形内 =================================
 func _is_point_in_polygon(point: Vector2, polygon: PackedVector2Array) -> bool:

@@ -92,11 +92,25 @@ func _create_unlock_icon(build_id: int, furniture: Node, config: Dictionary) -> 
 	print(">>> A: furniture=" + str(furniture))
 	print(">>> A: icon_root=" + str(icon_root))
 	print(">>> A: position=" + str(position))
-	var furniture_global: Vector2 = furniture.get_global_position()
+
+	# 计算家具的视觉中心（Polygon2D 的 position + polygon 顶点中心）
+	var furniture_visual_center: Vector2
+	if furniture is Polygon2D:
+		var points = furniture.polygon
+		var poly_center = Vector2.ZERO
+		for p in points:
+			poly_center += p
+		if points.size() > 0:
+			poly_center /= points.size()
+		furniture_visual_center = furniture.global_position + poly_center
+		print(">>> B: poly_center_offset=%s" % str(poly_center))
+	else:
+		furniture_visual_center = furniture.global_position
+
 	var icon_root_global: Vector2 = icon_root.get_global_position()
-	var local_pos: Vector2 = furniture_global - icon_root_global
+	var local_pos: Vector2 = furniture_visual_center - icon_root_global
 	var btn_pos: Vector2 = local_pos + Vector2(-40, -80)
-	print(">>> B: furniture_global=" + str(furniture_global))
+	print(">>> B: furniture_visual_center=%s" % str(furniture_visual_center))
 	print(">>> B: icon_root_global=" + str(icon_root_global))
 	print(">>> B: btn_pos=" + str(btn_pos))
 
