@@ -66,22 +66,9 @@ func _refresh_all_icons() -> void:
 			child.visible = false
 
 
-func _show_and_update_furniture(build_id: int, furniture: Node, config: Dictionary) -> void:
-	# 显示家具
+func _show_and_update_furniture(_build_id: int, furniture: Node, _config: Dictionary) -> void:
+	# 建造完成：只显示家具，贴图已在 tscn 中设置好
 	furniture.visible = true
-
-	# 更新贴图
-	var furniture_id: int = config.get("furnitureId", 0)
-	if furniture_id == 0:
-		return
-
-	var sprite_path: String = ItemManager.get_sprite_path(furniture_id)
-	if sprite_path.is_empty() or not ResourceLoader.exists(sprite_path):
-		sprite_path = "res://art/building/b%03d.png" % build_id
-
-	if ResourceLoader.exists(sprite_path):
-		furniture.texture = load(sprite_path)
-		print(">>> [FurnitureIconManager] 家具 %s 已完成，显示并更新贴图为 %s" % [furniture.name, sprite_path])
 
 
 func _clear_all_icons() -> void:
@@ -92,8 +79,7 @@ func _clear_all_icons() -> void:
 
 
 func _create_unlock_icon(build_id: int, furniture: Node, config: Dictionary) -> void:
-	print(">>> [FurnitureIconManager] _create_unlock_icon: build_id=%d, furniture=%s, furniture.position=%s" % [build_id, furniture.name, furniture.position])
-	# 创建或获取图标根节点
+	print(">>> [FurnitureIconManager] _create_unlock_icon: build_id=%d" % build_id)
 	var icon_root = get_node_or_null("FurnitureIconRoot")
 	if icon_root == null:
 		icon_root = Node2D.new()
@@ -101,14 +87,27 @@ func _create_unlock_icon(build_id: int, furniture: Node, config: Dictionary) -> 
 		icon_root.z_index = 2000
 		add_child(icon_root)
 
-	# 创建图标容器 - 使用 Button（内置点击处理）
+	# Debug
+	print(">>> [FurnitureIconManager] === 坐标调试 ===")
+	print(">>> A: furniture=" + str(furniture))
+	print(">>> A: icon_root=" + str(icon_root))
+	print(">>> A: position=" + str(position))
+	var furniture_global: Vector2 = furniture.get_global_position()
+	var icon_root_global: Vector2 = icon_root.get_global_position()
+	var local_pos: Vector2 = furniture_global - icon_root_global
+	var btn_pos: Vector2 = local_pos + Vector2(-40, -80)
+	print(">>> B: furniture_global=" + str(furniture_global))
+	print(">>> B: icon_root_global=" + str(icon_root_global))
+	print(">>> B: btn_pos=" + str(btn_pos))
+
+	# Button
 	var btn = Button.new()
 	btn.name = "UnlockIcon_%d" % build_id
 	btn.custom_minimum_size = Vector2(80, 40)
 	btn.size = btn.custom_minimum_size
-	btn.position = furniture.position + Vector2(-40, -80)
+	btn.position = btn_pos
 	btn.mouse_filter = Control.MOUSE_FILTER_STOP
-	# 按钮样式
+
 	var style_normal = StyleBoxFlat.new()
 	style_normal.bg_color = Color(0.2, 0.2, 0.2, 0.9)
 	style_normal.corner_radius_top_left = 8
@@ -152,14 +151,12 @@ func _create_unlock_icon(build_id: int, furniture: Node, config: Dictionary) -> 
 	print(">>> [FurnitureIconManager] icon position=%s, size=%s" % [btn.position, btn.size])
 	icon_root.add_child(btn)
 
-	# 内部布局
 	var hbox = HBoxContainer.new()
 	hbox.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	hbox.add_theme_constant_override("separation", 4)
 	btn.add_child(hbox)
 
-	# 星星图标
 	var star_icon = TextureRect.new()
 	star_icon.custom_minimum_size = Vector2(24, 24)
 	star_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
@@ -169,7 +166,6 @@ func _create_unlock_icon(build_id: int, furniture: Node, config: Dictionary) -> 
 		star_icon.texture = load(star_tex_path)
 	hbox.add_child(star_icon)
 
-	# 费用标签
 	var cost_label = Label.new()
 	cost_label.text = str(config.get("starCost", 0))
 	cost_label.add_theme_font_size_override("font_size", 20)
@@ -199,40 +195,6 @@ func _input(event: InputEvent) -> void:
 					print(">>> [FurnitureIconManager] 点击了图标! build_id=%d" % bid)
 					icon_clicked.emit(bid)
 					break
-
-
-## 更新指定家具的贴图
-func update_furniture_texture(build_id: int) -> void:
-	var furniture_root = get_node_or_null("../FurnitureRoot")
-	if furniture_root == null:
-		return
-
-	var slot_index: int = build_id - 1
-	var furniture_name: String = "Furniture_%d" % slot_index
-	var furniture: Node = furniture_root.find_child(furniture_name, false, false)
-	if furniture == null:
-		print(">>> [FurnitureIconManager] 找不到家具 %s" % furniture_name)
-		return
-
-	var config: Dictionary = _build_loader.get_build(build_id)
-	if config.is_empty():
-		return
-
-	var furniture_id: int = config.get("furnitureId", 0)
-	if furniture_id == 0:
-		return
-
-	# 通过 ItemManager 获取贴图路径
-	var sprite_path: String = ""
-	sprite_path = ItemManager.get_sprite_path(furniture_id)
-
-	if sprite_path.is_empty() or not ResourceLoader.exists(sprite_path):
-		# fallback 到 building 目录的贴图
-		sprite_path = "res://art/building/b%03d.png" % build_id
-
-	if ResourceLoader.exists(sprite_path):
-		furniture.texture = load(sprite_path)
-		print(">>> [FurnitureIconManager] 更新家具 %s 贴图为 %s" % [furniture_name, sprite_path])
 
 
 ## 获取玩家等级

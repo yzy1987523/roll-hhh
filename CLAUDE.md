@@ -221,6 +221,22 @@ sprite.set_anchors_preset(Control.PRESET_FULL_RECT)
 preview.set_anchors_preset(Control.PRESET_CENTER)
 ```
 
+### MouseFilter Property
+
+**MouseFilter values** (Control.mouse_filter):
+- `0` = **STOP** (default) - 接收鼠标事件，阻止传递到下方节点
+- `1` = **PASS** - 接收鼠标事件，同时传递到下方节点
+- `2` = **IGNORE** - 完全忽略鼠标事件，不接收也不传递
+
+**Common use cases**:
+```gdscript
+# 子节点图片需要透过点击到父节点按钮时，设置 IGNORE
+icon.mouse_filter = 2  # 忽略输入，让点击穿透
+
+# 背景装饰节点设置 IGNORE
+bg.mouse_filter = 2   # 忽略输入，不阻挡按钮点击
+```
+
 ### Drag & Swap Logic
 
 When dragging character A to cell with character B (different job/level):

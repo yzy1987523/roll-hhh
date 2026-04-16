@@ -46,8 +46,7 @@ var spawn_warrior: TextureButton
 var spawn_mage: TextureButton
 var spawn_priest: TextureButton
 var end_turn_button: TextureButton
-@onready var build_button: Control = $MainLayout/DetailActionBar/BuildButton
-var build_button_click_area: TextureButton
+@onready var build_button: TextureButton = $MainLayout/DetailActionBar/BuildButton
 var item_bar: HBoxContainer
 var dorm_button: TextureButton
 var shop_button: TextureButton
@@ -188,7 +187,6 @@ func _ready() -> void:
 	spawn_mage = get_node_or_null("MainLayout/BottomBarContainer/BottomBar/SpawnRow/SpawnButtons/SpawnMage")
 	spawn_priest = get_node_or_null("MainLayout/BottomBarContainer/BottomBar/SpawnRow/SpawnButtons/SpawnPriest")
 	end_turn_button = get_node_or_null("MainLayout/DetailActionBar/EndTurnButton")
-	build_button_click_area = get_node_or_null("MainLayout/DetailActionBar/BuildButton/ClickArea")
 	item_bar = get_node_or_null("MainLayout/MiddleBar/ItemBar")
 	dorm_button = get_node_or_null("MainLayout/MiddleBar/DormButton")
 	shop_button = get_node_or_null("MainLayout/MiddleBar/ShopButton")
@@ -278,8 +276,8 @@ func _connect_signals() -> void:
 		diamond_buy_btn.pressed.connect(_on_diamond_buy_pressed)
 	if encyclopedia_button:
 		encyclopedia_button.pressed.connect(_on_encyclopedia_pressed)
-	if build_button_click_area:
-		build_button_click_area.pressed.connect(_on_build_button_pressed)
+	if build_button:
+		build_button.pressed.connect(_on_build_button_pressed)
 	if bottom_hud_container:
 		bottom_hud_container.build_list_pressed.connect(_on_build_list_pressed)
 		bottom_hud_container.out_item_clicked.connect(_on_out_item_clicked)
@@ -867,31 +865,26 @@ func _play_swap_animation(src_index: int, tgt_index: int) -> void:
 	_try_advance_tutorial(2)
 
 
-## 创建飞行动画精灵的辅助函数
+## 创建飞行动画精灵的辅助函数（参考 _create_drag_preview 的方式）
 func _create_flying_sprite(ch: DataModels.BoardItemData) -> Control:
-	# 使用 board_item 场景作为飞行动画精灵
-	var board_item: Control = preload("res://scenes/board_item.tscn").instantiate()
-	board_item.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
-	board_item.z_index = 10  # 动画层级（低于弹窗）
-	board_item.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var anim_sprite := Control.new()
+	anim_sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
+	anim_sprite.z_index = 10
+	anim_sprite.z_as_relative = false
+	anim_sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	# 获取 Sprite 节点并设置纹理
-	var sprite: TextureRect = board_item.get_node_or_null("Sprite")
-	if sprite == null and board_item.get_child_count() > 0:
-		var first: Node = board_item.get_child(0)
-		if first is TextureRect:
-			sprite = first
+	var sprite := TextureRect.new()
+	sprite.set_anchors_preset(Control.PRESET_FULL_RECT)
+	sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sprite.custom_minimum_size = Vector2(CHAR_SIZE, CHAR_SIZE)
+	sprite.z_index = 0
+	var sprite_path: String = ch.get_sprite_path()
+	if ResourceLoader.exists(sprite_path):
+		sprite.texture = load(sprite_path)
 
-	if sprite != null:
-		sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		sprite.pivot_offset = Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
-		# 使用BoardItemData的sprite路径
-		var sprite_path: String = ch.get_sprite_path()
-		if ResourceLoader.exists(sprite_path):
-			sprite.texture = load(sprite_path)
-
-	return board_item
+	anim_sprite.add_child(sprite)
+	return anim_sprite
 
 
 ## 查找最近空格（排除指定单元格）
@@ -960,22 +953,27 @@ func spawn_item(start_pos: Vector2, item_id: int, target_index: int) -> bool:
 	moving_cells.append(target_index)
 	_refresh_board_display()
 
-	# 创建飞行动画精灵（使用裸 TextureRect，避免 board_item.tscn 的 layout 系统干扰）
-	var anim_sprite := TextureRect.new()
+	# 创建飞行动画精灵（参考 _create_drag_preview 的方式）
+	var anim_sprite := Control.new()
 	anim_sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
-	anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	anim_sprite.pivot_offset = Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
 	anim_sprite.z_index = 10
+	anim_sprite.z_as_relative = false
 	anim_sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	# 创建 Sprite 节点
+	var sprite := TextureRect.new()
+	sprite.set_anchors_preset(Control.PRESET_FULL_RECT)
+	sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sprite.custom_minimum_size = Vector2(CHAR_SIZE, CHAR_SIZE)
+	sprite.z_index = 0
 	var sprite_path: String = item.get_sprite_path()
 	if ResourceLoader.exists(sprite_path):
-		anim_sprite.texture = load(sprite_path)
+		sprite.texture = load(sprite_path)
 
+	anim_sprite.add_child(sprite)
 	add_child(anim_sprite)
 	anim_sprite.global_position = start_pos - Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
-	anim_sprite.scale = Vector2(1.0, 1.0)
 
 	# 目标格子中心世界坐标
 	var target_cell: Control = cell_panels[target_index]
@@ -1252,6 +1250,68 @@ func _play_coin_particle_effect(start_pos: Vector2, end_pos: Vector2, particle_c
 		tween.tween_property(particle, "modulate:a", 0.0, 0.1).set_delay(0.35)
 
 		# 动画结束后删除粒子和容器
+		tween.finished.connect(func():
+			if is_instance_valid(particle):
+				particle.queue_free()
+		, CONNECT_ONE_SHOT)
+
+	# 延迟清理容器
+	await get_tree().create_timer(0.5).timeout
+	if is_instance_valid(particle_container):
+		particle_container.queue_free()
+
+
+## 经验粒子特效：从起点飞向等级条位置
+func _play_exp_particle_effect(start_pos: Vector2, exp_amount: int) -> void:
+	# 查找等级条位置（TopBar/ResourceDisplay区域）
+	var exp_bar_pos: Vector2 = Vector2(400, 50)  # 默认位置，会动态获取
+
+	var resource_display := get_node_or_null("MainLayout/TopBar/ResourceDisplay")
+	if resource_display != null:
+		exp_bar_pos = resource_display.global_position + Vector2(100, 30)
+
+	# 创建粒子节点
+	var particle_container := Node2D.new()
+	particle_container.global_position = start_pos
+	particle_container.z_index = 15
+	add_child(particle_container)
+
+	# 经验图标
+	var EXP_ICON := preload("res://art/sprites/UI/icon/jingyan.png")
+
+	# 粒子数量根据经验值调整（每50点一个粒子，最多10个）
+	var particle_count := mini(maxi(exp_amount / 50, 1), 10)
+
+	# 为每个粒子创建精灵并设置初始位置
+	for i in range(particle_count):
+		var particle := Sprite2D.new()
+		particle.texture = EXP_ICON
+		particle.scale = Vector2(0.5, 0.5)
+		particle.global_position = start_pos + Vector2(
+			randf_range(-20, 20), randf_range(-20, 20)
+		)
+		particle.modulate = Color(0.3, 0.8, 1.0, 0.9)  # 蓝色经验特效
+		particle_container.add_child(particle)
+
+		# 创建飞向终点的动画
+		var tween := create_tween()
+		var offset := Vector2(randf_range(-30, 30), randf_range(-30, 30))
+		var mid_pos: Vector2 = (start_pos + exp_bar_pos) / 2.0 + offset + Vector2(0, -50)
+
+		# 位置动画：起点 -> 中点(弧线) -> 终点
+		tween.tween_property(particle, "global_position", mid_pos, 0.15)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(particle, "global_position", exp_bar_pos, 0.25)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+
+		# 缩放动画：从小到大再到正常
+		tween.tween_property(particle, "scale", Vector2(0.8, 0.8), 0.15)
+		tween.tween_property(particle, "scale", Vector2(0.5, 0.5), 0.25)
+
+		# 透明度动画：渐隐
+		tween.tween_property(particle, "modulate:a", 0.0, 0.1).set_delay(0.35)
+
+		# 动画结束后删除粒子
 		tween.finished.connect(func():
 			if is_instance_valid(particle):
 				particle.queue_free()
@@ -2192,7 +2252,7 @@ func _on_spawn_pressed(job: int) -> void:
 	_try_advance_tutorial(0)
 
 
-## 生成动画：从按钮位置飞到目标格子
+## 生成动画：从按钮位置飞到目标格子（参考 _create_drag_preview 的方式）
 func _play_spawn_animation(ch: DataModels.BoardItemData, start_pos: Vector2, end_pos: Vector2, target_index: int) -> void:
 	# 标记目标格子为移动中（动画完成前不显示）
 	moving_cells.append(target_index)
@@ -2200,36 +2260,40 @@ func _play_spawn_animation(ch: DataModels.BoardItemData, start_pos: Vector2, end
 	# 刷新显示（目标格子不显示角色）
 	_refresh_board_display()
 
-	# 使用 board_item.tscn 预制体创建动画精灵
-	var anim_container: Control = preload("res://scenes/board_item.tscn").instantiate()
-	var anim_sprite: TextureRect = anim_container.get_node_or_null("Sprite")
-	if anim_sprite == null:
-		anim_container.queue_free()
-		return
+	# 创建动画精灵（参考 _create_drag_preview 的方式）
+	var anim_sprite := Control.new()
+	anim_sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
+	anim_sprite.z_index = 10
+	anim_sprite.z_as_relative = false
+	anim_sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	# 设置纹理
+	# 创建 Sprite 节点
+	var sprite := TextureRect.new()
+	sprite.set_anchors_preset(Control.PRESET_FULL_RECT)
+	sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sprite.custom_minimum_size = Vector2(CHAR_SIZE, CHAR_SIZE)
+	sprite.z_index = 0
 	var sprite_path: String = ch.get_sprite_path()
 	if ResourceLoader.exists(sprite_path):
-		anim_sprite.texture = load(sprite_path)
+		sprite.texture = load(sprite_path)
 
-	add_child(anim_container)
-	anim_container.z_index = 10  # 动画层级（低于弹窗）
+	anim_sprite.add_child(sprite)
+	add_child(anim_sprite)
+	anim_sprite.global_position = start_pos - Vector2(CELL_SIZE as float / 2, CELL_SIZE as float / 2)
+	anim_sprite.scale = Vector2(0.5, 0.5)
 
-	# 使用世界坐标设置初始位置（让精灵中央对准目标）
-	anim_container.global_position = start_pos - Vector2(CELL_SIZE as float / 2, CELL_SIZE as float / 2)
-	anim_container.scale = Vector2(0.5, 0.5)
-
-	# 动画：从小到大、从按钮位置飞到目标格子（终点也是左上角对齐）
+	# 动画：从小到大、从按钮位置飞到目标格子
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(anim_container, "global_position", end_pos - Vector2(CELL_SIZE as float / 2, CELL_SIZE as float / 2), 0.3)\
+	tween.tween_property(anim_sprite, "global_position", end_pos - Vector2(CELL_SIZE as float / 2, CELL_SIZE as float / 2), 0.3)\
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(anim_container, "scale", Vector2(1.0, 1.0), 0.3)\
+	tween.tween_property(anim_sprite, "scale", Vector2(1.0, 1.0), 0.3)\
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 	# 动画结束后清理并刷新显示
 	tween.finished.connect(func():
-		anim_container.queue_free()
+		anim_sprite.queue_free()
 		moving_cells.erase(target_index)
 		_refresh_board_display()
 		_play_land_animation(target_index)
@@ -3013,15 +3077,22 @@ func _on_popup_close() -> void:
 func _on_build_button_pressed() -> void:
 	print(">>> [GameBoard] BuildButton pressed!")
 	SoundSystem.play_button_click()
-	# 播放按钮缩放动画
-	if build_button:
+	# 播放按钮缩放动画（由子级Icon播放），动画完成后再执行场景切换
+	var icon: TextureRect = build_button.find_child("Icon", true, false) if build_button else null
+	if icon:
 		var tween := create_tween()
-		tween.set_parallel(true)
-		tween.tween_property(build_button, "scale", Vector2(1.1, 1.1), 0.15)\
+		tween.tween_property(icon, "scale", Vector2(1.1, 1.1), 0.15)\
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		tween.tween_property(build_button, "scale", Vector2(1.0, 1.0), 0.15)\
+		tween.tween_property(icon, "scale", Vector2(1.0, 1.0), 0.1)\
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN).set_delay(0.15)
-	# 切换到Building场景
+		tween.finished.connect(_on_build_button_animation_complete)
+	else:
+		# 没有Icon时直接切换
+		_on_build_button_animation_complete()
+
+
+func _on_build_button_animation_complete() -> void:
+	# 动画完成后切换到Building场景
 	get_tree().change_scene_to_file("res://scenes/building.tscn")
 
 

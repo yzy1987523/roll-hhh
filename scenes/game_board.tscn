@@ -1,15 +1,13 @@
 [gd_scene format=3 uid="uid://lhfpkjexs7e5"]
 
 [ext_resource type="Script" uid="uid://blsuwfdclth4a" path="res://scripts/game_board.gd" id="1_game_board"]
-[ext_resource type="PackedScene" uid="uid://resource_display_001" path="res://scenes/resource_display.tscn" id="1_resource_display"]
+[ext_resource type="PackedScene" path="res://scenes/resource_display.tscn" id="1_resource_display"]
 [ext_resource type="Texture2D" uid="uid://dbgrt3fjthdx6" path="res://art/sprites/UI/panels/bg_0.jpg" id="2_sax53"]
-[ext_resource type="Texture2D" uid="uid://dt5a7npbvajtf" path="res://art/sprites/UI/items/smallItem/coin.png" id="3_coin"]
 [ext_resource type="Texture2D" uid="uid://c4m1krf23asjm" path="res://art/sprites/UI/items/smallItem/engery.png" id="4_energy"]
 [ext_resource type="Texture2D" uid="uid://c12x6mkh5bjm2" path="res://art/sprites/UI/items/smallItem/setting.png" id="6_setting"]
 [ext_resource type="Texture2D" uid="uid://bdp3xog0xtx7y" path="res://art/sprites/UI/items/smallItem/shop.png" id="7_shop"]
 [ext_resource type="Texture2D" uid="uid://bpt7u5pwxdo06" path="res://art/sprites/UI/items/smallItem/dorm.png" id="8_dorm"]
 [ext_resource type="Texture2D" uid="uid://d31cgiyurr02m" path="res://art/sprites/UI/items/smallItem/Encyclopedia.png" id="9_encyclopedia"]
-[ext_resource type="Texture2D" uid="uid://cqm34kbad7jq0" path="res://art/sprites/UI/icon/zuanshi.png" id="9_zuanshi"]
 [ext_resource type="Texture2D" uid="uid://dv6kfqsd5cu5q" path="res://art/sprites/UI/items/smallItem/close.png" id="10_close"]
 [ext_resource type="Texture2D" uid="uid://bnq7sp57ajygp" path="res://art/sprites/UI/icon/exit.png" id="11_hl2y5"]
 [ext_resource type="Texture2D" uid="uid://bn8pnsxuaaic8" path="res://art/sprites/UI/items/smallItem/spawner0.png" id="13_cac7a"]
@@ -65,12 +63,11 @@ custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="ResourceDisplay" parent="MainLayout/TopBar" instance=ExtResource("1_resource_display")]
+[node name="ResourceDisplay" parent="MainLayout/TopBar" unique_id=484052423 instance=ExtResource("1_resource_display")]
 layout_mode = 2
-size_flags_vertical = 3
 
 [node name="Spacer" type="Control" parent="MainLayout/TopBar" unique_id=1825867427]
-layout_mode = 3
+layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="SettingsButton" type="Button" parent="MainLayout/TopBar" unique_id=2027233340]
@@ -1530,22 +1527,11 @@ layout_mode = 2
 size_flags_horizontal = 4
 theme_override_constants/separation = 8
 
-[node name="BuildButton" type="Control" parent="MainLayout/DetailActionBar" unique_id=999999001]
+[node name="BuildButton" type="TextureButton" parent="MainLayout/DetailActionBar" unique_id=999999001]
 custom_minimum_size = Vector2(150, 200)
 layout_mode = 2
 size_flags_vertical = 4
-mouse_filter = 1
-
-[node name="ClickArea" type="TextureButton" parent="MainLayout/DetailActionBar/BuildButton" unique_id=999999004]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 texture_normal = ExtResource("15_8auva")
-stretch_mode = 5
-expand_icon = true
 
 [node name="Bg" type="NinePatchRect" parent="MainLayout/DetailActionBar/BuildButton" unique_id=999999002]
 layout_mode = 1
@@ -1554,7 +1540,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 0
 texture = ExtResource("22_kuang")
 patch_margin_left = 10
 patch_margin_top = 10
@@ -1574,8 +1559,8 @@ offset_right = 49.5
 offset_bottom = 71.5
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 0
 pivot_offset_ratio = Vector2(0.5, 0.5)
+mouse_filter = 2
 texture = ExtResource("11_hl2y5")
 expand_mode = 1
 stretch_mode = 5

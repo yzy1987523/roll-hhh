@@ -12,6 +12,8 @@ var _description_label: Label = null
 var _confirm_button: Button = null
 var _close_button: TextureButton = null
 var _button_container: HBoxContainer = null
+var _icon_container: HBoxContainer = null  # 图标容器（用于显示物品图标）
+var _reward_icons: Array[TextureRect] = []  # 奖励图标列表
 
 # ---- 回调 ----
 var _on_confirm_cb: Callable = Callable()
@@ -115,6 +117,14 @@ func _create_popup_ui() -> void:
 	_content_label.custom_minimum_size.y = 200
 	_content_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(_content_label)
+
+	# 奖励图标容器（显示物品图标）
+	_icon_container = HBoxContainer.new()
+	_icon_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	_icon_container.add_theme_constant_override("separation", 16)
+	_icon_container.custom_minimum_size.y = 80
+	_icon_container.visible = false
+	vbox.add_child(_icon_container)
 
 	# 说明前添加空行
 	var desc_spacer := Control.new()
@@ -222,6 +232,45 @@ func hide() -> void:
 	_popup_panel.visible = false
 	_on_confirm_cb = Callable()
 	_on_close_cb = Callable()
+
+	# 清除奖励图标
+	_clear_reward_icons()
+
+
+## 设置奖励图标（显示物品图标列表）
+func set_reward_icons(item_ids: Array) -> void:
+	if _icon_container == null:
+		return
+
+	# 清除旧图标
+	_clear_reward_icons()
+
+	if item_ids.is_empty():
+		_icon_container.visible = false
+		return
+
+	_icon_container.visible = true
+	for item_id in item_ids:
+		var icon := TextureRect.new()
+		icon.custom_minimum_size = Vector2(64, 64)
+		icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		var sprite_path: String = ItemManager.get_sprite_path(item_id)
+		if not sprite_path.is_empty() and ResourceLoader.exists(sprite_path):
+			icon.texture = load(sprite_path)
+		else:
+			icon.modulate = Color(0.5, 0.5, 0.5, 1)
+		_icon_container.add_child(icon)
+		_reward_icons.append(icon)
+
+
+func _clear_reward_icons() -> void:
+	for icon in _reward_icons:
+		if is_instance_valid(icon):
+			icon.queue_free()
+	_reward_icons.clear()
+	if _icon_container != null:
+		_icon_container.visible = false
 
 
 ## 检查弹窗是否打开

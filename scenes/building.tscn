@@ -32,7 +32,6 @@ position = Vector2(-51, 68)
 texture = ExtResource("6_bg")
 
 [node name="UILayer" type="CanvasLayer" parent="." unique_id=1234567902]
-visible = false
 script = ExtResource("10_ui")
 
 [node name="TopLeftUI" type="VBoxContainer" parent="UILayer" unique_id=1234567903]
@@ -205,13 +204,32 @@ uv = PackedVector2Array(0, 0, 1, 0, 1, 1, 0, 1)
 vertex_colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 [node name="FurnitureIconManager" type="Node2D" parent="." unique_id=1234567893]
-visible = false
 script = ExtResource("5_furniture_icon")
 
 [node name="CharacterRoot" type="Node2D" parent="." unique_id=1234567894]
-visible = false
 script = ExtResource("11_char")
 frames = Array[Texture2D]([ExtResource("12_player01"), ExtResource("13_player02")])
+initial_grid = Vector2i(2, 2)
+
+[node name="CharacterRoot2" type="Node2D" parent="." unique_id=1234567895]
+script = ExtResource("11_char")
+frames = Array[Texture2D]([ExtResource("12_player01"), ExtResource("13_player02")])
+initial_grid = Vector2i(3, 2)
+
+[node name="CharacterRoot3" type="Node2D" parent="." unique_id=1234567896]
+script = ExtResource("11_char")
+frames = Array[Texture2D]([ExtResource("12_player01"), ExtResource("13_player02")])
+initial_grid = Vector2i(4, 3)
+
+[node name="CharacterRoot4" type="Node2D" parent="." unique_id=1234567897]
+script = ExtResource("11_char")
+frames = Array[Texture2D]([ExtResource("12_player01"), ExtResource("13_player02")])
+initial_grid = Vector2i(4, 4)
+
+[node name="CharacterRoot5" type="Node2D" parent="." unique_id=1234567898]
+script = ExtResource("11_char")
+frames = Array[Texture2D]([ExtResource("12_player01"), ExtResource("13_player02")])
+initial_grid = Vector2i(3, 3)
 
 [connection signal="pressed" from="UILayer/TopLeftUI/BuildListBtn" to="UILayer" method="_on_build_list_pressed"]
 [connection signal="pressed" from="UILayer/BottomLeftUI/PlayBtn" to="UILayer" method="_on_play_pressed"]

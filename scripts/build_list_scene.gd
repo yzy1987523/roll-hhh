@@ -84,9 +84,35 @@ func _create_build_item(config, is_unlocked: bool, is_completed: bool) -> Contro
 		cost_label.text = "已完成"
 		cost_label.modulate = Color(0.5, 0.8, 0.5, 1)
 	else:
-		cost_label.text = "★ %d  |  +%d 经验" % [config.starCost, config.expReward]
+		cost_label.text = "★ %d" % config.starCost
 	cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	info_vbox.add_child(cost_label)
+
+	# 奖励信息（经验+物品图标）
+	var reward_hbox := HBoxContainer.new()
+	reward_hbox.add_theme_constant_override("separation", 8)
+
+	# 经验奖励
+	if config.expReward > 0:
+		var exp_label := Label.new()
+		exp_label.text = "+%d经验" % config.expReward
+		exp_label.modulate = Color(0.3, 0.8, 0.3, 1)
+		reward_hbox.add_child(exp_label)
+
+	# 物品奖励图标
+	for item_id in config.itemReward:
+		var reward_icon := TextureRect.new()
+		reward_icon.custom_minimum_size = Vector2(32, 32)
+		reward_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		reward_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		var sprite_path: String = ItemManager.get_sprite_path(item_id)
+		if not sprite_path.is_empty() and ResourceLoader.exists(sprite_path):
+			reward_icon.texture = load(sprite_path)
+		else:
+			reward_icon.modulate = Color(0.5, 0.5, 0.5, 1)
+		reward_hbox.add_child(reward_icon)
+
+	info_vbox.add_child(reward_hbox)
 
 	hbox.add_child(info_vbox)
 
@@ -139,13 +165,41 @@ func _on_build_pressed(build_id: int) -> void:
 		_popup_not_enough_stars()
 		return
 
+	# 构建奖励信息
+	var exp_reward: int = config.get("expReward", 0)
+	var item_rewards: Array = config.get("itemReward", [])
+	var reward_desc := ""
+	if exp_reward > 0:
+		reward_desc += "+%d 经验\n" % exp_reward
+	if not item_rewards.is_empty():
+		reward_desc += "+%d 个物品" % item_rewards.size()
+
+	# 显示确认弹窗
+	PopupSystem.show(
+		"确认建造",
+		"消耗 ★ %d\n\n%s" % [config.starCost, reward_desc],
+		"是否确认建造？",
+		"建造",
+		"取消",
+		_on_build_confirmed.bind(build_id),
+		Callable()
+	)
+	# 设置奖励图标
+	PopupSystem.set_reward_icons(item_rewards)
+
+
+func _on_build_confirmed(build_id: int) -> void:
+	var config = _build_loader.get_build(build_id)
+	if config.is_empty():
+		return
+
 	# 扣除星星，添加经验，发放奖励
 	TaskManager.add_stars(-config.starCost)
 	TaskManager.add_exp(config.expReward)
 
-	# 发放物品奖励
+	# 发放物品奖励（移入局外道具栏）
 	for item_id in config.itemReward:
-		GameManager.add_item(item_id)
+		GameManager.add_out_item(item_id)
 
 	# 标记完成
 	_save_build_completed(build_id)

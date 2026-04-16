@@ -231,10 +231,6 @@ func _on_confirm_build():
 	_place_furniture_at_empty()
 	print(">>> [GridManager] 放置家具完成")
 
-	# 更新家具贴图
-	_update_furniture_texture(build_id)
-	print(">>> [GridManager] 更新贴图完成")
-
 	# 刷新图标显示（隐藏已完成的图标）
 	_refresh_furniture_icons()
 	print(">>> [GridManager] 刷新图标完成")
@@ -246,12 +242,6 @@ func _refresh_furniture_icons() -> void:
 	var icon_mgr = get_node_or_null("../FurnitureIconManager")
 	if icon_mgr and icon_mgr.has_method("refresh_all"):
 		icon_mgr.refresh_all()
-
-
-func _update_furniture_texture(build_id: int) -> void:
-	var icon_mgr = get_node_or_null("../FurnitureIconManager")
-	if icon_mgr and icon_mgr.has_method("update_furniture_texture"):
-		icon_mgr.update_furniture_texture(build_id)
 
 # ================================= 获取玩家数据 =================================
 func _get_player_stars() -> int:
@@ -285,11 +275,17 @@ func _spawn_furniture_with_texture(gx: int, gy: int, furniture_id: int):
 	var tex = load(tex_path) if ResourceLoader.exists(tex_path) else _get_placeholder_tex()
 	fur.texture = tex
 
+	# 缩放 0.25 倍
+	fur.scale = Vector2(0.25, 0.25)
+
+	# 底部对齐：scale 后的实际高度需要乘以 scale
+	var tex_height = fur.texture.get_size().y * fur.scale.y
+	fur.offset = Vector2(0, -tex_height * 0.5)
+
 	fur.position = grid_to_world(gx, gy)
-	fur.offset = Vector2(0, -fur.texture.get_size().y * 0.5)  # 底部对齐
 	furniture_root.add_child(fur)
 	grid_occupied[gy][gx] = true
-	print(">>> [GridManager] 放置家具 id=%d at (%d,%d)" % [furniture_id, gx, gy])
+	print(">>> [GridManager] 放置家具 id=%d at (%d,%d), scale=%s, offset=%s" % [furniture_id, gx, gy, fur.scale, fur.offset])
 	return fur
 
 # ================================= 核心：坐标转换 =================================
