@@ -12,20 +12,13 @@ signal submit_requested()  # 请求提交任务，由game_board处理动画
 const PATH_BUILD_LIST_BTN := "ScrollContainer/ContentHBox/ZoneA/VBoxA/BuildListBtn"
 const PATH_ITEMS_STACK := "ScrollContainer/ContentHBox/ZoneB/VBoxB/ItemsStack"
 const PATH_ITEMS_COUNT := "ScrollContainer/ContentHBox/ZoneB/ItemsCountLabel"
+const PATH_ZONE_B := "ScrollContainer/ContentHBox/ZoneB"
 const PATH_TASK_PANEL := "ScrollContainer/ContentHBox/ZoneC"
-const PATH_TASK_ITEM_ICON := "ScrollContainer/ContentHBox/ZoneC/TaskHBox/TaskItemIcon"
-const PATH_TASK_COUNT := "ScrollContainer/ContentHBox/ZoneC/TaskHBox/TaskVBox/TaskCountLabel"
-const PATH_TASK_PROGRESS := "ScrollContainer/ContentHBox/ZoneC/TaskHBox/TaskVBox/TaskProgressBar"
-const PATH_TASK_STAR_ICON := "ScrollContainer/ContentHBox/ZoneC/TaskHBox/TaskStarHBox/TaskStarIcon"
-const PATH_TASK_STAR_LABEL := "ScrollContainer/ContentHBox/ZoneC/TaskHBox/TaskStarHBox/TaskStarLabel"
-const PATH_SUBMIT_BTN_CONTAINER := "ScrollContainer/ContentHBox/ZoneC/TaskHBox/SubmitBtnContainer"
 
-# 局外道具堆最大显示数量
-const MAX_VISIBLE_ITEMS: int = 5
-# 道具图标引用
-var _out_items_icons: Array[TextureRect] = []
 # 提交按钮引用
 var _submit_btn: TextureButton = null
+# 局外道具图标引用
+var _out_items_icons: Array[TextureRect] = []
 
 func _ready() -> void:
 	var build_list_btn: Button = get_node(PATH_BUILD_LIST_BTN)
@@ -34,11 +27,11 @@ func _ready() -> void:
 	TaskManager.task_progress_updated.connect(_on_task_progress_updated)
 	TaskManager.task_completed.connect(_on_task_completed)
 	GameManager.out_items_changed.connect(_on_out_items_changed)
-	# 初始化提交按钮（必须在 _update_task_display 之前）
-	_init_submit_button()
+	# 初始化任务栏（重建ZoneC内容）
+	_rebuild_task_panel()
 	_update_task_display()
 	_update_build_list_btn()
-	# 初始化局外道具显示（默认添加背包）
+	# 初始化局外道具显示
 	_refresh_out_items()
 
 
@@ -59,9 +52,10 @@ func _on_stars_changed(_new_stars: int) -> void:
 	_update_build_list_btn()
 
 
-## 更新建造清单按钮显示
+## 更新建造清单按钮显示（星星图标+数量）
 func _update_build_list_btn() -> void:
 	var build_list_btn: Button = get_node(PATH_BUILD_LIST_BTN)
+	build_list_btn.visible = true
 	var current_stars: int = TaskManager.get_stars()
 
 	# 清除按钮原有子节点
@@ -72,6 +66,7 @@ func _update_build_list_btn() -> void:
 	var hbox := HBoxContainer.new()
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	hbox.add_theme_constant_override("separation", 6)
+	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# 星星图标
 	var star_icon := TextureRect.new()
@@ -79,19 +74,21 @@ func _update_build_list_btn() -> void:
 	star_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
 	star_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	star_icon.custom_minimum_size = Vector2(28, 28)
+	star_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# 星星数量
 	var star_label := Label.new()
 	star_label.text = str(current_stars)
 	star_label.add_theme_font_size_override("font_size", 22)
+	star_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	hbox.add_child(star_icon)
 	hbox.add_child(star_label)
 	build_list_btn.add_child(hbox)
 
 
-## 设置局外道具堆显示
-## @param item_ids Array of item_ids
+## 设置局外道具堆显示（只显示最后一个道具+总数量）
+## Feature 3 & 7: 默认隐藏，有道具时显示，只显示最后一个+数量
 func update_out_items(item_ids: Array[int]) -> void:
 	# 清空现有显示
 	for icon in _out_items_icons:
@@ -99,23 +96,21 @@ func update_out_items(item_ids: Array[int]) -> void:
 			icon.queue_free()
 	_out_items_icons.clear()
 
+	var zone_b: PanelContainer = get_node(PATH_ZONE_B)
 	var items_count_label: Label = get_node(PATH_ITEMS_COUNT)
 	var items_stack: VBoxContainer = get_node(PATH_ITEMS_STACK)
 
 	if item_ids.is_empty():
-		items_count_label.text = "0"
+		zone_b.visible = false
 		return
 
-	# 显示数量
+	# 有道具时显示ZoneB
+	zone_b.visible = true
 	items_count_label.text = str(item_ids.size())
 
-	# 计算要显示的物品（最后获得的在上面，所以倒序取）
-	var display_count := mini(item_ids.size(), MAX_VISIBLE_ITEMS)
-	var start_idx := item_ids.size() - display_count
-
-	# 创建图标（最后获得的在上面）
-	for i in range(start_idx, item_ids.size()):
-		_add_item_icon(item_ids[i], items_stack)
+	# 只显示最后一个道具（最近获得的）
+	var last_item_id: int = item_ids[item_ids.size() - 1]
+	_add_item_icon(last_item_id, items_stack)
 
 
 func _add_item_icon(item_id: int, parent: VBoxContainer) -> void:
@@ -138,94 +133,128 @@ func _add_item_icon(item_id: int, parent: VBoxContainer) -> void:
 	_out_items_icons.append(icon)
 
 
-func _on_item_icon_input(event: InputEvent, item_id: int, icon: TextureRect) -> void:
+func _on_item_icon_input(event: InputEvent, item_id: int, _icon: TextureRect) -> void:
 	if event is InputEventMouseButton:
 		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 			out_item_clicked.emit(item_id)
 
 
-func _on_item_icon_pressed(item_id: int) -> void:
-	out_item_clicked.emit(item_id)
-
-
-func _on_task_progress_updated(_task_id: int, progress: float) -> void:
+func _on_task_progress_updated(_task_id: int, _progress: float) -> void:
 	_update_task_display()
 
 
 func _on_task_completed(_task_id: int, _reward: Dictionary) -> void:
 	_update_task_display()
-	_refresh_out_items()  # 刷新局外道具显示（任务物品图标）
+	_refresh_out_items()
 
 
-## 更新任务栏显示
-func _update_task_display() -> void:
-	var current_task: Dictionary = TaskManager.get_current_task()
-	var task_panel: PanelContainer = get_node(PATH_TASK_PANEL)
+# ================================= 重建任务栏（Feature 5）=================================
+# 新布局：星星在上方，物品居中，进度在下方，完成按钮叠加在任务单上
+func _rebuild_task_panel() -> void:
+	var zone_c: PanelContainer = get_node(PATH_TASK_PANEL)
+
+	# 删除除了PanelBg之外的所有子节点
+	for child in zone_c.get_children():
+		if child.name.begins_with("PanelBg"):
+			continue
+		child.queue_free()
+
+	# 创建主容器（垂直布局）
+	var main_vbox := VBoxContainer.new()
+	main_vbox.name = "TaskMainVBox"
+	main_vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	main_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	main_vbox.add_theme_constant_override("separation", 4)
+	main_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	zone_c.add_child(main_vbox)
+
+	# 第1行：星星奖励（顶部）
+	var star_row := HBoxContainer.new()
+	star_row.name = "StarRow"
+	star_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	star_row.add_theme_constant_override("separation", 4)
+	star_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	main_vbox.add_child(star_row)
+
+	var star_icon := TextureRect.new()
+	star_icon.name = "TaskStarIcon"
+	star_icon.texture = load("res://art/sprites/UI/icon/star.png")
+	star_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+	star_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	star_icon.custom_minimum_size = Vector2(24, 24)
+	star_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	star_row.add_child(star_icon)
+
+	var star_label := Label.new()
+	star_label.name = "TaskStarLabel"
+	star_label.text = "+0"
+	star_label.add_theme_font_size_override("font_size", 18)
+	star_label.add_theme_color_override("font_color", Color(0.9, 0.8, 0.1, 1))
+	star_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	star_row.add_child(star_label)
+
+	# 第2行：物品图标（居中）
+	var item_center := CenterContainer.new()
+	item_center.name = "ItemCenter"
+	item_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	item_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	main_vbox.add_child(item_center)
+
+	var item_icon := TextureRect.new()
+	item_icon.name = "TaskItemIcon"
+	item_icon.custom_minimum_size = Vector2(60, 60)
+	item_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+	item_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	item_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	item_center.add_child(item_icon)
+
+	# 第3行：进度（物品下方）
+	var progress_vbox := VBoxContainer.new()
+	progress_vbox.name = "ProgressVBox"
+	progress_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	progress_vbox.add_theme_constant_override("separation", 2)
+	progress_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	main_vbox.add_child(progress_vbox)
+
+	var count_label := Label.new()
+	count_label.name = "TaskCountLabel"
+	count_label.text = "0/1"
+	count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	count_label.add_theme_font_size_override("font_size", 16)
+	count_label.add_theme_color_override("font_color", Color(0.3, 0.3, 0.3, 1))
+	count_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	progress_vbox.add_child(count_label)
+
+	var progress_bar := ProgressBar.new()
+	progress_bar.name = "TaskProgressBar"
+	progress_bar.custom_minimum_size = Vector2(0, 10)
+	progress_bar.max_value = 1.0
+	progress_bar.step = 1.0
+	progress_bar.show_percentage = false
+	progress_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	progress_vbox.add_child(progress_bar)
+
+	# 叠加层：完成按钮（覆盖在任务单中心偏下）
+	_init_submit_button_overlay(zone_c)
 
 
-	if current_task.is_empty():
-		task_panel.visible = false
-		return
-
-	task_panel.visible = true
-
-	# 任务需求物品
-	var need_items: Array = current_task.get("needItems", [])
-	var reward: Dictionary = current_task.get("reward", {})
-	var star_reward: int = reward.get("star", 0)
-	var progress: float = TaskManager.get_current_task_progress()
-
-
-	# 显示星星奖励
-	var task_star_label: Label = get_node(PATH_TASK_STAR_LABEL)
-	task_star_label.text = "+%d" % star_reward
-
-	# 显示任务物品图标（取第一个）
-	var task_item_icon: TextureRect = get_node(PATH_TASK_ITEM_ICON)
-	if not need_items.is_empty():
-		var item_id: int = need_items[0]
-		var sprite_path: String = ItemManager.get_sprite_path(item_id)
-		if not sprite_path.is_empty() and ResourceLoader.exists(sprite_path):
-			task_item_icon.texture = load(sprite_path)
-		else:
-			task_item_icon.modulate = Color(0.5, 0.5, 0.5, 0.5)
-
-	# 进度显示
-	var require_count: int = need_items.size()
-	var current_count: int = int(progress * require_count)
-	var task_count_label: Label = get_node(PATH_TASK_COUNT)
-	task_count_label.text = "%d/%d" % [current_count, require_count]
-
-	var task_progress_bar: ProgressBar = get_node(PATH_TASK_PROGRESS)
-	task_progress_bar.max_value = require_count
-	task_progress_bar.value = current_count
-
-	# 任务满足时显示提交按钮
-	var submit_container: Control = find_child("SubmitBtnContainer", true, false)
-	if submit_container == null:
-		submit_container = find_child("SubmitBtnContainer", true, true)
-	if submit_container != null:
-		submit_container.visible = (progress >= 1.0)
-	if _submit_btn != null:
-		_submit_btn.visible = (progress >= 1.0)
-
-
-## 初始化提交按钮
-func _init_submit_button() -> void:
-	# 查找 TaskHBox
-	var task_hbox: HBoxContainer = find_child("TaskHBox", true, false)
-	if task_hbox == null:
-		task_hbox = find_child("TaskHBox", true, true)
-	if task_hbox == null:
-		return
-
-	# 动态创建提交按钮
-	var btn: TextureButton = TextureButton.new()
+## 初始化完成按钮（叠加在任务单上）
+func _init_submit_button_overlay(zone_c: PanelContainer) -> void:
+	var btn := TextureButton.new()
 	btn.name = "SubmitButton"
-	btn.custom_minimum_size = Vector2(120, 60)
-	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	btn.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	btn.custom_minimum_size = Vector2(120, 50)
 	btn.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	# 使用锚点定位到ZoneC中心偏下
+	btn.anchor_left = 0.5
+	btn.anchor_top = 0.6
+	btn.anchor_right = 0.5
+	btn.anchor_bottom = 0.6
+	btn.offset_left = -60
+	btn.offset_top = -10
+	btn.offset_right = 60
+	btn.offset_bottom = 40
+	btn.z_index = 10
 
 	# 加载纹理
 	var tex_path := "res://art/sprites/UI/icon/btn.png"
@@ -241,12 +270,63 @@ func _init_submit_button() -> void:
 	label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9, 1))
-	label.add_theme_font_size_override("font_size", 24)
+	label.add_theme_font_size_override("font_size", 22)
 
 	btn.add_child(label)
 	btn.pressed.connect(_on_submit_pressed)
-	task_hbox.add_child(btn)
+	btn.visible = false
+	zone_c.add_child(btn)
 	_submit_btn = btn
+
+
+## 更新任务栏显示
+func _update_task_display() -> void:
+	var current_task: Dictionary = TaskManager.get_current_task()
+	var task_panel: PanelContainer = get_node(PATH_TASK_PANEL)
+
+	if current_task.is_empty():
+		task_panel.visible = false
+		return
+
+	task_panel.visible = true
+
+	# 任务需求物品
+	var need_items: Array = current_task.get("needItems", [])
+	var reward: Dictionary = current_task.get("reward", {})
+	var star_reward: int = reward.get("star", 0)
+	var progress: float = TaskManager.get_current_task_progress()
+
+	# 使用 find_child 查找动态创建的节点
+	var task_star_label: Label = find_child("TaskStarLabel", true, false)
+	if task_star_label:
+		task_star_label.text = "+%d" % star_reward
+
+	# 显示任务物品图标（取第一个）
+	var task_item_icon: TextureRect = find_child("TaskItemIcon", true, false)
+	if task_item_icon and not need_items.is_empty():
+		var item_id: int = need_items[0]
+		var sprite_path: String = ItemManager.get_sprite_path(item_id)
+		if not sprite_path.is_empty() and ResourceLoader.exists(sprite_path):
+			task_item_icon.texture = load(sprite_path)
+			task_item_icon.modulate = Color.WHITE
+		else:
+			task_item_icon.modulate = Color(0.5, 0.5, 0.5, 0.5)
+
+	# 进度显示
+	var require_count: int = need_items.size()
+	var current_count: int = int(progress * require_count)
+	var task_count_label: Label = find_child("TaskCountLabel", true, false)
+	if task_count_label:
+		task_count_label.text = "%d/%d" % [current_count, require_count]
+
+	var task_progress_bar: ProgressBar = find_child("TaskProgressBar", true, false)
+	if task_progress_bar:
+		task_progress_bar.max_value = require_count
+		task_progress_bar.value = current_count
+
+	# 任务满足时显示提交按钮（叠加在任务单上）
+	if _submit_btn != null:
+		_submit_btn.visible = (progress >= 1.0)
 
 
 ## 提交按钮点击
@@ -264,3 +344,21 @@ func _on_submit_pressed() -> void:
 func _on_submit_animation_complete() -> void:
 	# 发出信号让game_board处理物品飞行动画
 	submit_requested.emit()
+
+
+## 获取建造清单按钮全局位置（用于星星飞行终点）
+func get_build_list_btn_global_center() -> Vector2:
+	var btn: Button = get_node(PATH_BUILD_LIST_BTN)
+	return btn.global_position + Vector2(btn.size.x / 2, btn.size.y / 2)
+
+
+## 获取任务面板全局中心（用于动画）
+func get_task_panel_global_center() -> Vector2:
+	var task_panel: PanelContainer = get_node(PATH_TASK_PANEL)
+	return task_panel.global_position + Vector2(task_panel.size.x / 2, task_panel.size.y / 2)
+
+
+## 隐藏完成按钮（提交动画开始时调用）
+func hide_submit_button() -> void:
+	if _submit_btn != null:
+		_submit_btn.visible = false

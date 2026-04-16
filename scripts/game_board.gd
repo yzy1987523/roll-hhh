@@ -107,6 +107,8 @@ var cell_highlight_effects: Array = []  # TextureRect 高亮效果（序列帧�
 var cell_state_overlays: Array = []  # TextureRect 状态叠加层（锁定/灰尘）
 var cell_producer_fx: Array = []  # TextureRect 生成器特效 fx02（作为物品sprite的子级）
 var cell_task_icons: Array = []  # TextureRect 任务物品图标（左下角标记）
+var cell_cooldown_timers: Array = []  # TextureProgressBar 冷却倒计时（右上角）
+var cell_cooldown_bgs: Array = []  # TextureRect 冷却倒计时背景层
 
 # ---- 背包面板 ----
 var _backpack_scene_instance: Control = null  # 背包场景实例
@@ -214,6 +216,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_process_producer_fx_animation(delta)
+	_process_cooldown_timers()
 	if energy_timer != null and energy_timer.visible:
 		_update_energy_timer_text()
 
@@ -330,10 +333,12 @@ func _on_producer_stock_changed(board_index: int, _new_stock: int) -> void:
 
 func _on_producer_cooldown_started(board_index: int, _cooldown_duration: float) -> void:
 	_hide_producer_fx(board_index)
+	_show_cooldown_timer(board_index)
 
 
 func _on_producer_cooldown_finished(board_index: int) -> void:
 	_update_producer_fx_visibility(board_index)
+	_hide_cooldown_timer(board_index)
 
 
 func _on_producer_registered(board_index: int, _state: ProducerManager.ProducerState) -> void:
@@ -420,6 +425,47 @@ func _process_producer_fx_animation(delta: float) -> void:
 				cell_producer_fx[i].texture = frame_tex
 
 
+## 更新所有冷却倒计时进度
+func _process_cooldown_timers() -> void:
+	for i in range(BoardData.BOARD_SLOTS):
+		if i >= cell_cooldown_timers.size():
+			break
+		var cd_progress: TextureProgressBar = cell_cooldown_timers[i]
+		if not is_instance_valid(cd_progress) or not cd_progress.visible:
+			continue
+		var total_cd: float = ProducerManager.get_cooldown_total(i)
+		var remaining: float = ProducerManager.get_cooldown_remaining(i)
+		if total_cd > 0 and remaining > 0:
+			cd_progress.value = remaining / total_cd
+		else:
+			_hide_cooldown_timer(i)
+
+
+## 显示冷却倒计时
+func _show_cooldown_timer(board_index: int) -> void:
+	if board_index < 0 or board_index >= cell_cooldown_timers.size():
+		return
+	var cd_progress: TextureProgressBar = cell_cooldown_timers[board_index]
+	var cd_bg: TextureRect = cell_cooldown_bgs[board_index]
+	if is_instance_valid(cd_progress):
+		cd_progress.visible = true
+		cd_progress.value = 1.0
+	if is_instance_valid(cd_bg):
+		cd_bg.visible = true
+
+
+## 隐藏冷却倒计时
+func _hide_cooldown_timer(board_index: int) -> void:
+	if board_index < 0 or board_index >= cell_cooldown_timers.size():
+		return
+	var cd_progress: TextureProgressBar = cell_cooldown_timers[board_index]
+	var cd_bg: TextureRect = cell_cooldown_bgs[board_index]
+	if is_instance_valid(cd_progress):
+		cd_progress.visible = false
+	if is_instance_valid(cd_bg):
+		cd_bg.visible = false
+
+
 ## 为所有TextureButton添加hover和press视觉反馈
 func _setup_button_feedbacks() -> void:
 	var texture_buttons: Array[TextureButton] = [
@@ -479,6 +525,8 @@ func _setup_board_ui() -> void:
 	cell_state_overlays.clear()
 	cell_producer_fx.clear()
 	cell_task_icons.clear()
+	cell_cooldown_timers.clear()
+	cell_cooldown_bgs.clear()
 
 	for i in range(GRID_COLS * GRID_ROWS):
 		# 获取静态格子节点
@@ -587,6 +635,54 @@ func _setup_board_ui() -> void:
 		task_icon.z_index = 15
 		sprite_container.add_child(task_icon)
 		cell_task_icons.append(task_icon)
+
+		# 动态创建冷却倒计时（右上角，2层：背景圆 + 前景TextureProgressBar）
+		var cd_size: float = 36.0
+		# 背景层（灰色半透明圆底）
+		var cd_bg := TextureRect.new()
+		cd_bg.name = "CooldownBg"
+		cd_bg.custom_minimum_size = Vector2(cd_size, cd_size)
+		cd_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		cd_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		cd_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cd_bg.anchor_left = 1.0
+		cd_bg.anchor_top = 0.0
+		cd_bg.anchor_right = 1.0
+		cd_bg.anchor_bottom = 0.0
+		cd_bg.offset_left = -cd_size - 2.0
+		cd_bg.offset_top = 2.0
+		cd_bg.offset_right = -2.0
+		cd_bg.offset_bottom = cd_size + 2.0
+		cd_bg.visible = false
+		cd_bg.z_index = 16
+		cd_bg.modulate = Color(0.3, 0.3, 0.3, 0.7)
+		cell.add_child(cd_bg)
+		cell_cooldown_bgs.append(cd_bg)
+
+		# 前景层（TextureProgressBar，360度Filled模式）
+		var cd_progress := TextureProgressBar.new()
+		cd_progress.name = "CooldownTimer"
+		cd_progress.custom_minimum_size = Vector2(cd_size, cd_size)
+		cd_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cd_progress.anchor_left = 1.0
+		cd_progress.anchor_top = 0.0
+		cd_progress.anchor_right = 1.0
+		cd_progress.anchor_bottom = 0.0
+		cd_progress.offset_left = -cd_size - 2.0
+		cd_progress.offset_top = 2.0
+		cd_progress.offset_right = -2.0
+		cd_progress.offset_bottom = cd_size + 2.0
+		cd_progress.fill_mode = TextureProgressBar.FILL_CLOCKWISE
+		cd_progress.min_value = 0.0
+		cd_progress.max_value = 1.0
+		cd_progress.value = 1.0
+		cd_progress.visible = false
+		cd_progress.z_index = 17
+		# 使用 bar1 作为进度纹理（白色）
+		if ResourceLoader.exists("res://art/sprites/UI/icon/bar1.png"):
+			cd_progress.texture_progress = load("res://art/sprites/UI/icon/bar1.png")
+		cell.add_child(cd_progress)
+		cell_cooldown_timers.append(cd_progress)
 
 		# 点击事件
 		if cell.gui_input.is_connected(_on_cell_gui_input):
@@ -1809,6 +1905,12 @@ func _refresh_board_display() -> void:
 		# 更新生成器特效可见性
 		_update_producer_fx_visibility(i)
 
+		# 更新冷却倒计时可见性
+		if ProducerManager.is_in_cooldown(i):
+			_show_cooldown_timer(i)
+		else:
+			_hide_cooldown_timer(i)
+
 		# 如果格子正在移动动画中，跳过渲染
 		if i in moving_cells:
 			if cell_sprites[i] != null:
@@ -2260,9 +2362,20 @@ func _play_spawn_animation(ch: DataModels.BoardItemData, start_pos: Vector2, end
 	# 刷新显示（目标格子不显示角色）
 	_refresh_board_display()
 
-	# 创建动画精灵（参考 _create_drag_preview 的方式）
+	# 获取物品纹理以确定原始尺寸
+	var sprite_path: String = ch.get_sprite_path()
+	var item_tex: Texture2D = null
+	if ResourceLoader.exists(sprite_path):
+		item_tex = load(sprite_path)
+
+	# 使用物品原始纹理尺寸（而非CELL_SIZE）
+	var item_size: Vector2 = Vector2(CHAR_SIZE, CHAR_SIZE)
+	if item_tex != null:
+		item_size = item_tex.get_size()
+
+	# 创建动画精灵
 	var anim_sprite := Control.new()
-	anim_sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
+	anim_sprite.custom_minimum_size = item_size
 	anim_sprite.z_index = 10
 	anim_sprite.z_as_relative = false
 	anim_sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2272,24 +2385,20 @@ func _play_spawn_animation(ch: DataModels.BoardItemData, start_pos: Vector2, end
 	sprite.set_anchors_preset(Control.PRESET_FULL_RECT)
 	sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	sprite.custom_minimum_size = Vector2(CHAR_SIZE, CHAR_SIZE)
+	sprite.custom_minimum_size = item_size
 	sprite.z_index = 0
-	var sprite_path: String = ch.get_sprite_path()
-	if ResourceLoader.exists(sprite_path):
-		sprite.texture = load(sprite_path)
+	if item_tex != null:
+		sprite.texture = item_tex
 
 	anim_sprite.add_child(sprite)
 	add_child(anim_sprite)
-	anim_sprite.global_position = start_pos - Vector2(CELL_SIZE as float / 2, CELL_SIZE as float / 2)
-	anim_sprite.scale = Vector2(0.5, 0.5)
+	anim_sprite.global_position = start_pos - item_size / 2
+	# 不再使用scale动画，物品直接以原始尺寸飞行
 
-	# 动画：从小到大、从按钮位置飞到目标格子
+	# 动画：从按钮位置飞到目标格子
 	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(anim_sprite, "global_position", end_pos - Vector2(CELL_SIZE as float / 2, CELL_SIZE as float / 2), 0.3)\
+	tween.tween_property(anim_sprite, "global_position", end_pos - item_size / 2, 0.3)\
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(anim_sprite, "scale", Vector2(1.0, 1.0), 0.3)\
-		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 	# 动画结束后清理并刷新显示
 	tween.finished.connect(func():
@@ -2880,30 +2989,33 @@ func _on_out_item_clicked(item_id: int) -> void:
 		target_pos.x * CELL_SIZE + CELL_SIZE / 2,
 		target_pos.y * CELL_SIZE + CELL_SIZE / 2
 	)
-	# 获取局外道具图标位置（第一个）
-	var items_stack_path := "MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneB/VBoxB/ItemsStack"
-	var items_stack: VBoxContainer = get_node(items_stack_path)
-	var start_pos: Vector2 = items_stack.get_global_position() + Vector2(30, 30)
-	# 创建飞行动画精灵
-	var anim_sprite := TextureRect.new()
-	anim_sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
-	anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	anim_sprite.global_position = start_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
-	anim_sprite.z_index = 10
+	# 获取局外道具图标位置
+	var items_stack: VBoxContainer = find_child("ItemsStack", true, false)
+	if items_stack == null:
+		items_stack = get_node_or_null("MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneB/VBoxB/ItemsStack")
+	var start_pos: Vector2 = items_stack.get_global_position() + Vector2(30, 30) if items_stack else Vector2(400, 1600)
+	# 获取物品纹理以确定原始尺寸
+	var item_tex: Texture2D = null
 	var sprite_path: String = item.get_sprite_path()
 	if ResourceLoader.exists(sprite_path):
-		anim_sprite.texture = load(sprite_path)
+		item_tex = load(sprite_path)
+	var item_size: Vector2 = item_tex.get_size() if item_tex else Vector2(60, 60)
+	# 创建飞行动画精灵
+	var anim_sprite := TextureRect.new()
+	anim_sprite.custom_minimum_size = item_size
+	anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	anim_sprite.global_position = start_pos - item_size / 2
+	anim_sprite.z_index = 10
+	if item_tex != null:
+		anim_sprite.texture = item_tex
 	get_tree().root.add_child(anim_sprite)
 	# 从局外道具移除
 	GameManager.remove_out_item(item_id)
 	# 播放飞行动画
 	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(anim_sprite, "global_position", end_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2), 0.4)\
+	tween.tween_property(anim_sprite, "global_position", end_pos - item_size / 2, 0.4)\
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(anim_sprite, "scale", Vector2(0.8, 0.8), 0.4)\
-		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.finished.connect(func():
 		anim_sprite.queue_free()
 		# 放置物品到棋盘
@@ -2914,51 +3026,46 @@ func _on_out_item_clicked(item_id: int) -> void:
 	)
 
 
-## 处理提交请求：物品飞向任务栏后完成任务
+## 处理提交请求：隐藏完成按钮 → 物品飞向任务栏 → 任务单缩小消失 → 星星粒子飞向建造清单 → 刷新
 func _on_submit_requested() -> void:
+	# Step 1: 隐藏完成按钮
+	if bottom_hud_container and bottom_hud_container.has_method("hide_submit_button"):
+		bottom_hud_container.hide_submit_button()
+
 	# 获取任务物品信息
 	var task_info: Dictionary = TaskManager.get_task_items_info()
 	var all_board_items: Array = task_info.get("board", [])
-	var backpack_items: Array = task_info.get("backpack", [])
 
-	# 只选择显示图标的物品（最近的物品）
+	# 只选择显示图标的物品
 	var board_items: Array = []
 	for item_data in all_board_items:
 		var idx: int = item_data["index"]
 		if idx < cell_task_icons.size() and is_instance_valid(cell_task_icons[idx]) and cell_task_icons[idx].visible:
 			board_items.append(item_data)
 
-	# 如果没有物品，直接完成
-	if board_items.is_empty() and backpack_items.is_empty():
-		_finish_task_submission()
+	# 获取任务栏位置
+	var task_panel_center: Vector2 = bottom_hud_container.get_task_panel_global_center() if bottom_hud_container else Vector2(540, 1600)
+
+	# 如果没有物品，直接进入缩小动画
+	if board_items.is_empty():
+		_play_task_shrink_animation(task_panel_center)
 		return
 
-	# 获取任务栏位置（飞行动画终点）
-	var task_panel_path := "MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC"
-	var task_panel: Control = get_node(task_panel_path)
-	var target_pos: Vector2 = task_panel.get_global_position() + Vector2(task_panel.size.x / 2, task_panel.size.y / 2)
+	# Step 2: 物品飞向任务栏位置
+	var total_items: int = board_items.size()
+	var completed := [0]
 
-	# 记录需要移除的物品数量（用数组包装以便lambda修改）
-	var total_items: int = board_items.size() + backpack_items.size()
-	var completed := [0]  # [completed_count]
-
-	# 如果没有物品需要动画，直接完成
-	if total_items == 0:
-		_finish_task_submission()
-		return
-
-	# 棋盘物品飞行动画
 	for item_data in board_items:
 		var board_index: int = item_data["index"]
 		var cell_panel: Control = cell_panels[board_index]
 		var start_pos: Vector2 = cell_panel.get_global_position() + Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
 
-		# 创建飞行动画精灵
+		# 创建飞行精灵
 		var anim_sprite := TextureRect.new()
-		anim_sprite.custom_minimum_size = Vector2(CELL_SIZE, CELL_SIZE)
+		anim_sprite.custom_minimum_size = Vector2(60, 60)
 		anim_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		anim_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		anim_sprite.global_position = start_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2)
+		anim_sprite.global_position = start_pos - Vector2(30, 30)
 		anim_sprite.z_index = 10
 		var sprite_path: String = item_data.get("sprite_path", "")
 		if not sprite_path.is_empty() and ResourceLoader.exists(sprite_path):
@@ -2973,28 +3080,102 @@ func _on_submit_requested() -> void:
 		if board_index < cell_task_icons.size():
 			cell_task_icons[board_index].visible = false
 
-		# 播放飞行动画
+		# 飞行动画
 		var tween := create_tween()
 		tween.set_parallel(true)
-		tween.tween_property(anim_sprite, "global_position", target_pos - Vector2(CELL_SIZE / 2, CELL_SIZE / 2), 0.4)\
-			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tween.tween_property(anim_sprite, "scale", Vector2(0.5, 0.5), 0.4)\
-			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tween.tween_property(anim_sprite, "global_position", task_panel_center - Vector2(30, 30), 0.35)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tween.tween_property(anim_sprite, "scale", Vector2(0.4, 0.4), 0.35)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		tween.finished.connect(func():
 			anim_sprite.queue_free()
 			completed[0] += 1
 			if completed[0] >= total_items:
-				_finish_task_submission()
+				# 所有物品到达，开始任务单缩小动画
+				_play_task_shrink_animation(task_panel_center)
 		)
 
-	# 如果没有棋盘物品但有背包物品，直接完成
-	if board_items.is_empty() and not backpack_items.is_empty():
-		_finish_task_submission()
+
+## 任务单缩小消失动画
+func _play_task_shrink_animation(task_panel_center: Vector2) -> void:
+	var task_panel_path := "MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC"
+	var task_panel: Control = get_node_or_null(task_panel_path)
+	if task_panel == null:
+		_finish_task_submission_new()
+		return
+
+	task_panel.pivot_offset = task_panel.size / 2
+
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(task_panel, "scale", Vector2(0.0, 0.0), 0.3)\
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	tween.tween_property(task_panel, "modulate:a", 0.0, 0.3)
+	tween.finished.connect(func():
+		# 缩小完成，播放星星粒子飞向建造清单
+		_play_star_particles_to_build_list(task_panel_center)
+	)
 
 
-## 完成提交：实际移除物品并刷新
-func _finish_task_submission() -> void:
-	# 获取当前任务的物品需求
+## 星星粒子飞向建造清单按钮
+func _play_star_particles_to_build_list(start_pos: Vector2) -> void:
+	var STAR_ICON: Texture2D = load("res://art/sprites/UI/icon/star.png")
+	var end_pos: Vector2 = bottom_hud_container.get_build_list_btn_global_center() if bottom_hud_container else Vector2(100, 1600)
+
+	# 获取当前任务的星星奖励
+	var current_task: Dictionary = TaskManager.get_current_task()
+	var reward: Dictionary = current_task.get("reward", {})
+	var star_reward: int = reward.get("star", 1)
+
+	var particle_count: int = clampi(star_reward, 1, 8)
+	var particles_arrived := [0]
+
+	for i in range(particle_count):
+		var star := Sprite2D.new()
+		star.texture = STAR_ICON
+		star.scale = Vector2(0.5, 0.5)
+		star.global_position = start_pos
+
+		# 创建CanvasLayer包裹以确保屏幕空间
+		var canvas := CanvasLayer.new()
+		canvas.layer = 100
+		var star_control := TextureRect.new()
+		star_control.texture = STAR_ICON
+		star_control.custom_minimum_size = Vector2(30, 30)
+		star_control.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		star_control.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		star_control.position = start_pos - Vector2(15, 15)
+		star_control.z_index = 200
+		star_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		canvas.add_child(star_control)
+		get_tree().root.add_child(canvas)
+		star.queue_free()  # 不需要Sprite2D
+
+		# 先散开
+		var angle: float = TAU * float(i) / float(particle_count)
+		var scatter_pos: Vector2 = start_pos + Vector2(cos(angle), sin(angle)) * randf_range(30, 60) - Vector2(15, 15)
+
+		var scatter_tween := create_tween()
+		scatter_tween.tween_property(star_control, "position", scatter_pos, 0.2)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+		# 然后飞向目标
+		var fly_delay: float = 0.2 + randf_range(0.0, 0.1)
+		scatter_tween.tween_property(star_control, "position", end_pos - Vector2(15, 15), 0.35)\
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN).set_delay(fly_delay - 0.2)
+		scatter_tween.tween_property(star_control, "modulate:a", 0.0, 0.1)
+		scatter_tween.finished.connect(func():
+			canvas.queue_free()
+			particles_arrived[0] += 1
+			if particles_arrived[0] >= particle_count:
+				# 所有星星到达，完成任务提交
+				_finish_task_submission_new()
+		)
+
+
+## 新版完成提交：实际移除物品，增加星星，恢复任务面板，刷新
+func _finish_task_submission_new() -> void:
+	# 获取当前任务信息
 	var current_task: Dictionary = TaskManager.get_current_task()
 	if current_task.is_empty():
 		return
@@ -3008,7 +3189,15 @@ func _finish_task_submission() -> void:
 		print(">>> [GameBoard] 任务提交成功")
 	else:
 		print(">>> [GameBoard] 任务提交失败")
-	# 刷新棋盘显示（会刷新任务图标）
+
+	# 恢复任务面板显示
+	var task_panel_path := "MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC"
+	var task_panel: Control = get_node_or_null(task_panel_path)
+	if task_panel:
+		task_panel.scale = Vector2(1.0, 1.0)
+		task_panel.modulate = Color.WHITE
+
+	# 刷新棋盘和任务栏
 	_refresh_board_display()
 
 
