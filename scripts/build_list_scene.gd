@@ -155,6 +155,7 @@ func _create_build_item(config, is_unlocked: bool, is_completed: bool) -> Contro
 
 
 func _on_build_pressed(build_id: int) -> void:
+	SoundSystem.play_button_click()
 	var config = _build_loader.get_build(build_id)
 	if config.is_empty():
 		return
@@ -226,4 +227,5 @@ func _save_build_completed(build_id: int) -> void:
 
 
 func _on_close_pressed() -> void:
+	SoundSystem.play_button_click()
 	queue_free()

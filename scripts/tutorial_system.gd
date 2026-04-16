@@ -441,6 +441,7 @@ func _disconnect_target_signal() -> void:
 
 
 func _on_target_pressed() -> void:
+	SoundSystem.play_button_click()
 	# 统计步骤1的点击次数
 	if current_step == TutorialStep.SPAWN_WARRIOR:
 		spawn_click_count += 1

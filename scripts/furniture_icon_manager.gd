@@ -189,6 +189,7 @@ func _create_unlock_icon(build_id: int, furniture: Node, config: Dictionary) -> 
 
 # Button 点击处理
 func _on_icon_pressed(build_id: int) -> void:
+	SoundSystem.play_button_click()
 	print(">>> [FurnitureIconManager] _on_icon_pressed: build_id=%d" % build_id)
 	icon_clicked.emit(build_id)
 

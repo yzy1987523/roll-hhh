@@ -465,6 +465,7 @@ func _on_item_slot_input(event: InputEvent, slot_index: int) -> void:
 
 
 func _on_speed_2x_pressed() -> void:
+	SoundSystem.play_button_click()
 	battle_speed = 2.0
 	speed_1x.button_pressed = false
 	speed_2x.button_pressed = true
@@ -472,6 +473,7 @@ func _on_speed_2x_pressed() -> void:
 
 
 func _on_speed_3x_pressed() -> void:
+	SoundSystem.play_button_click()
 	battle_speed = 3.0
 	speed_1x.button_pressed = false
 	speed_2x.button_pressed = false

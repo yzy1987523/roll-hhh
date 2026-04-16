@@ -66,6 +66,7 @@ func _refresh_out_items() -> void:
 
 
 func _on_build_list_pressed() -> void:
+	SoundSystem.play_button_click()
 	build_list_pressed.emit()
 
 
@@ -246,6 +247,7 @@ func _update_task_display() -> void:
 
 ## 提交按钮点击
 func _on_submit_pressed() -> void:
+	SoundSystem.play_button_click()
 	if _submit_btn == null:
 		return
 	# 播放点击动效：放大1.1倍再缩回1倍，总用时0.3秒

@@ -253,11 +253,13 @@ func _show_build_popup():
 	btn_hbox.add_child(build_btn)
 
 func _on_cancel_build():
+	SoundSystem.play_button_click()
 	if build_popup != null:
 		build_popup.queue_free()
 		build_popup = null
 
 func _on_confirm_build():
+	SoundSystem.play_button_click()
 	print(">>> [GridManager] _on_confirm_build 开始")
 	var cost = current_build_config["starCost"]
 	var stars = _get_player_stars()

@@ -285,7 +285,9 @@ func _connect_signals() -> void:
 	print(">>> [GameBoard] diamond_buy_btn=%s" % diamond_buy_btn)
 	if energy_buy_btn:
 		energy_buy_btn.pressed.connect(_on_energy_buy_pressed)
-		print(">>> [GameBoard] EnergyBuyBtn 信号已连接")
+		print(">>> [GameBoard] EnergyBuyBtn 信号已连接, global_pos=%s" % energy_buy_btn.global_position)
+	else:
+		push_warning(">>> [GameBoard] EnergyBuyBtn 未找到!")
 	if gold_buy_btn:
 		gold_buy_btn.pressed.connect(_on_gold_buy_pressed)
 	if diamond_buy_btn:
@@ -1492,6 +1494,9 @@ func _collect_coinpile(cell_index: int) -> void:
 	if coin_item == null:
 		return
 
+	# 播放收集音效
+	SoundSystem.play_sfx(SoundSystem.SFX_GET_COIN)
+
 	# 计算金币价值 f(n) = round(2.5^(n-1))
 	var coin_value: int = ItemManager.get_coinpile_value(coin_item.level)
 
@@ -1527,6 +1532,9 @@ func _collect_energy_ball(cell_index: int) -> void:
 	var energy_item: DataModels.BoardItemData = bd.get_item_at_index(cell_index)
 	if energy_item == null:
 		return
+
+	# 播放收集音效
+	SoundSystem.play_sfx(SoundSystem.SFX_GET_COIN)
 
 	# 计算体力值
 	var energy_value: int = ItemManager.get_energy_value(energy_item.id, energy_item.level)
@@ -3261,9 +3269,24 @@ func _find_control_at_position(pos: Vector2) -> Control:
 				return child
 	return null
 
-func _unhandled_input(event: InputEvent) -> void:
-	# _unhandled_input 只接收未被 UI 元素处理的事件
-	# 所以按钮、滑动条等会自动接收它们的事件，无需手动处理
+func _input(event: InputEvent) -> void:
+	# 当背包或弹窗打开时，忽略棋盘输入处理，让它们接收点击事件
+	if _backpack_visible or PopupSystem.is_open():
+		return
+
+	# 手动处理按钮点击（因为按钮在外部场景实例化，gui_input 信号可能不触发）
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var mouse_pos: Vector2 = event.global_position
+		# 检测是否点在购买按钮上
+		if energy_buy_btn != null and _is_point_in_control(mouse_pos, energy_buy_btn):
+			_on_energy_buy_pressed()
+			return
+		if gold_buy_btn != null and _is_point_in_control(mouse_pos, gold_buy_btn):
+			_on_gold_buy_pressed()
+			return
+		if diamond_buy_btn != null and _is_point_in_control(mouse_pos, diamond_buy_btn):
+			_on_diamond_buy_pressed()
+			return
 
 	# 处理鼠标点击/移动 - 手动路由到正确的格子以解决 gui_input 信号不触发的问题
 	if event is InputEventMouseButton or event is InputEventMouseMotion:
@@ -3275,7 +3298,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				var cell_index_str: String = cell_name.substr(5)
 				var cell_index: int = cell_index_str.to_int()
 				_on_cell_gui_input(event, cell_index)
-				return  # 阻止事件继续传播到 GUI 系统
+				return  # 阻止事件继续传播
+
 	# 按 D 键将选中角色存入宿舍
 	if event is InputEventKey and event.pressed and event.keycode == KEY_D:
 		if selected_index >= 0:
@@ -3287,6 +3311,14 @@ func _unhandled_input(event: InputEvent) -> void:
 				selected_index = -1
 				_refresh_board_display()
 				_update_character_detail_panel()
+
+
+## 检查点是否在 Control 内
+func _is_point_in_control(point: Vector2, ctrl: Control) -> bool:
+	if ctrl == null:
+		return false
+	var rect: Rect2 = ctrl.get_global_rect()
+	return rect.has_point(point)
 
 
 # ---- 按钮回调 ----
@@ -3556,7 +3588,7 @@ func _finish_task_submission_new() -> void:
 
 func _on_energy_buy_pressed() -> void:
 	print(">>> [GameBoard] _on_energy_buy_pressed 被调用!")
-	SoundSystem.play_button_click()
+	SoundSystem.play_merge()
 	var cost: int = GameManager.get_energy_purchase_cost()
 	var cost_text: String = LocalizationSystem.get_text("game_board.buy_energy_confirm", {"cost": cost})
 	PopupSystem.show(
@@ -3578,7 +3610,7 @@ func _do_energy_buy() -> void:
 
 
 func _on_gold_buy_pressed() -> void:
-	SoundSystem.play_button_click()
+	SoundSystem.play_merge()
 	PopupSystem.show(
 		LocalizationSystem.get_text("game_board.gold_buy_title"),
 		LocalizationSystem.get_text("game_board.gold_buy_desc"),
@@ -3596,7 +3628,7 @@ func _do_gold_buy() -> void:
 
 
 func _on_diamond_buy_pressed() -> void:
-	SoundSystem.play_button_click()
+	SoundSystem.play_merge()
 	PopupSystem.show(
 		LocalizationSystem.get_text("game_board.diamond_buy_title"),
 		LocalizationSystem.get_text("game_board.diamond_buy_desc"),

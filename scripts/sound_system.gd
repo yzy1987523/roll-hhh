@@ -4,15 +4,16 @@ extends Node
 ## 管理BGM淡入淡出切换和音效播放
 
 # ---- BGM配置 ----
-const BGM_PREPARE := "res://art/audio/bgm/bgm_0.ogg"  # 备战阶段
-const BGM_BATTLE := "res://art/audio/bgm/bgm_1.ogg"   # 战斗阶段
+const BGM_PREPARE := "res://art/audio/bgm/bgm_0.mp3"  # 备战阶段
+#const BGM_BATTLE := "res://art/audio/bgm/bgm_1.ogg"   # 战斗阶段
 
 # ---- 音效路径 ----
-const SFX_ATTACK_FIRE := "res://art/audio/sfx/battle/sfx_attack_fire.ogg"
-const SFX_BULLET_HIT := "res://art/audio/sfx/battle/sfx_bullet_hit.ogg"
-const SFX_VICTORY := "res://art/audio/sfx/battle/sfx_victory.ogg"
+#const SFX_ATTACK_FIRE := "res://art/audio/sfx/battle/sfx_attack_fire.ogg"
+#const SFX_BULLET_HIT := "res://art/audio/sfx/battle/sfx_bullet_hit.ogg"
+#const SFX_VICTORY := "res://art/audio/sfx/battle/sfx_victory.ogg"
 const SFX_MERGE := "res://art/audio/sfx/gameboard/sfx_merge.ogg"
 const SFX_BUTTON_CLICK := "res://art/audio/sfx/ui/sfx_button_click.ogg"
+const SFX_GET_COIN := "res://art/audio/sfx/gameboard/sfx_getcoin.ogg"
 
 # ---- 音频节点 ----
 var _bgm_player_a: AudioStreamPlayer = null
@@ -27,6 +28,7 @@ const SFX_VOLUME_DB := 0.0      # 音效音量
 
 # ---- 状态 ----
 var _current_bgm: String = ""
+var _bgm_muted: bool = false  # BGM静音标志
 
 
 func _ready() -> void:
@@ -65,11 +67,14 @@ func _connect_phase_signal() -> void:
 
 ## 播放BGM（带淡入淡出过渡）
 func play_bgm(bgm_path: String, fade_duration: float = BGM_FADE_DURATION) -> void:
+	if _bgm_muted:
+		return  # 静音时不播放BGM
+
 	if bgm_path == _current_bgm:
 		return  # 相同BGM不重复播放
-	
+
 	_current_bgm = bgm_path
-	
+
 	# 确定下一个播放器
 	var next_player: AudioStreamPlayer
 	if _active_player == _bgm_player_a:
@@ -125,6 +130,23 @@ func stop_bgm_immediate() -> void:
 	_current_bgm = ""
 
 
+## 切换BGM静音状态
+func toggle_bgm_mute() -> void:
+	_bgm_muted = not _bgm_muted
+	if _bgm_muted:
+		# 静音：淡出并停止
+		var tween := create_tween()
+		tween.tween_property(_active_player, "volume_db", -80.0, 0.5)
+		await tween.finished
+		stop_bgm_immediate()
+	else:
+		# 取消静音：重新播放当前BGM
+		if _current_bgm != "":
+			var bgm_path = _current_bgm
+			_current_bgm = ""  # 重置以确保能重新播放
+			play_bgm(bgm_path)
+
+
 # ---- 音效播放 ----
 
 ## 播放音效
@@ -159,18 +181,18 @@ func play_merge() -> void:
 
 
 ## 播放攻击音效
-func play_attack_fire() -> void:
-	play_sfx(SFX_ATTACK_FIRE)
+#func play_attack_fire() -> void:
+	#play_sfx(SFX_ATTACK_FIRE)
 
 
 ## 播放子弹命中音效
-func play_bullet_hit() -> void:
-	play_sfx(SFX_BULLET_HIT)
+#func play_bullet_hit() -> void:
+	#play_sfx(SFX_BULLET_HIT)
 
 
 ## 播放胜利音效
-func play_victory() -> void:
-	play_sfx(SFX_VICTORY)
+#func play_victory() -> void:
+	#play_sfx(SFX_VICTORY)
 
 
 # ---- 阶段变化回调 ----
@@ -179,8 +201,8 @@ func _on_phase_changed(new_phase: String) -> void:
 	match new_phase:
 		GameManager.PHASE_PREPARE:
 			play_bgm(BGM_PREPARE)
-		GameManager.PHASE_BATTLE:
-			play_bgm(BGM_BATTLE)
+		#GameManager.PHASE_BATTLE:
+			#play_bgm(BGM_BATTLE)
 		GameManager.PHASE_GAME_OVER:
 			stop_bgm()
 
