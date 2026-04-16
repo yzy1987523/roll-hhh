@@ -21,18 +21,16 @@ func transition_in() -> void:
 	if backdrop == null:
 		return
 
-	var screen_size := DisplayServer.window_get_size(0)
-
 	backdrop.visible = true
-	backdrop.size.x = screen_size.x
-	backdrop.size.y = screen_size.y
-	# 初始位置：移到屏幕上方
-	backdrop.position.y = -screen_size.y
+	# 使用 scale 动画，从 scale=0 展开到 scale=1
+	# pivot_offset.y = 0 让缩放以顶部为中心点，实现从上往下展开效果
+	backdrop.pivot_offset.y = 0
+	backdrop.scale.y = 0.0
 
-	# 动画：从上往下滑入
+	# 动画：从上往下滑入（scale 从 0 到 1）
 	var tween := transition_instance.create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(backdrop, "position:y", 0.0, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(backdrop, "scale:y", 1.0, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 	await tween.finished
 
 # 退出过渡动画（从下往上滑出）
@@ -44,15 +42,14 @@ func transition_out() -> void:
 	if backdrop == null:
 		return
 
-	var screen_height := DisplayServer.window_get_size(0).y
-
-	# 动画：从当前位置往上滑出
+	# 动画：从上往下收拢（scale 从 1 到 0）
 	var tween := transition_instance.create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(backdrop, "position:y", -screen_height, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(backdrop, "scale:y", 0.0, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 	await tween.finished
 
 	backdrop.visible = false
+	backdrop.scale.y = 1.0  # 重置
 	is_transitioning = false
 
 # 带过渡的场景切换

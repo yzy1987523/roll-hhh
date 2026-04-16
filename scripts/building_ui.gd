@@ -334,7 +334,7 @@ func _play_explosion_then_fly(start_pos: Vector2, end_pos: Vector2, exp_amount: 
 	var EXP_ICON := preload("res://art/sprites/UI/icon/jingyan.png")
 	var particle_container := Node2D.new()
 	particle_container.global_position = start_pos
-	add_child(particle_container)
+	get_tree().root.add_child(particle_container)
 
 	var particle_count: int = clampi(randi_range(8, 12), 8, 12)
 	var particles: Array[Sprite2D] = []
@@ -428,8 +428,8 @@ func _show_level_up_popup(new_level: int, rewards: Dictionary) -> void:
 	var popup = PanelContainer.new()
 	popup.name = "LevelUpPopup"
 	popup.set_anchors_preset(Control.PRESET_CENTER)
-	popup.position = Vector2(-175, -150)
-	popup.size = Vector2(350, 300)
+	popup.position = Vector2(-280, -200)
+	popup.size = Vector2(560, 400)
 	popup.z_index = 4000
 
 	var style = StyleBoxFlat.new()
@@ -449,15 +449,16 @@ func _show_level_up_popup(new_level: int, rewards: Dictionary) -> void:
 
 	var vbox = VBoxContainer.new()
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vbox.size = Vector2(560, 400)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 14)
+	vbox.add_theme_constant_override("separation", 18)
 	popup.add_child(vbox)
 
 	# 标题
 	var title = Label.new()
 	title.text = "升级!"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_font_size_override("font_size", 40)
 	title.add_theme_color_override("font_color", Color(1, 0.9, 0.3))
 	vbox.add_child(title)
 
@@ -465,35 +466,35 @@ func _show_level_up_popup(new_level: int, rewards: Dictionary) -> void:
 	var level_label = Label.new()
 	level_label.text = "达到 Lv.%d" % new_level
 	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	level_label.add_theme_font_size_override("font_size", 20)
+	level_label.add_theme_font_size_override("font_size", 28)
 	vbox.add_child(level_label)
 
 	# 奖励标题
 	var reward_title = Label.new()
 	reward_title.text = "获得奖励:"
 	reward_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	reward_title.add_theme_font_size_override("font_size", 16)
+	reward_title.add_theme_font_size_override("font_size", 24)
 	reward_title.add_theme_color_override("font_color", Color(0.6, 1.0, 0.6))
 	vbox.add_child(reward_title)
 
 	# 奖励内容
 	var reward_hbox = HBoxContainer.new()
 	reward_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	reward_hbox.add_theme_constant_override("separation", 16)
+	reward_hbox.add_theme_constant_override("separation", 24)
 	vbox.add_child(reward_hbox)
 
 	var coin_reward: int = int(rewards.get("coin", 0))
 	if coin_reward > 0:
 		var coin_label = Label.new()
 		coin_label.text = "金币 +%d" % coin_reward
-		coin_label.add_theme_font_size_override("font_size", 16)
+		coin_label.add_theme_font_size_override("font_size", 24)
 		coin_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
 		reward_hbox.add_child(coin_label)
 
 	var item_rewards: Array = rewards.get("items", [])
 	for item_id in item_rewards:
 		var item_icon = TextureRect.new()
-		item_icon.custom_minimum_size = Vector2(40, 40)
+		item_icon.custom_minimum_size = Vector2(64, 64)
 		item_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
 		item_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		item_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -508,7 +509,8 @@ func _show_level_up_popup(new_level: int, rewards: Dictionary) -> void:
 
 	var confirm_btn = Button.new()
 	confirm_btn.text = "领取"
-	confirm_btn.custom_minimum_size = Vector2(120, 44)
+	confirm_btn.custom_minimum_size = Vector2(180, 60)
+	confirm_btn.add_theme_font_size_override("font_size", 28)
 	confirm_btn.pressed.connect(_on_level_up_confirm.bind(popup, rewards))
 	center_container.add_child(confirm_btn)
 

@@ -150,7 +150,7 @@ func _show_build_popup():
 	build_popup = PanelContainer.new()
 	build_popup.name = "BuildPopup"
 	build_popup.set_anchors_preset(Control.PRESET_CENTER)
-	build_popup.position = Vector2(-175, -140)
+	build_popup.position = Vector2(-280, -140)
 	build_popup.size = Vector2(350, 280)
 	build_popup.z_index = 3000
 
@@ -182,6 +182,7 @@ func _show_build_popup():
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 22)
 	title.add_theme_color_override("font_color", Color(1, 0.9, 0.5))
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(title)
 
 	# 花费
