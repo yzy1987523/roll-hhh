@@ -196,6 +196,7 @@ func _on_build_confirmed(build_id: int) -> void:
 
 	# 扣除星星，添加经验，发放奖励
 	TaskManager.add_stars(-config.starCost)
+	SoundSystem.play_sfx("res://art/audio/sfx/gameboard/sfx_getcoin.ogg")
 	TaskManager.add_exp(config.expReward)
 
 	# 发放物品奖励（移入局外道具栏）

@@ -3467,7 +3467,8 @@ func _on_submit_requested() -> void:
 			completed[0] += 1
 			if completed[0] >= total_items:
 				# 所有物品到达，播放音效
-				SoundSystem.play_sfx("sfx_meet")
+				print(">>> [GameBoard] 播放 sfx_meet 音效")
+				SoundSystem.play_sfx("res://art/audio/sfx/gameboard/sfx_meet.mp3")
 				# 开始任务单缩小动画
 				_play_task_shrink_animation(task_panel_center)
 		)
