@@ -1439,9 +1439,14 @@ func _merge_at(src_index: int, tgt_index: int) -> void:
 	# 合成后目标位置变为 OCCUPIED
 	bd.set_grid_state(tgt_index, BoardData.GridState.OCCUPIED)
 	
-	# 检查合成后的物品是否是生成器，如果是则注册到ProducerManager
+	# 检查合成后的物品是否是生成器，如果是则叠加库存并清除冷却
 	if ItemManager.is_producer(merged.id):
-		ProducerManager.register_producer(tgt_index, merged.id)
+		if ProducerManager.has_producer(tgt_index):
+			# 目标位置已有生成器：叠加库存并清除冷却
+			ProducerManager.merge_producer(tgt_index, src_item.id)
+		else:
+			# 目标位置没有生成器：注册新生成器
+			ProducerManager.register_producer(tgt_index, merged.id)
 		_update_producer_fx_visibility(tgt_index)
 
 	# 合成位置上下左右的 LOCKED 格子 → 切换为 DUSTY
@@ -3553,7 +3558,9 @@ func _play_star_particles_to_build_list(start_pos: Vector2) -> void:
 			canvas.queue_free()
 			particles_arrived[0] += 1
 			if particles_arrived[0] >= particle_count:
-				# 所有星星到达，完成任务提交
+				# 所有星星到达，播放音效
+				SoundSystem.play_sfx("sfx_getcoin.ogg")
+				# 完成任务提交
 				_finish_task_submission_new()
 		)
 

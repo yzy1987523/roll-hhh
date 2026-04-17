@@ -99,6 +99,11 @@ func _update_single_producer(state: ProducerState, delta: float) -> void:
 		cooldown_started.emit(state.board_index, state.cooldown_time)
 
 
+# ---- 检查生成器是否存在 ----
+func has_producer(board_index: int) -> bool:
+	return _producers.has(board_index)
+
+
 # ---- 注册生成器 ----
 func register_producer(board_index: int, item_id: int) -> bool:
 	# 检查是否已经是生成器
@@ -308,6 +313,38 @@ func skip_cooldown(board_index: int) -> bool:
 
 	cooldown_finished.emit(board_index)
 	return true
+
+
+# ---- 合并生成器库存（合成时调用） ----
+## 将另一个同等级生成器的库存叠加到目标生成器，并清除冷却时间
+func merge_producer(to_index: int, from_item_id: int) -> void:
+	if not _producers.has(to_index):
+		return
+
+	var state: ProducerState = _producers[to_index]
+
+	# 获取被合成物品的库存配置
+	var cfg: Dictionary = _config_loader.get_item(from_item_id)
+	if cfg.is_empty():
+		return
+
+	# 计算被合成物品的库存（根据 maxCount 比例）
+	var from_max_count: int = cfg.get("maxCount", 20)
+
+	# 如果 from 的 maxCount > to 的 maxCount，按比例叠加
+	# 叠加量 = min(from_max, to_max - current + from_max - current) 确保持续有库存
+	var stock_to_add: int = from_max_count
+	var new_count: int = mini(state.current_count + stock_to_add, state.max_count)
+	state.current_count = new_count
+
+	# 清除冷却时间
+	state.cooldown_remaining = 0.0
+
+	# 重置恢复时间（保持当前恢复进度）
+	state.last_recovery_time = Time.get_ticks_msec() / 1000.0
+
+	stock_changed.emit(to_index, state.current_count, state.max_count)
+	cooldown_finished.emit(to_index)
 
 
 # ---- 获取跳过冷却花费 ----

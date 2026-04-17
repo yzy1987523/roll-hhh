@@ -147,6 +147,9 @@ func _show_build_popup():
 	if build_popup != null:
 		build_popup.queue_free()
 
+	# 禁用家具图标按钮，防止点击穿透弹窗
+	_set_furniture_icons_enabled(false)
+
 	build_popup = PanelContainer.new()
 	build_popup.name = "BuildPopup"
 	build_popup.set_anchors_preset(Control.PRESET_CENTER)
@@ -258,6 +261,19 @@ func _on_cancel_build():
 	if build_popup != null:
 		build_popup.queue_free()
 		build_popup = null
+	# 恢复家具图标按钮
+	_set_furniture_icons_enabled(true)
+
+func _set_furniture_icons_enabled(enabled: bool) -> void:
+	var icon_mgr = get_node_or_null("../FurnitureIconManager")
+	if icon_mgr == null:
+		return
+	var icon_root = icon_mgr.find_child("FurnitureIconRoot", true, false)
+	if icon_root == null:
+		return
+	for icon in icon_root.get_children():
+		if icon is Control:
+			icon.mouse_filter = Control.MOUSE_FILTER_IGNORE if not enabled else Control.MOUSE_FILTER_STOP
 
 func _on_confirm_build():
 	SoundSystem.play_button_click()

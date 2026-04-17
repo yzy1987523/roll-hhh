@@ -180,7 +180,6 @@ func _can_move_to(grid: Vector2i) -> bool:
 	var world_pos = _grid_to_world(grid)
 	var in_floor = _is_point_on_floor(world_pos)
 	if not in_floor:
-		print(">>> [Character2D] _can_move_to: grid=%s, world_pos=%s, in_floor=%s" % [grid, world_pos, in_floor])
 		return false
 
 	# 地图边界检查
