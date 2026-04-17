@@ -336,7 +336,6 @@ class BoardItemData:
 		data.level = cfg.get("level", 1)
 		data.sprite = cfg.get("sprite", "")
 		data.content = cfg.get("content", "")
-		print(">>> [DEBUG] from_config: id=%d, name='%s', content='%s'" % [data.id, data.name, data.content])
 		# type 是字符串，需要映射到 BoardItemType enum
 		data.item_type = _parse_item_type(cfg.get("type", ""))
 		# next_composite 可能是字符串或整数，空字符串转为 0
@@ -380,7 +379,6 @@ class BoardItemData:
 		data.max_count = max_count
 		data.recovery_time = recovery_time
 		data.cooldown_time = cooldown_time
-		print(">>> [DEBUG] duplicate: id=%d, name='%s', content='%s' -> '%s'" % [id, name, content, data.content])
 		return data
 
 	# 序列化为字典 (仅包含需要持久化的字段)
@@ -411,6 +409,5 @@ class BoardItemData:
 				var item_data: BoardItemData = im.get_item(data.id)
 				if item_data != null:
 					data.content = item_data.content
-					print(">>> [DEBUG] from_dict补充content: id=%d, content='%s'" % [data.id, data.content])
 		
 		return data

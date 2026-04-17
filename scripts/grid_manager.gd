@@ -40,6 +40,7 @@ var build_config: Dictionary = {}
 # UI节点
 var build_popup: Control = null
 var current_build_config: Dictionary = {}
+var _confirm_btn: Button = null
 
 # 信号：建造完成后通知 building_ui 播放特效
 signal build_exp_reward(furniture_world_pos: Vector2, exp_amount: int, build_id: int)
@@ -66,13 +67,10 @@ func _ready():
 		for x in range(map_width):
 			row.append(false)
 		grid_occupied.append(row)
-	print(">>> [GridManager] grid_occupied 初始化完成: %d x %d" % [map_height, map_width])
 
 	# 检查场景中是否已有静态地板/墙体（兄弟节点，不是子节点）
 	var existing_floor_root = get_node_or_null("../FloorRoot")
 	var existing_wall_root = get_node_or_null("../WallRoot")
-
-	print(">>> [GridManager] _ready: existing_floor_root=%s, existing_wall_root=%s" % [existing_floor_root, existing_wall_root])
 
 	# 地板和墙已在 building.tscn 中静态定义，直接使用
 	floor_list = []
@@ -80,7 +78,6 @@ func _ready():
 		for child in existing_floor_root.get_children():
 			floor_list.append(child)
 	wall_root = existing_wall_root
-	print(">>> [GridManager] 使用静态地板和墙体（共 %d 地板）" % floor_list.size())
 
 	# 初始化家具父节点（FurnitureRoot 是兄弟节点，不是子节点）
 	furniture_root = get_node_or_null("../FurnitureRoot")
@@ -90,7 +87,6 @@ func _ready():
 		furniture_root = Node2D.new()
 		furniture_root.name = "FurnitureRoot"
 		get_parent().add_child(furniture_root)
-	print(">>> [GridManager] furniture_root=%s, children=%d" % [furniture_root, furniture_root.get_child_count()])
 
 	# 静态墙体边界锁定
 	set_map_border_limit()
@@ -102,23 +98,17 @@ func _ready():
 func _connect_furniture_icon_signals() -> void:
 	# FurnitureIconManager 是 RoomRoot 的子节点，与 GridManager 是兄弟关系
 	var icon_mgr = get_node_or_null("../FurnitureIconManager")
-	print(">>> [GridManager] _connect_furniture_icon_signals: icon_mgr=%s" % icon_mgr)
 	if icon_mgr == null:
-		print(">>> [GridManager] 警告: FurnitureIconManager 未找到!")
 		return
 	if icon_mgr.has_signal("icon_clicked"):
 		icon_mgr.icon_clicked.connect(_on_furniture_icon_clicked)
-		print(">>> [GridManager] 已连接 FurnitureIconManager 信号")
 
 
 func _on_furniture_icon_clicked(build_id: int) -> void:
-	print(">>> [GridManager] _on_furniture_icon_clicked 收到信号! build_id=%d" % build_id)
 	# 显示建造确认弹窗
 	current_build_config = build_config.get(float(build_id), {})
 	if not current_build_config.is_empty():
 		_show_build_popup()
-	else:
-		print(">>> [GridManager] 警告: 找不到 build_id=%d 的配置!" % build_id)
 
 # ================================= 加载建造配置 =================================
 func _load_build_config():
@@ -139,7 +129,6 @@ func _load_build_config():
 	if data.has("builds"):
 		for item in data["builds"]:
 			build_config[item["id"]] = item
-			print(">>> [GridManager] 加载建造配置: id=%d, name=%s, unlockLevel=%d" % [item["id"], item["name"], item["unlockLevel"]])
 
 # ================================= 创建建造面板 =================================
 # ================================= 建造弹窗 =================================
@@ -153,8 +142,8 @@ func _show_build_popup():
 	build_popup = PanelContainer.new()
 	build_popup.name = "BuildPopup"
 	build_popup.set_anchors_preset(Control.PRESET_CENTER)
-	build_popup.position = Vector2(-280, -140)
-	build_popup.size = Vector2(350, 280)
+	build_popup.position = Vector2(-350, -280)
+	build_popup.size = Vector2(700, 560)
 	build_popup.z_index = 3000
 
 	var style = StyleBoxFlat.new()
@@ -170,11 +159,16 @@ func _show_build_popup():
 	style.border_color = Color(0.8, 0.7, 0.4, 1)
 	build_popup.add_theme_stylebox_override("panel", style)
 
-	add_child(build_popup)
+	# 添加到 UILayer (CanvasLayer) 以统一坐标系统
+	var ui_layer = get_node_or_null("../UILayer")
+	if ui_layer != null:
+		ui_layer.add_child(build_popup)
+	else:
+		add_child(build_popup)
 
 	var vbox = VBoxContainer.new()
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	vbox.size = Vector2(350, 280)
+	vbox.size = Vector2(700, 560)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_theme_constant_override("separation", 12)
 	build_popup.add_child(vbox)
@@ -183,23 +177,40 @@ func _show_build_popup():
 	var title = Label.new()
 	title.text = "建造确认"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_font_size_override("font_size", 44)
 	title.add_theme_color_override("font_color", Color(1, 0.9, 0.5))
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(title)
 
-	# 花费
-	var cost_label = Label.new()
-	cost_label.text = "花费 ★%d" % current_build_config.get("starCost", 0)
-	cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	cost_label.add_theme_font_size_override("font_size", 18)
-	vbox.add_child(cost_label)
+	# 花费（用星星图标+数字）
+	var cost_title = Label.new()
+	cost_title.text = "花费"
+	cost_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cost_title.add_theme_font_size_override("font_size", 36)
+	vbox.add_child(cost_title)
+
+	var cost_hbox = HBoxContainer.new()
+	cost_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_child(cost_hbox)
+
+	var star_icon = TextureRect.new()
+	star_icon.custom_minimum_size = Vector2(48, 48)
+	star_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+	star_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	star_icon.texture = load("res://art/sprites/UI/icon/star.png")
+	cost_hbox.add_child(star_icon)
+
+	var cost_num_label = Label.new()
+	cost_num_label.text = " %d" % current_build_config.get("starCost", 0)
+	cost_num_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	cost_num_label.add_theme_font_size_override("font_size", 36)
+	cost_hbox.add_child(cost_num_label)
 
 	# 奖励区域
 	var reward_title = Label.new()
 	reward_title.text = "获得奖励:"
 	reward_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	reward_title.add_theme_font_size_override("font_size", 16)
+	reward_title.add_theme_font_size_override("font_size", 32)
 	reward_title.add_theme_color_override("font_color", Color(0.6, 1.0, 0.6))
 	vbox.add_child(reward_title)
 
@@ -209,14 +220,21 @@ func _show_build_popup():
 	reward_hbox.add_theme_constant_override("separation", 12)
 	vbox.add_child(reward_hbox)
 
-	# 经验奖励
+	# 经验奖励（用经验图标+数字）
 	var exp_reward: int = current_build_config.get("expReward", 0)
 	if exp_reward > 0:
-		var exp_label = Label.new()
-		exp_label.text = "EXP +%d" % exp_reward
-		exp_label.add_theme_font_size_override("font_size", 16)
-		exp_label.add_theme_color_override("font_color", Color(0.3, 0.8, 1.0))
-		reward_hbox.add_child(exp_label)
+		var exp_icon = TextureRect.new()
+		exp_icon.custom_minimum_size = Vector2(48, 48)
+		exp_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		exp_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		exp_icon.texture = load("res://art/sprites/UI/icon/jingyan.png")
+		reward_hbox.add_child(exp_icon)
+
+		var exp_num_label = Label.new()
+		exp_num_label.text = "+%d" % exp_reward
+		exp_num_label.add_theme_font_size_override("font_size", 32)
+		exp_num_label.add_theme_color_override("font_color", Color(0.3, 0.8, 1.0))
+		reward_hbox.add_child(exp_num_label)
 
 	# 物品奖励图标
 	var item_rewards: Array = current_build_config.get("itemReward", [])
@@ -226,7 +244,7 @@ func _show_build_popup():
 		reward_hbox.add_child(item_container)
 
 		var item_icon = TextureRect.new()
-		item_icon.custom_minimum_size = Vector2(40, 40)
+		item_icon.custom_minimum_size = Vector2(80, 80)
 		item_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
 		item_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		item_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -244,16 +262,17 @@ func _show_build_popup():
 	# 取消按钮
 	var cancel_btn = Button.new()
 	cancel_btn.text = "取消"
-	cancel_btn.custom_minimum_size = Vector2(100, 40)
+	cancel_btn.custom_minimum_size = Vector2(200, 80)
 	cancel_btn.pressed.connect(_on_cancel_build)
 	btn_hbox.add_child(cancel_btn)
 
 	# 建造按钮
 	var build_btn = Button.new()
 	build_btn.text = "建造"
-	build_btn.custom_minimum_size = Vector2(100, 40)
+	build_btn.custom_minimum_size = Vector2(200, 80)
 	build_btn.add_theme_color_override("bg_color", Color(0.4, 0.7, 0.3))
 	build_btn.pressed.connect(_on_confirm_build)
+	_confirm_btn = build_btn
 	btn_hbox.add_child(build_btn)
 
 func _on_cancel_build():
@@ -261,6 +280,7 @@ func _on_cancel_build():
 	if build_popup != null:
 		build_popup.queue_free()
 		build_popup = null
+		_confirm_btn = null
 	# 恢复家具图标按钮
 	_set_furniture_icons_enabled(true)
 
@@ -277,11 +297,9 @@ func _set_furniture_icons_enabled(enabled: bool) -> void:
 
 func _on_confirm_build():
 	SoundSystem.play_button_click()
-	print(">>> [GridManager] _on_confirm_build 开始")
 	var cost = current_build_config["starCost"]
 	var stars = _get_player_stars()
 	var build_id: int = current_build_config.get("id", 0)
-	print(">>> [GridManager] cost=%d, stars=%d, build_id=%d" % [cost, stars, build_id])
 
 	if stars < cost:
 		TipManager.show_tip("星星不足，需要 %d 颗星星" % cost, 2.0)
@@ -292,11 +310,9 @@ func _on_confirm_build():
 	TaskManager.stars -= cost
 	TaskManager.stars_changed.emit(TaskManager.stars)
 	TaskManager.add_completed_build_id(build_id)
-	print(">>> [GridManager] 消耗星星完成")
 
 	# 刷新图标显示（隐藏已完成的图标，显示家具）
 	_refresh_furniture_icons()
-	print(">>> [GridManager] 刷新图标完成")
 
 	# 推开家具附近的角色
 	_push_characters_from_furniture(build_id)
@@ -305,15 +321,13 @@ func _on_confirm_build():
 	var item_rewards: Array = current_build_config.get("itemReward", [])
 	for item_id in item_rewards:
 		GameManager.add_out_item(int(item_id))
-		print(">>> [GridManager] 发放物品奖励: item_id=%d" % int(item_id))
 
 	# 发射信号通知 building_ui 播放经验粒子特效
 	var exp_reward: int = current_build_config.get("expReward", 0)
 	if exp_reward > 0:
-		# 获取家具的世界位置作为粒子起点
-		var furniture_pos: Vector2 = _get_furniture_world_pos(build_id)
-		build_exp_reward.emit(furniture_pos, exp_reward, build_id)
-		print(">>> [GridManager] 发射 build_exp_reward 信号: pos=%s, exp=%d" % [furniture_pos, exp_reward])
+		# 使用确认按钮的屏幕坐标作为粒子起点
+		var start_pos: Vector2 = _confirm_btn.global_position + Vector2(_confirm_btn.size.x / 2, _confirm_btn.size.y / 2)
+		build_exp_reward.emit(start_pos, exp_reward, build_id)
 
 	_on_cancel_build()
 
@@ -331,11 +345,10 @@ func _get_player_level() -> int:
 	return TaskManager.get_level()
 
 # ================================= 获取家具世界坐标 =================================
-func _get_furniture_world_pos(build_id: int) -> Vector2:
+func get_furniture_world_pos(build_id: int) -> Vector2:
 	var slot_index: int = build_id - 1
 	var furniture_node = furniture_root.get_node_or_null("Furniture_%d" % slot_index)
 	if furniture_node == null:
-		print(">>> [GridManager] _get_furniture_world_pos: Furniture_%d 未找到! furniture_root=%s, children=%d" % [slot_index, furniture_root.name, furniture_root.get_child_count()])
 		return Vector2.ZERO
 	if furniture_node is Polygon2D:
 		var points = furniture_node.polygon
@@ -344,14 +357,12 @@ func _get_furniture_world_pos(build_id: int) -> Vector2:
 			poly_center += p
 		if points.size() > 0:
 			poly_center /= points.size()
-		var world_pos = furniture_node.global_position + poly_center
-		print(">>> [GridManager] _get_furniture_world_pos: build_id=%d, global_pos=%s, poly_center=%s, world_pos=%s" % [build_id, furniture_node.global_position, poly_center, world_pos])
-		return world_pos
+		return furniture_node.global_position + poly_center
 	return furniture_node.global_position
 
 # ================================= 推开家具附近的角色 =================================
 func _push_characters_from_furniture(build_id: int) -> void:
-	var furniture_pos: Vector2 = _get_furniture_world_pos(build_id)
+	var furniture_pos: Vector2 = get_furniture_world_pos(build_id)
 	var push_threshold: float = 80.0
 
 	# 查找所有 CharacterRoot 节点（与 GridManager 是兄弟关系）
@@ -390,10 +401,9 @@ func _push_characters_from_furniture(build_id: int) -> void:
 					child.set("_current_grid", candidate)
 					child.set("_target_grid", candidate)
 				pushed = true
-				print(">>> [GridManager] 推开角色 %s 到 (%d,%d)" % [child.name, candidate.x, candidate.y])
 				break
 		if not pushed:
-			print(">>> [GridManager] 无法推开角色 %s，周围没有空格子" % child.name)
+			pass  # 无法推开，周围没有空格子
 
 # ================================= 核心：坐标转换 =================================
 func grid_to_world(gx: int, gy: int) -> Vector2:
@@ -550,7 +560,6 @@ func generate_room_walls():
 	set_map_border_limit()
 
 func set_map_border_limit():
-	print(">>> [GridManager] set_map_border_limit: map_width=%d, map_height=%d, grid_occupied.size=%d" % [map_width, map_height, grid_occupied.size()])
 	# 后墙行（gy=0）全部锁定
 	for x in range(map_width):
 		if grid_occupied.size() > 0 and grid_occupied[0].size() > x:
@@ -607,7 +616,6 @@ func get_furniture_visual_center_y(poly: Polygon2D) -> float:
 # ================================= 模式控制 =================================
 func toggle_edit_mode():
 	is_edit_mode = !is_edit_mode
-	print(">>> [GridManager] 编辑模式: %s" % ("开启" if is_edit_mode else "关闭"))
 	if not is_edit_mode:
 		selected_furniture = null
 

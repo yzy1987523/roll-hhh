@@ -31,7 +31,6 @@ var _current_out_item_id: int = -1
 @onready var _build_list_star_label: Label = $ScrollContainer/ContentHBox/ZoneA/VBoxA/BuildListBtn/StarHBox/StarLabel
 
 func _ready() -> void:
-	print(">>> [BottomHUD] _ready 开始执行")
 	_build_list_btn.pressed.connect(_on_build_list_pressed)
 	TaskManager.stars_changed.connect(_on_stars_changed)
 	TaskManager.task_progress_updated.connect(_on_task_progress_updated)
@@ -46,14 +45,11 @@ func _ready() -> void:
 	# 初始化局外道具显示
 	_refresh_out_items()
 	# 监听ItemManager加载完成信号，确保物品配置加载后再刷新任务显示
-	print(">>> [BottomHUD] 检查ItemManager.is_loaded=%s" % ItemManager.is_loaded)
 	# 始终先连接信号（防止后续加载完成时错过）
 	ItemManager.items_loaded.connect(_update_task_display)
 	# 如果已加载，立即调用一次
 	if ItemManager.is_loaded:
-		print(">>> [BottomHUD] ItemManager已加载，延迟调用_update_task_display")
 		call_deferred("_update_task_display")
-	print(">>> [BottomHUD] _ready 执行完成")
 
 
 func _on_out_items_changed() -> void:
@@ -166,24 +162,17 @@ func refresh_task_display() -> void:
 
 ## 更新任务栏显示
 func _update_task_display() -> void:
-	print(">>> [BottomHUD] _update_task_display 开始执行")
-	print(">>> [BottomHUD] ItemManager.is_loaded=%s, all_items.size=%d" % [ItemManager.is_loaded, ItemManager.all_items.size()])
-	
 	# 如果ItemManager未加载，延迟重试
 	if not ItemManager.is_loaded:
-		print(">>> [BottomHUD] ItemManager未加载，延迟0.1秒后重试")
 		await get_tree().create_timer(0.1).timeout
 		if not ItemManager.is_loaded:
-			print(">>> [BottomHUD] ItemManager仍未加载，放弃更新")
 			return
-	
+
 	var current_task: Dictionary = TaskManager.get_current_task()
-	print(">>> [BottomHUD] current_task=%s" % current_task)
-	
+
 	var task_panel: PanelContainer = get_node(PATH_TASK_PANEL)
 
 	if current_task.is_empty():
-		print(">>> [BottomHUD] current_task为空，隐藏task_panel")
 		task_panel.visible = false
 		return
 
@@ -194,40 +183,22 @@ func _update_task_display() -> void:
 	var reward: Dictionary = current_task.get("reward", {})
 	var star_reward: int = reward.get("star", 0)
 	var progress: float = TaskManager.get_current_task_progress()
-	
-	print(">>> [BottomHUD] need_items=%s, star_reward=%d, progress=%.2f" % [need_items, star_reward, progress])
 
 	# 使用保存的引用（而非find_child）
 	if _task_star_label != null:
 		_task_star_label.text = "+%d" % star_reward
 
 	# 显示任务物品图标（取第一个）
-	print(">>> [BottomHUD] _task_item_icon=%s, need_items.size=%d" % [_task_item_icon, need_items.size()])
-	
 	if _task_item_icon and not need_items.is_empty():
 		var item_id: int = int(need_items[0])
-		print(">>> [BottomHUD] 准备加载物品图标，item_id=%d" % item_id)
-		
-		# 调试：检查节点初始状态
-		print(">>> [BottomHUD] 设置前: visible=%s, size=%s, texture=%s" % [_task_item_icon.visible, _task_item_icon.size, _task_item_icon.texture])
-		
+
 		var sprite_path: String = ItemManager.get_sprite_path(item_id)
-		print(">>> [BottomHUD] sprite_path='%s'" % sprite_path)
-		
+
 		if not sprite_path.is_empty() and ResourceLoader.exists(sprite_path):
-			print(">>> [BottomHUD] 加载纹理: %s" % sprite_path)
 			var tex: Texture2D = load(sprite_path)
 			_task_item_icon.texture = tex
 			_task_item_icon.modulate = Color.WHITE
-			# 调试：检查设置后状态
-			print(">>> [BottomHUD] 设置后: visible=%s, size=%s, texture=%s, parent=%s" % [_task_item_icon.visible, _task_item_icon.size, _task_item_icon.texture, _task_item_icon.get_parent()])
-			print(">>> [BottomHUD] ✅ 物品图标加载成功")
 		else:
-			# 调试：打印加载失败信息
-			if sprite_path.is_empty():
-				print(">>> [BottomHUD] ❌ 物品%d的sprite_path为空" % item_id)
-			elif not ResourceLoader.exists(sprite_path):
-				print(">>> [BottomHUD] ❌ 物品%d的sprite不存在: %s" % [item_id, sprite_path])
 			_task_item_icon.modulate = Color(0.5, 0.5, 0.5, 0.5)
 
 	# 进度显示

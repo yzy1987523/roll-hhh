@@ -52,7 +52,6 @@ var end_turn_button: TextureButton
 var item_bar: HBoxContainer
 var dorm_button: TextureButton
 var shop_button: TextureButton
-var encyclopedia_button: TextureButton
 var bottom_hud_container: Control
 
 # ---- 资源显示节点 (TopBar/ResourceDisplay) ----
@@ -200,7 +199,6 @@ func _ready() -> void:
 	item_bar = get_node_or_null("MainLayout/MiddleBar/ItemBar")
 	dorm_button = get_node_or_null("MainLayout/MiddleBar/DormButton")
 	shop_button = get_node_or_null("MainLayout/MiddleBar/ShopButton")
-	encyclopedia_button = get_node_or_null("MainLayout/MiddleBar/EncyclopediaButton")
 	bottom_hud_container = get_node_or_null("MainLayout/MiddleBar/BottomHUDContainer")
 	# 播放备战阶段BGM
 	SoundSystem.play_bgm(SoundSystem.BGM_PREPARE)
@@ -280,20 +278,14 @@ func _connect_signals() -> void:
 	if shop_button:
 		shop_button.pressed.connect(_on_shop_pressed)
 	settings_button.pressed.connect(_on_settings_pressed)
-	print(">>> [GameBoard] energy_buy_btn=%s" % energy_buy_btn)
-	print(">>> [GameBoard] gold_buy_btn=%s" % gold_buy_btn)
-	print(">>> [GameBoard] diamond_buy_btn=%s" % diamond_buy_btn)
 	if energy_buy_btn:
 		energy_buy_btn.pressed.connect(_on_energy_buy_pressed)
-		print(">>> [GameBoard] EnergyBuyBtn 信号已连接, global_pos=%s" % energy_buy_btn.global_position)
 	else:
 		push_warning(">>> [GameBoard] EnergyBuyBtn 未找到!")
 	if gold_buy_btn:
 		gold_buy_btn.pressed.connect(_on_gold_buy_pressed)
 	if diamond_buy_btn:
 		diamond_buy_btn.pressed.connect(_on_diamond_buy_pressed)
-	if encyclopedia_button:
-		encyclopedia_button.pressed.connect(_on_encyclopedia_pressed)
 	if build_button:
 		build_button.pressed.connect(_on_build_button_pressed)
 	if bottom_hud_container:
@@ -542,7 +534,7 @@ func _hide_cooldown_timer(board_index: int) -> void:
 func _setup_button_feedbacks() -> void:
 	var texture_buttons: Array[TextureButton] = [
 		spawn_warrior, spawn_mage, spawn_priest,
-		dorm_button, shop_button, encyclopedia_button,
+		dorm_button, shop_button,
 		end_turn_button, close_settings_button
 	]
 	for btn in texture_buttons:
@@ -809,7 +801,6 @@ func _update_character_detail_panel() -> void:
 			# 显示角色信息：名字 + 等级
 			name_label.text = "%s Lv.%d" % [ch.name, ch.level]
 			# 显示内容描述
-			print(">>> [DEBUG] _update_character_detail_panel: id=%d, name='%s', content='%s'" % [ch.id, ch.name, ch.content])
 			detail_label.text = ch.content
 			hint_label.text = ""
 
@@ -1669,16 +1660,11 @@ func _play_coin_particle_effect(start_pos: Vector2, end_pos: Vector2, particle_c
 func _get_gold_bar_position() -> Vector2:
 	var gold_icon: Node = get_node_or_null("MainLayout/TopBar/ResourceDisplay/GoldContainer/GoldRow/GoldIcon")
 	if gold_icon != null:
-		var pos: Vector2 = gold_icon.global_position + Vector2(20, 20)
-		print(">>> [GameBoard] gold_icon global_position: ", gold_icon.global_position, " -> target: ", pos)
-		return pos
+		return gold_icon.global_position + Vector2(20, 20)
 	# 回退到 resource_display 的金币区域
 	var resource_display: Node = get_node_or_null("MainLayout/TopBar/ResourceDisplay")
 	if resource_display != null:
-		var pos: Vector2 = resource_display.global_position + Vector2(200, 30)
-		print(">>> [GameBoard] resource_display global_position: ", resource_display.global_position, " -> target: ", pos)
-		return pos
-	print(">>> [GameBoard] gold_bar_position fallback: ", Vector2(300, 50))
+		return resource_display.global_position + Vector2(200, 30)
 	return Vector2(300, 50)  # 最终回退
 
 
@@ -1884,7 +1870,6 @@ func _sacrifice_character(cell_index: int) -> void:
 	selected_index = -1
 	_refresh_board_display()
 	_update_character_detail_panel()
-	# Tutorial: advance after sacrifice (step 3 = details/sacrifice/encyclopedia)
 	_try_advance_tutorial(3)
 
 
@@ -3481,7 +3466,9 @@ func _on_submit_requested() -> void:
 			anim_sprite.queue_free()
 			completed[0] += 1
 			if completed[0] >= total_items:
-				# 所有物品到达，开始任务单缩小动画
+				# 所有物品到达，播放音效
+				SoundSystem.play_sfx("sfx_meet")
+				# 开始任务单缩小动画
 				_play_task_shrink_animation(task_panel_center)
 		)
 
@@ -3576,11 +3563,7 @@ func _finish_task_submission_new() -> void:
 	var submitted: Array[int] = []
 	for item_id in need_items:
 		submitted.append(int(item_id))
-	var success: bool = TaskManager.try_complete_task(submitted)
-	if success:
-		print(">>> [GameBoard] 任务提交成功")
-	else:
-		print(">>> [GameBoard] 任务提交失败")
+	TaskManager.try_complete_task(submitted)
 
 	# 恢复任务面板显示
 	var task_panel_path := "MainLayout/MiddleBar/BottomHUDContainer/ScrollContainer/ContentHBox/ZoneC"
@@ -3594,7 +3577,6 @@ func _finish_task_submission_new() -> void:
 
 
 func _on_energy_buy_pressed() -> void:
-	print(">>> [GameBoard] _on_energy_buy_pressed 被调用!")
 	SoundSystem.play_merge()
 	var cost: int = GameManager.get_energy_purchase_cost()
 	var cost_text: String = LocalizationSystem.get_text("game_board.buy_energy_confirm", {"cost": cost})
@@ -3683,13 +3665,6 @@ func _on_shop_pressed() -> void:
 	# 使用弹窗方式打开商店（不切换场景）
 	var shop_scene := preload("res://scenes/shop_scene.tscn").instantiate()
 	add_child(shop_scene)
-
-
-func _on_encyclopedia_pressed() -> void:
-	SoundSystem.play_button_click()
-	_try_advance_tutorial(3)
-	var encyclopedia := preload("res://scenes/encyclopedia_scene.tscn").instantiate()
-	add_child(encyclopedia)
 
 
 func _on_item_pressed() -> void:
@@ -3884,7 +3859,6 @@ func _use_item_direct(slot_index: int) -> void:
 		if affected_target >= 0:
 			_play_item_effect_highlight(affected_target)
 	else:
-		print(">>> [GameBoard] 使用道具失败: %s" % item.name)
 		# 显示失败提示（延迟显示，避免被弹窗遮挡）
 		await get_tree().create_timer(0.15).timeout
 		TipManager.show_tip(LocalizationSystem.get_text("items.cannot_use_board_full"))
@@ -3912,7 +3886,6 @@ func _use_item_on_target(target_index: int) -> void:
 			affected_target = target_index
 		_play_item_effect_highlight(affected_target)
 	else:
-		print(">>> [GameBoard] 使用道具失败: %s" % item.name)
 		# 显示失败提示（延迟显示，避免被弹窗遮挡）
 		await get_tree().create_timer(0.15).timeout
 		TipManager.show_tip(LocalizationSystem.get_text("items.cannot_use_board_full"))
@@ -4225,10 +4198,6 @@ func _refresh_game_board_texts() -> void:
 	if shop_label:
 		shop_label.text = LocalizationSystem.get_text("game_board.shop")
 
-	var encyclopedia_label = encyclopedia_button.get_node_or_null("Label") if encyclopedia_button else null
-	if encyclopedia_label:
-		encyclopedia_label.text = LocalizationSystem.get_text("game_board.encyclopedia")
-	
 	# 献祭按钮标题
 	var vbox = sacrifice_button.get_node_or_null("VBoxContainer")
 	if vbox:

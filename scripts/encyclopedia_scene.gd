@@ -88,7 +88,6 @@ func _ready() -> void:
 	LocalizationSystem.language_changed.connect(_on_localization_changed)
 	_build_job_grid()
 	_update_evolution_display()
-	print(">>> [Encyclopedia] 图鉴已打开")
 
 
 func _build_job_grid() -> void:
@@ -188,7 +187,6 @@ func _create_job_sprite(job_id: int, level: int, char_type: int) -> TextureRect:
 		return result
 	
 	# 加载失败时返回纯色方块
-	print(">>> [Encyclopedia] 资源文件不存在: %s" % path)
 	var rect := TextureRect.new()
 	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
 	img.fill(JOB_COLORS.get(job_id, Color(0.5, 0.5, 0.5)))
@@ -459,13 +457,11 @@ func _calc_defense(job_id: int, level: int) -> int:
 
 
 func _on_close() -> void:
-	print(">>> [Encyclopedia] 关闭图鉴")
 	SoundSystem.play_button_click()
 	queue_free()
 
 
 func _on_localization_changed(_lang: String) -> void:
-	print(">>> [Encyclopedia] 语言切换为: %s" % _lang)
 	# 更新标题
 	if title_label:
 		title_label.text = LocalizationSystem.get_text("encyclopedia.title")

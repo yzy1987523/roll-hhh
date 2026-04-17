@@ -23,15 +23,12 @@ signal items_loaded()
 
 
 func _ready() -> void:
-	print(">>> [ItemManager] _ready 开始执行")
 	_load_items()
-	print(">>> [ItemManager] _ready 执行完成, is_loaded=%s, all_items.size=%d" % [is_loaded, all_items.size()])
 
 
 ## 加载所有物品配置
 func _load_items() -> void:
 	if not _config_loader.load_config():
-		print(">>> [ItemManager] 配置加载失败!")
 		return
 
 	all_items.clear()
@@ -48,9 +45,7 @@ func _load_items() -> void:
 	
 	# 标记加载完成
 	is_loaded = true
-	print(">>> [ItemManager] 物品加载完成，准备发射items_loaded信号，all_items.size=%d" % all_items.size())
 	items_loaded.emit()
-	print(">>> [ItemManager] items_loaded信号已发射")
 
 
 
@@ -71,13 +66,9 @@ func get_item(item_id: int) -> DM.BoardItemData:
 
 ## 获取物品sprite完整路径
 func get_sprite_path(item_id: int) -> String:
-	print(">>> [ItemManager] get_sprite_path(item_id=%d) 被调用, is_loaded=%s" % [item_id, is_loaded])
 	var board_item: DM.BoardItemData = get_item(item_id)
 	if board_item != null:
-		var path: String = board_item.get_sprite_path()
-		print(">>> [ItemManager] get_sprite_path返回: %s" % path)
-		return path
-	print(">>> [ItemManager] get_sprite_path返回空字符串，board_item为null")
+		return board_item.get_sprite_path()
 	return ""
 
 

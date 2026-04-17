@@ -307,16 +307,20 @@ func _on_build_completed(build_id: int) -> void:
 	if exp_reward <= 0:
 		return
 	var end_pos: Vector2 = _get_exp_bar_center()
-	var start_pos: Vector2 = Vector2(540, 400)
+	# 通过 GridManager 获取实际家具位置
+	var grid_mgr = get_node_or_null("../GridManager")
+	var start_pos: Vector2
+	if grid_mgr != null and grid_mgr.has_method("get_furniture_world_pos"):
+		start_pos = grid_mgr.get_furniture_world_pos(build_id)
+	else:
+		start_pos = Vector2(540, 400)  # 降级默认值
 	_play_explosion_then_fly(start_pos, end_pos, exp_reward)
 
 
 # ================================= GridManager 建造经验奖励回调 =================================
-func _on_build_exp_reward(furniture_world_pos: Vector2, exp_amount: int, _build_id: int) -> void:
-	print(">>> [BuildingUI] _on_build_exp_reward: pos=%s, exp=%d" % [furniture_world_pos, exp_amount])
-	# 将世界坐标转换为屏幕坐标（CanvasLayer 子节点使用屏幕空间）
-	var start_pos: Vector2 = get_viewport().get_canvas_transform() * furniture_world_pos
-	print(">>> [BuildingUI] 坐标转换: world=%s → screen=%s, canvas_transform=%s" % [furniture_world_pos, start_pos, get_viewport().get_canvas_transform()])
+func _on_build_exp_reward(start_pos: Vector2, exp_amount: int, _build_id: int) -> void:
+	print(">>> [BuildingUI] _on_build_exp_reward: pos=%s, exp=%d" % [start_pos, exp_amount])
+	# start_pos 是确认按钮的根空间坐标，end_pos 用 CanvasLayer 空间坐标
 	var end_pos: Vector2 = _get_exp_bar_center()
 	_play_explosion_then_fly(start_pos, end_pos, exp_amount)
 
@@ -331,10 +335,17 @@ func _get_exp_bar_center() -> Vector2:
 
 # ================================= 爆炸粒子 + 飞向经验条 =================================
 func _play_explosion_then_fly(start_pos: Vector2, end_pos: Vector2, exp_amount: int) -> void:
+	print(">>> [BuildingUI] _play_explosion_then_fly: start_pos=%s, end_pos=%s" % [start_pos, end_pos])
 	var EXP_ICON := preload("res://art/sprites/UI/icon/jingyan.png")
+
+	# 粒子容器添加到 building_ui (CanvasLayer)
 	var particle_container := Node2D.new()
-	particle_container.global_position = start_pos
-	get_tree().root.add_child(particle_container)
+	add_child(particle_container)
+
+	# 将根空间坐标转换为 CanvasLayer 局部坐标
+	var root_to_local: Transform2D = Transform2D.IDENTITY
+	var start_local: Vector2 = root_to_local * start_pos
+	var end_local: Vector2 = end_pos  # end_pos 已经是 CanvasLayer 空间
 
 	var particle_count: int = clampi(randi_range(8, 12), 8, 12)
 	var particles: Array[Sprite2D] = []
@@ -343,17 +354,17 @@ func _play_explosion_then_fly(start_pos: Vector2, end_pos: Vector2, exp_amount: 
 	for i in range(particle_count):
 		var particle := Sprite2D.new()
 		particle.texture = EXP_ICON
-		particle.scale = Vector2(0.8, 0.8)
-		particle.global_position = start_pos
+		particle.scale = Vector2(1.8, 1.8)
+		particle.position = start_local
 		particle_container.add_child(particle)
 		particles.append(particle)
 
 		var angle: float = TAU * float(i) / float(particle_count) + randf_range(-0.2, 0.2)
 		var scatter_dist: float = randf_range(40, 80)
-		var scatter_pos: Vector2 = start_pos + Vector2(cos(angle), sin(angle)) * scatter_dist
+		var scatter_pos: Vector2 = start_local + Vector2(cos(angle), sin(angle)) * scatter_dist
 
 		var scatter_tween := create_tween()
-		scatter_tween.tween_property(particle, "global_position", scatter_pos, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		scatter_tween.tween_property(particle, "position", scatter_pos, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		scatter_tween.tween_property(particle, "scale", Vector2(1.2, 1.2), 0.3)
 
 	# Phase 2: 收束飞向经验条 (0.4s) - 延迟 0.3s 后开始
@@ -363,7 +374,7 @@ func _play_explosion_then_fly(start_pos: Vector2, end_pos: Vector2, exp_amount: 
 			continue
 		var fly_tween := create_tween()
 		var random_offset := Vector2(randf_range(-15, 15), randf_range(-15, 15))
-		fly_tween.tween_property(particle, "global_position", end_pos + random_offset, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		fly_tween.tween_property(particle, "position", end_local + random_offset, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		fly_tween.parallel().tween_property(particle, "scale", Vector2(0.6, 0.6), 0.4)
 		fly_tween.tween_property(particle, "modulate:a", 0.0, 0.1)
 
@@ -485,11 +496,18 @@ func _show_level_up_popup(new_level: int, rewards: Dictionary) -> void:
 
 	var coin_reward: int = int(rewards.get("coin", 0))
 	if coin_reward > 0:
-		var coin_label = Label.new()
-		coin_label.text = "金币 +%d" % coin_reward
-		coin_label.add_theme_font_size_override("font_size", 24)
-		coin_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
-		reward_hbox.add_child(coin_label)
+		var coin_icon = TextureRect.new()
+		coin_icon.custom_minimum_size = Vector2(32, 32)
+		coin_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH
+		coin_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		coin_icon.texture = load("res://art/sprites/UI/icon/jinbi.png")
+		reward_hbox.add_child(coin_icon)
+
+		var coin_num_label = Label.new()
+		coin_num_label.text = "+%d" % coin_reward
+		coin_num_label.add_theme_font_size_override("font_size", 24)
+		coin_num_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
+		reward_hbox.add_child(coin_num_label)
 
 	var item_rewards: Array = rewards.get("items", [])
 	for item_id in item_rewards:
